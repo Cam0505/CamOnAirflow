@@ -2,16 +2,22 @@ version: 2
 models:
 - name: base_geo
   description: ''
+  config:
+      contract:
+        enforced: true
   columns:
   - name: city_id
     description: ''
+    data_type: bigint
     data_tests:
       - not_null
       - unique
   - name: city
     description: ''
+    data_type: varchar
   - name: latitude
     description: ''
+    data_type: double precision
     data_tests:
           - dbt_expectations.expect_column_values_to_be_between:
               min_value: -90
@@ -19,6 +25,7 @@ models:
               strictly: false
   - name: longitude
     description: ''
+    data_type: double precision
     data_tests:
           - dbt_expectations.expect_column_values_to_be_between:
               min_value: -180
@@ -26,6 +33,7 @@ models:
               strictly: false
   - name: country_code
     description: ''
+    data_type: varchar
     data_tests:
     - accepted_values:
         values: ['AU', 'NZ', 'CA', 'GB']

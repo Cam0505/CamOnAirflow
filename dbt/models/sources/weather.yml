@@ -1,0 +1,14 @@
+version: 2
+
+sources:
+  - name: weather
+    database: testing_dbt
+    schema: weather_data
+
+    loaded_at_field: timestamp
+
+    tables:
+      - name: daily_weather
+        freshness:
+          warn_after: {count: 14, period: day}  # Warn if the data is older than 14 days
+          error_after: {count: 21, period: day}  # Error if the data is older than 21 days

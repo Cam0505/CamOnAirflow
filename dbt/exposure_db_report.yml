@@ -1,0 +1,24 @@
+version: 2
+
+exposures:
+  - name: Db_Report_exposure
+    label: DB Report Exposure
+    type: dashboard
+    maturity: high
+    url: Example-URL
+    description: >
+      Meal and Beverage Report
+    depends_on:
+      - ref('dim_alcoholic_type')
+      - ref('dim_beverage_type')
+      - ref('dim_date')
+      - ref('dim_glass_type')
+      - ref('dim_ingredients_hierarchy')
+      - ref('dim_meal_category')
+      - ref('dim_meal_country')
+      - ref('dim_meal_ingredient_hierarchy')
+      - ref('fact_beverage_consumption')
+      - ref('fact_meal_consumption')
+    owner:
+      name: Cam
+      email: cam.martin0505@gmail.com

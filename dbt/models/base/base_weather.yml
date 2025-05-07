@@ -13,6 +13,10 @@ models:
         description: ''
       - name: city
         description: ''
+        data_tests:
+          - relationships:
+              to: ref('base_geo')
+              field: city  # Added this field to define the reference column
       - name: temperature_max
         description: ''
       - name: temperature_min

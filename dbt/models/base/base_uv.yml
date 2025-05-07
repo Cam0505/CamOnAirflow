@@ -21,6 +21,10 @@ models:
     description: ''
   - name: city
     description: ''
+    data_tests:
+    - relationships:
+        to: ref('base_geo')
+        field: city
   - name: location__lat
     description: ''
     data_tests:

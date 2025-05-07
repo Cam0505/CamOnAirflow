@@ -1,0 +1,9 @@
+version: 2
+
+sources:
+  - name: geo
+    database: testing_dbt
+    schema: geo_data
+
+    tables:
+      - name: geo_cities

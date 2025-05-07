@@ -10,5 +10,10 @@ sources:
   - name: gsheets
     database: testing_dbt
     schema: google_sheets
+
+    loaded_at_field: TO_TIMESTAMP(date_time, 'MM/DD/YYYY HH24:MI:SS')
     tables:
       - name: gsheet_finance
+        freshness:
+          warn_after: {count: 3, period: day}  # Warn if the data is older than 3 days
+          error_after: {count: 9, period: day}  # Error if the data is older than 9 days

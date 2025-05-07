@@ -14,25 +14,30 @@ macro-paths: ["macros"]
 target-path: "target"
 clean-targets: ["target", "dbt_modules", "logs"]
 
-require-dbt-version: [">=1.8.2", "<=1.9.1"]
+require-dbt-version: [">=1.8.2", "<1.9.0"]
 
 models:
   Cams_Project:
-      base:
-        # +required_tests: {"unique.*|not_null": 1}
-        +schema: base
-        +materialized: table
-        +tags: base
-      staging_source:
-        +schema: staging_source
-        +materialized: table
-      staging:
-        +schema: staging
-        +materialized: table
-      common:
-        +schema: common
-        +materialized: table
+  # This is an example.
+    +pre-hook:
+        - "{{ check_and_create_audit_log() }}"
+    +post-hook:
+        - "INSERT INTO audit_log (model, run_at) VALUES ('{{ this }}', CURRENT_TIMESTAMP)"
+    base:
+      +schema: base
+      +materialized: table
+      +tags: [base]
+    staging_source:
+      +schema: staging_source
+      +materialized: table
+    staging:
+      +schema: staging
+      +materialized: table
+    common:
+      +schema: common
+      +materialized: table
+
 snapshots:
   Cams_Project:
-    +path: snapshots
+    path: snapshots
     +tags: snapshot_dependencies

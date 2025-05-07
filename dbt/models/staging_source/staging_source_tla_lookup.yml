@@ -1,0 +1,15 @@
+version: 2
+models:
+- name: staging_source_tla_lookup
+  description: ''
+  columns:
+  - name: region
+    description: ''
+  - name: tlaid
+    description: ''
+  - name: tlaname
+    description: ''
+  - name: dim_tla_sk
+    description: ''
+  - name: dim_region_sk
+    description: ''

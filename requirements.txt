@@ -14,6 +14,7 @@ pandas==2.1.4
 pipdeptree==2.26.1
 psycopg2-binary==2.9.10
 dlt==1.10.0
-python-dotenv
-requests
+python-dotenv==1.1.0
+requests==2.32.3
 astronomer-cosmos[dbt.postgres]==1.10.0
+yfinance==0.2.58

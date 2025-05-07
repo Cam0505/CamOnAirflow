@@ -1,0 +1,13 @@
+version: 2
+models:
+- name: staging_source_crash_lanes_surface
+  description: ''
+  columns:
+  - name: roadlane
+    description: ''
+  - name: roadsurface
+    description: ''
+  - name: dim_lanes_surface_sk
+    description: ''
+  - name: dbt_invoke
+    description: ''

@@ -1,0 +1,37 @@
+version: 2
+
+models:
+- name: base_uv
+  description: ''
+  data_tests:
+  - dbt_utils.unique_combination_of_columns:
+      combination_of_columns:
+      - uv_time
+      - city
+  columns:
+  - name: uv_date
+    description: ''
+  - name: uv
+    description: ''
+  - name: uv_max
+    description: ''
+  - name: uv_time
+    description: ''
+  - name: ozone
+    description: ''
+  - name: city
+    description: ''
+  - name: location__lat
+    description: ''
+    data_tests:
+    - dbt_expectations.expect_column_values_to_be_between:
+        min_value: -90
+        max_value: 90
+        strictly: false
+  - name: location__lng
+    description: ''
+    data_tests:
+    - dbt_expectations.expect_column_values_to_be_between:
+        min_value: -180
+        max_value: 180
+        strictly: false

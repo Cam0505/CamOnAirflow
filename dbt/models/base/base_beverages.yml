@@ -1,0 +1,25 @@
+version: 2
+models:
+- name: base_beverages
+  description: ''
+  columns:
+  - name: beverage_name
+    description: ''
+    data_tests:
+    - not_null
+    - unique
+  - name: beverage_id
+    description: ''
+    data_tests:
+    - not_null
+    - unique
+  - name: beverage_type
+    description: ''
+  - name: beverage_category_sk
+    description: ''
+  - name: alcoholic_type
+    description: ''
+    data_tests:
+    - accepted_values:
+        values: ['Non alcoholic', 'Optional alcohol', 'Alcoholic']
+        quote: true

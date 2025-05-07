@@ -1,0 +1,44 @@
+# Git-related files
+.git
+
+# Environment files
+.env
+dlt_pipeline/.dlt/secrets.toml
+credentials.json
+
+dbt/profiles.yml
+dbt/dbt_packages/
+
+# macOS-specific
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Airflow-specific
+airflow-webserver.pid
+webserver_config.py
+airflow.cfg
+airflow.db
+astro
+.airflow
+airflow-dag-run.log
+airflow-worker.log
+airflow-scheduler.log
+
+# Python-related
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv
+
+# Docker-related
+.dockerignore
+docker-compose.override.yml
+airflow_settings.yaml
+
+# Editor and IDE specific files
+.vscode/
+
+# Misc
+*.log

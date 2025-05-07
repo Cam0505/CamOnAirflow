@@ -1,0 +1,20 @@
+{
+    "name": "astro-airflow-dev",
+    "dockerFile": "../Dockerfile",
+    "context": "..",
+    "settings": {
+      "terminal.integrated.defaultProfile.linux": "bash"
+    },
+    "extensions": [
+      "ms-python.python",
+      "ms-azuretools.vscode-docker",
+      "charliermarsh.ruff",
+      "batisteo.vscode-dbt-power-user"
+    ],
+    "postCreateCommand": "pip install --root-user-action=ignore -r requirements.txt && pip install --root-user-action=ignore -r dbt-requirements.txt",
+    "mounts": [
+      "source=${localWorkspaceFolder}/profiles.yml,target=/root/.dbt/profiles.yml,type=bind",
+      "source=${localWorkspaceFolder}/dbt,target=/usr/local/airflow/dbt,type=bind"
+    ],
+    "remoteUser": "root"
+  }

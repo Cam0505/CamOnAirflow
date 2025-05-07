@@ -1,0 +1,9 @@
+version: 2
+
+sources:
+  - name: uv
+    database: testing_dbt
+    schema: uv_data
+    tables:
+    # Alcoholic Type
+      - name: uv_index

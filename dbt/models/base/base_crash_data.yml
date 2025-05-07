@@ -1,0 +1,295 @@
+version: 2
+
+models:
+- name: base_crash_data
+  description: ""
+  columns:
+  - name: x
+    data_type: double precision
+    description: ""
+
+  - name: y
+    data_type: double precision
+    description: ""
+
+  - name: objectid
+    data_type: integer
+    description: ""
+    generic_tests:
+    - unique
+
+  - name: advisoryspeedtext
+    data_type: integer
+    description: ""
+
+  - name: areaunitid
+    data_type: integer
+    description: ""
+
+  - name: bicycle
+    data_type: integer
+    description: ""
+
+  - name: bridge
+    data_type: integer
+    description: ""
+
+  - name: bus
+    data_type: integer
+    description: ""
+
+  - name: carstationwagon
+    data_type: integer
+    description: ""
+
+  - name: cliffbank
+    data_type: integer
+    description: ""
+
+  - name: crashdirectiondescription
+    data_type: character varying
+    description: ""
+
+  - name: crashfinancialyear
+    data_type: character varying
+    description: ""
+
+  - name: crashlocation1
+    data_type: text
+    description: ""
+
+  - name: crashlocation2
+    data_type: text
+    description: ""
+
+  - name: crashroadsideroad
+    data_type: text
+    description: ""
+
+  - name: crashseverity
+    data_type: character varying
+    description: ""
+
+  - name: crashshdescription
+    data_type: character varying
+    description: ""
+
+  - name: crashyear
+    data_type: integer
+    description: ""
+
+  - name: debris
+    data_type: integer
+    description: ""
+
+  - name: directionroledescription
+    data_type: character varying
+    description: ""
+
+  - name: ditch
+    data_type: integer
+    description: ""
+
+  - name: fatalcount
+    data_type: integer
+    description: ""
+
+  - name: fence
+    data_type: integer
+    description: ""
+
+  - name: flathill
+    data_type: character varying
+    description: ""
+
+  - name: guardrail
+    data_type: integer
+    description: ""
+
+  - name: holiday
+    data_type: character varying
+    description: ""
+
+  - name: houseorbuilding
+    data_type: integer
+    description: ""
+
+  - name: intersection
+    data_type: text
+    description: ""
+
+  - name: kerb
+    data_type: integer
+    description: ""
+
+  - name: light
+    data_type: character varying
+    description: ""
+
+  - name: meshblockid
+    data_type: integer
+    description: ""
+
+  - name: minorinjurycount
+    data_type: integer
+    description: ""
+
+  - name: moped
+    data_type: integer
+    description: ""
+
+  - name: motorcycle
+    data_type: integer
+    description: ""
+
+  - name: numberoflanes
+    data_type: integer
+    description: ""
+
+  - name: objectthrownordropped
+    data_type: integer
+    description: ""
+
+  - name: otherobject
+    data_type: integer
+    description: ""
+
+  - name: othervehicletype
+    data_type: integer
+    description: ""
+
+  - name: overbank
+    data_type: integer
+    description: ""
+
+  - name: parkedvehicle
+    data_type: integer
+    description: ""
+
+  - name: pedestrian
+    data_type: integer
+    description: ""
+
+  - name: phoneboxetc
+    data_type: integer
+    description: ""
+
+  - name: postorpole
+    data_type: integer
+    description: ""
+
+  - name: region
+    data_type: character varying
+    description: ""
+
+  - name: roadcharacter
+    data_type: character varying
+    description: ""
+
+  - name: roadlane
+    data_type: character varying
+    description: ""
+
+  - name: roadsurface
+    data_type: character varying
+    description: ""
+
+  - name: roadworks
+    data_type: integer
+    description: ""
+
+  - name: schoolbus
+    data_type: integer
+    description: ""
+
+  - name: seriousinjurycount
+    data_type: integer
+    description: ""
+
+  - name: sliporflood
+    data_type: integer
+    description: ""
+
+  - name: speedlimit
+    data_type: integer
+    description: ""
+
+  - name: strayanimal
+    data_type: integer
+    description: ""
+
+  - name: streetlight
+    data_type: character varying
+    description: ""
+
+  - name: suv
+    data_type: integer
+    description: ""
+
+  - name: taxi
+    data_type: integer
+    description: ""
+
+  - name: temporaryspeedlimit
+    data_type: integer
+    description: ""
+
+  - name: tlaid
+    data_type: integer
+    description: ""
+
+  - name: tlaname
+    data_type: character varying
+    description: ""
+
+  - name: trafficcontrol
+    data_type: character varying
+    description: ""
+
+  - name: trafficisland
+    data_type: integer
+    description: ""
+
+  - name: trafficsign
+    data_type: integer
+    description: ""
+
+  - name: train
+    data_type: boolean
+    description: ""
+
+  - name: tree
+    data_type: integer
+    description: ""
+
+  - name: truck
+    data_type: integer
+    description: ""
+
+  - name: unknownvehicletype
+    data_type: integer
+    description: ""
+
+  - name: urban
+    data_type: character varying
+    description: ""
+
+  - name: vanorutility
+    data_type: integer
+    description: ""
+
+  - name: vehicle
+    data_type: integer
+    description: ""
+
+  - name: waterriver
+    data_type: integer
+    description: ""
+
+  - name: weathera
+    data_type: character varying
+    description: ""
+
+  - name: weatherb
+    data_type: character varying
+    description: ""

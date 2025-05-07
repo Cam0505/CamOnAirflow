@@ -1,0 +1,7 @@
+version: 2
+models:
+- name: dim_ingredients_jointable
+  description: ''
+  columns:
+  - name: beverage_id
+    description: ''

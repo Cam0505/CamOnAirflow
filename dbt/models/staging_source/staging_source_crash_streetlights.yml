@@ -1,0 +1,11 @@
+version: 2
+models:
+- name: staging_source_crash_streetlights
+  description: ''
+  columns:
+  - name: light_conditions
+    description: ''
+  - name: streetlight
+    description: ''
+  - name: dim_streetlight_sk
+    description: ''

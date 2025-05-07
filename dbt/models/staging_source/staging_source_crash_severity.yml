@@ -1,0 +1,9 @@
+version: 2
+models:
+- name: staging_source_crash_severity
+  description: ''
+  columns:
+  - name: crashseverity
+    description: ''
+  - name: dim_crashseverity_sk
+    description: ''

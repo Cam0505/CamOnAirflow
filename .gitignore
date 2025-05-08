@@ -4,7 +4,7 @@
 # Environment files
 .env
 dlt_pipeline/.dlt/secrets.toml
-credentials.json
+dlt_pipeline/credentials.json
 
 dbt/profiles.yml
 dbt/dbt_packages/

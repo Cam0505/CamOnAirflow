@@ -14,15 +14,20 @@ jobs:
     runs-on: ubuntu-latest  # Use the latest Ubuntu environment
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12.9'  # or whatever version you use
+
       # Install dependencies
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt 
       
-      - name: Change directory to DBT project
-        run: cd dbt
-
-      # Step 6: Run DBT build (this combines dbt run and dbt test)
       - name: Run DBT build
-        run: dbt build          
+        run: cd dbt && dbt build 

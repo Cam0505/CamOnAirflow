@@ -13,6 +13,16 @@ jobs:
   test:
     runs-on: ubuntu-latest  # Use the latest Ubuntu environment
 
+    services:
+      postgres:
+        image: postgres:13  # Use the official PostgreSQL Docker image
+        env:
+          POSTGRES_USER: ${{ secrets.DBT_PG_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.DBT_PG_PASS }}
+          POSTGRES_DB: ${{ secrets.DBT_PG_DB }}
+        ports:
+          - 5433:5432 
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -28,6 +38,37 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt 
+      - name: Set up DBT profile
+        run: |
+          mkdir -p ~/.dbt
+          cat > ~/.dbt/profiles.yml <<EOF
+          default:
+            outputs:
+              astro_dev:
+                type: postgres
+                host: localhost
+                port: 5433
+                user: ${{ secrets.DBT_PG_USER }}
+                pass: ${{ secrets.DBT_PG_PASS }}
+                dbname: ${{ secrets.DBT_PG_DB }}
+                schema: public
+                threads: 2
+            target: astro_dev
+          EOF
       
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          until nc -z -v -w30 localhost 5433; do
+            echo "Waiting for PostgreSQL to start..."
+            sleep 5
+          done
+          echo "PostgreSQL is up and running!"
+
+      # Step 5: Install DBT package dependencies
+      - name: Install DBT dependencies
+        run: |
+          cd dbt && dbt deps
+      
+      # Run Dim Date because it doesn't dependent on other pipelines, makes sure the database and dbt work
       - name: Run DBT build
-        run: cd dbt && dbt build 
+        run: cd dbt && dbt build --select dim_date

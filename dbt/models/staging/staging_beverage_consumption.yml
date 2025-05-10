@@ -4,21 +4,21 @@ models:
   description: ''
   columns:
   - name: beverage_id
-    description: ''
+    description: "{{ doc('beverage_id') }}"
   - name: beverage_name
-    description: ''
+    description: "{{ doc('beverage_name') }}"
   - name: beverage_category_sk
-    description: ''
+    description: "{{ doc('beverage_category_sk') }}"
   - name: glass_type
-    description: ''
+    description: "{{ doc('glass_type') }}"
   - name: beverage_type_sk
     description: ''
   - name: beverage_type
-    description: ''
+    description: "{{ doc('beverage_type') }}"
   - name: alcoholic_type_sk
     description: ''
   - name: alcoholic_type
-    description: ''
+    description: "{{ doc('alcoholic_type') }}"
   - name: str_category
     description: ''
   - name: str_alcoholic

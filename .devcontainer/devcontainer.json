@@ -1,20 +1,58 @@
+
 {
-    "name": "astro-airflow-dev",
-    "dockerFile": "../Dockerfile",
+    "name": "camonairflow",
+    "build": {
+    "dockerfile": "../Dockerfile",
+    "cacheFrom": "camonairflow-app:latest",
     "context": "..",
-    "settings": {
-      "terminal.integrated.defaultProfile.linux": "bash"
-    },
-    "extensions": [
-      "ms-python.python",
-      "ms-azuretools.vscode-docker",
-      "charliermarsh.ruff",
-      "batisteo.vscode-dbt-power-user"
-    ],
-    "postCreateCommand": "pip install --root-user-action=ignore -r requirements.txt && pip install --root-user-action=ignore -r dbt-requirements.txt",
-    "mounts": [
-      "source=${localWorkspaceFolder}/profiles.yml,target=/root/.dbt/profiles.yml,type=bind",
+    "args": {
+      "VARIANT": "3.12.9"  // Explicit Python version
+    }
+  },
+  "runArgs": [
+    "--cpus=4",
+    "--memory=4g",
+    "--init"
+  ],
+  "mounts": [
+      "source=${localWorkspaceFolder}/profiles.yml,target=/usr/local/airflow/dbt/profiles.yml,type=bind",
       "source=${localWorkspaceFolder}/dbt,target=/usr/local/airflow/dbt,type=bind"
     ],
-    "remoteUser": "root"
-  }
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "dbt.executablePath": "/usr/local/bin/dbt",
+        "dbt.pythonPath": "/usr/local/bin/python",
+        "dbt.profilesDir": "/usr/local/airflow/dbt",
+        "dbt.projectDir": "${containerWorkspaceFolder}",
+        "dbt.enableTelemetry": false,
+        "python.linting.enabled": true,
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "python.envFile": "${containerWorkspaceFolder}/.env"
+      },
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "dbt-labs.dbt",
+        "ms-azuretools.vscode-docker"
+      ]
+    },
+    "postCreateCommand": "",
+    "containerEnv": {
+      "PYTHONPATH": "/usr/local/airflow",
+      "AIRFLOW_HOME": "/usr/local/airflow",
+      "DBT_PROFILES_DIR": "/usr/local/airflow/dbt",
+      "ENV_FILE": "${containerWorkspaceFolder}/.env"
+    },
+    "settings": {
+      "terminal.integrated.defaultProfile.linux": "bash",
+      "python.analysis.extraPaths": [
+        "/usr/local/airflow",
+        "/usr/local/airflow/dags",
+        "/usr/local/airflow/dlt_pipeline",
+      ]
+    }
+  },
+  "remoteUser": "astro",
+  "updateRemoteUserUID": false
+}

@@ -42,3 +42,5 @@ airflow_settings.yaml
 
 # Misc
 *.log
+
+.user.yaml

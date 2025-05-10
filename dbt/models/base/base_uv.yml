@@ -2,7 +2,7 @@ version: 2
 
 models:
 - name: base_uv
-  description: ''
+  description: "{{ doc('base_uv_description') }}"
   data_tests:
   - dbt_utils.unique_combination_of_columns:
       combination_of_columns:
@@ -12,28 +12,28 @@ models:
   - name: uv_date
     description: ''
   - name: uv
-    description: ''
+    description: "{{ doc('uv') }}"
   - name: uv_max
     description: ''
   - name: uv_time
     description: ''
   - name: ozone
-    description: ''
+    description: "{{ doc('ozone') }}"
   - name: city
-    description: ''
+    description: "{{ doc('city') }}"
     data_tests:
     - relationships:
         to: ref('base_geo')
         field: city
   - name: location__lat
-    description: ''
+    description: "{{ doc('latitude') }}"
     data_tests:
     - dbt_expectations.expect_column_values_to_be_between:
         min_value: -90
         max_value: 90
         strictly: false
   - name: location__lng
-    description: ''
+    description: "{{ doc('longitude') }}"
     data_tests:
     - dbt_expectations.expect_column_values_to_be_between:
         min_value: -180

@@ -68,6 +68,7 @@ jobs:
       - name: Install DBT dependencies
         run: |
           cd dbt && dbt deps
-
+      
+      # Run Dim Date because it doesn't dependent on other pipelines, makes sure the database and dbt work
       - name: Run DBT build
-        run: cd dbt && dbt build 
+        run: cd dbt && dbt build --select dim_date

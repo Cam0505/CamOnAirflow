@@ -33,4 +33,8 @@ RUN mkdir -p /tmp && \
 COPY requirements.txt . 
 RUN pip install --no-cache-dir -r requirements.txt
 
-RUN pipdeptree
+# Set permissions for /tmp
+RUN mkdir -p /tmp && touch /tmp/dbt.log && chown airflow: /tmp/dbt.log
+
+# Expose Airflow ports
+EXPOSE 8080

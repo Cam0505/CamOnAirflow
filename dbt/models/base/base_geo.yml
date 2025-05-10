@@ -1,7 +1,7 @@
 version: 2
 models:
 - name: base_geo
-  description: ''
+  description: "{{ doc('base_geo_description') }}"
   config:
     contract:
       enforced: true
@@ -13,10 +13,10 @@ models:
     - not_null
     - unique
   - name: city
-    description: ''
+    description: "{{ doc('city') }}"
     data_type: varchar
   - name: latitude
-    description: ''
+    description: "{{ doc('latitude') }}"
     data_type: double precision
     data_tests:
     - dbt_expectations.expect_column_values_to_be_between:
@@ -24,7 +24,7 @@ models:
         max_value: 90
         strictly: false
   - name: longitude
-    description: ''
+    description: "{{ doc('longitude') }}"
     data_type: double precision
     data_tests:
     - dbt_expectations.expect_column_values_to_be_between:
@@ -39,11 +39,11 @@ models:
         values: ['AU', 'NZ', 'CA', 'GB']
         quote: true
   - name: country
-    description: ''
+    description: "{{ doc('country') }}"
     data_type: varchar
   - name: region
-    description: ''
+    description: "{{ doc('region') }}"
     data_type: varchar
   - name: continent
-    description: ''
+    description: "{{ doc('continent') }}"
     data_type: varchar

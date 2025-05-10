@@ -13,6 +13,21 @@ jobs:
   test:
     runs-on: ubuntu-latest  # Use the latest Ubuntu environment
 
+    services:
+      postgres:
+        image: postgres:13  # Ensure you are using the correct version
+        ports:
+          - 5433:5433     # Expose the default PostgreSQL port
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: testing_dbt
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -36,7 +51,7 @@ jobs:
             outputs:
               astro_dev:
                 type: postgres
-                host: ${{ secrets.DBT_PG_HOST }}
+                host: localhost
                 port: 5433
                 user: ${{ secrets.DBT_PG_USER }}
                 pass: ${{ secrets.DBT_PG_PASS }}

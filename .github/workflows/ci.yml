@@ -46,5 +46,10 @@ jobs:
             target: astro_dev
           EOF
       
+      # Step 5: Install DBT package dependencies
+      - name: Install DBT dependencies
+        run: |
+          cd dbt && dbt deps
+
       - name: Run DBT build
         run: cd dbt && dbt build 

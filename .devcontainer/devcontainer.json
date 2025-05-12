@@ -9,6 +9,8 @@
         "/usr/local/airflow/dags", 
         "/usr/local/airflow/dlt_pipeline", 
       ]
+    },"containerEnv": {
+    "PYTHONPATH": "/usr/local/airflow"
     },
     "extensions": [
       "ms-python.python",

@@ -3,7 +3,12 @@
     "dockerFile": "../Dockerfile",
     "context": "..",
     "settings": {
-      "terminal.integrated.defaultProfile.linux": "bash"
+      "terminal.integrated.defaultProfile.linux": "bash",
+      "python.analysis.extraPaths": [
+        "/usr/local/airflow", 
+        "/usr/local/airflow/dags", 
+        "/usr/local/airflow/dlt_pipeline", 
+      ]
     },
     "extensions": [
       "ms-python.python",
@@ -11,7 +16,7 @@
       "charliermarsh.ruff",
       "batisteo.vscode-dbt-power-user"
     ],
-    "postCreateCommand": "pip install --root-user-action=ignore -r requirements.txt && pip install --root-user-action=ignore -r dbt-requirements.txt",
+    "postCreateCommand": "pip install --root-user-action=ignore -r requirements.txt && (cd dbt && dbt deps)",
     "mounts": [
       "source=${localWorkspaceFolder}/profiles.yml,target=/root/.dbt/profiles.yml,type=bind",
       "source=${localWorkspaceFolder}/dbt,target=/usr/local/airflow/dbt,type=bind"

@@ -140,7 +140,7 @@ def run_dlt_pipeline():
 with DAG(
     dag_id='gfinance_dbt',
     start_date=datetime(2025, 5, 1),
-    schedule_interval= None, #'*/45 * * * *',
+    schedule= None, #'*/45 * * * *',
     catchup=False,
 ) as dag:
 
@@ -158,3 +158,17 @@ with DAG(
     )
 
     _ = run_pipeline >> dbt_build
+
+
+if __name__ == "__main__":
+    # Run the DLT pipeline step
+    print("Running DLT pipeline locally...")
+    result = run_dlt_pipeline()
+    print(f"DLT pipeline result: {result}")
+
+    result = True  # Simulate success for local testing
+
+    # Optionally run dbt build if DLT succeeded
+    if result:
+        print("Running dbt build locally...")
+        os.system(f"cd {DBT_DIR} && dbt build --select source:gsheets+ --profiles-dir . --project-dir .")

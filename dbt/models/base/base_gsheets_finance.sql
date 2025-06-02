@@ -1,7 +1,21 @@
-SELECT id, stock, price::numeric::money, TO_TIMESTAMP(date_time, 'MM/DD/YYYY HH24:MI:SS')::timestamp without time zone as date_time,
-round((max(price) over(partition by stock) - min(price) over(partition by stock))::numeric, 2)::numeric::money as price_spread,
-round((last_value(price) over(partition by stock order by date_time)::numeric - first_value(price) over(partition by stock)::numeric), 2)::numeric::money as relative_price_movement,
-round((last_value(price) over(partition by stock)::numeric - first_value(price) over(partition by stock)::numeric), 2)::numeric::money as abs_price_movement,
-Count(id) over(partition by stock)::integer as Num_Stock_Entries
-	-- FROM google_sheets.gsheet_finance
-    From {{ source("gsheets", "gsheet_finance") }}
+-- ------------------------------------------------------------------------------
+-- Model: Base_gsheets_finance
+-- Description: Base Table Google Sheets Finance
+-- ------------------------------------------------------------------------------
+-- Change Log:
+-- Date       | Author   | Description
+-- -----------|----------|-------------------------------------------------------
+-- 2025-06-02 | Cam      | Initial creation
+-- YYYY-MM-DD | NAME     | [Add future changes here] (Second Test, Please work)
+-- ------------------------------------------------------------------------------
+
+SELECT 
+    id, 
+    stock, 
+    CAST(price AS DECIMAL) AS price,  -- DuckDB doesn't have a money type
+    {{ convert_to_timezone(column_name='date_time') }} AS date_time,
+    ROUND((MAX(price) OVER(PARTITION BY stock) - MIN(price) OVER(PARTITION BY stock)), 2) AS price_spread,
+    ROUND((LAST(price) OVER(PARTITION BY stock ORDER BY date_time) - FIRST(price) OVER(PARTITION BY stock)), 2) AS relative_price_movement,
+    ROUND((LAST(price) OVER(PARTITION BY stock) - FIRST(price) OVER(PARTITION BY stock)), 2) AS abs_price_movement,
+    COUNT(id) OVER(PARTITION BY stock) AS Num_Stock_Entries
+    From {{ source("gsheets", "gsheets_finance") }}

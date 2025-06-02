@@ -31,6 +31,8 @@ def get_project_root():
 # Standardized paths
 PROJECT_ROOT = get_project_root()
 DBT_DIR = PROJECT_ROOT / "dbt"
+DBT_TARGETS_DIR = DBT_DIR / "target"
+DBT_RUN_RESULTS_DIR = DBT_TARGETS_DIR / "run_results.json"
 PIPELINES_DIR = PROJECT_ROOT / "pipelines"
 CREDENTIALS = PIPELINES_DIR / "credentials.json"
 ENV_FILE = PROJECT_ROOT / ".env"

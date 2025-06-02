@@ -12,23 +12,24 @@
   "runArgs": [
     "--cpus=4",
     "--memory=4g",
-    "--init"
+    "--init",
+    "--user=astro"
   ],
+  "workspaceFolder": "/workspaces/CamOnAirFlow",
   "mounts": [
-      "source=${localWorkspaceFolder}/profiles.yml,target=/usr/local/airflow/dbt/profiles.yml,type=bind",
-      "source=${localWorkspaceFolder}/dbt,target=/usr/local/airflow/dbt,type=bind"
-    ],
+    {
+      "source": "${localWorkspaceFolder}",
+      "target": "/workspaces/CamOnAirFlow",
+      "type": "bind"
+    }
+  ],
   "customizations": {
     "vscode": {
       "settings": {
-        "dbt.executablePath": "/usr/local/bin/dbt",
-        "dbt.pythonPath": "/usr/local/bin/python",
-        "dbt.profilesDir": "/usr/local/airflow/dbt",
-        "dbt.projectDir": "${containerWorkspaceFolder}",
         "dbt.enableTelemetry": false,
         "python.linting.enabled": true,
         "terminal.integrated.defaultProfile.linux": "bash",
-        "python.envFile": "${containerWorkspaceFolder}/.env"
+        "python.envFile": "/workspaces/CamOnAirFlow/.env"
       },
       "extensions": [
         "ms-python.python",
@@ -39,17 +40,17 @@
     },
     "postCreateCommand": "",
     "containerEnv": {
-      "PYTHONPATH": "/usr/local/airflow",
-      "AIRFLOW_HOME": "/usr/local/airflow",
-      "DBT_PROFILES_DIR": "/usr/local/airflow/dbt",
-      "ENV_FILE": "${containerWorkspaceFolder}/.env"
+      "PYTHONPATH": "/workspaces/CamOnAirFlow",
+      "AIRFLOW_HOME": "/workspaces/CamOnAirFlow",
+      "DBT_PROFILES_DIR": "/workspaces/CamOnAirFlow/dbt",
+      "ENV_FILE": "/workspaces/CamOnAirFlow/.env"
     },
     "settings": {
       "terminal.integrated.defaultProfile.linux": "bash",
       "python.analysis.extraPaths": [
-        "/usr/local/airflow",
-        "/usr/local/airflow/dags",
-        "/usr/local/airflow/dlt_pipeline",
+        "/workspaces/CamOnAirFlow",
+        "/workspaces/CamOnAirFlow/dags",
+        "/workspaces/CamOnAirFlow/dlt_pipeline",
       ]
     }
   },

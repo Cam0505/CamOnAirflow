@@ -3,8 +3,13 @@
 
 # Environment files
 .env
-dlt_pipeline/.dlt/secrets.toml
-dlt_pipeline/credentials.json
+pipelines/.dlt/secrets.toml
+pipelines/credentials.json
+
+pipelines/.dlt/*/load
+pipelines/.dlt/*/normalize
+pipelines/.dlt/*/trace.pickle
+
 
 dbt/profiles.yml
 dbt/dbt_packages/
@@ -34,7 +39,6 @@ __pycache__/
 
 # Docker-related
 .dockerignore
-docker-compose.override.yml
 airflow_settings.yaml
 
 # Editor and IDE specific files

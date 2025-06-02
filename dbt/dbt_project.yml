@@ -1,9 +1,9 @@
-name: 'Cams_Project'
+name: 'camonairflow'
 
 config-version: 2
 version: '1.8.2'
 
-profile: 'default'
+profile: 'camonairflow'
 
 model-paths: ["models"]
 seed-paths: ["seeds"]
@@ -17,7 +17,7 @@ clean-targets: ["target", "dbt_modules", "logs"]
 require-dbt-version: [">=1.8.2", "<1.9.0"]
 
 models:
-  Cams_Project:
+  camonairflow:
   # This is an example.
     +pre-hook:
         - "{{ check_and_create_audit_log() }}"
@@ -27,9 +27,6 @@ models:
       +schema: base
       +materialized: table
       +tags: [base]
-    staging_source:
-      +schema: staging_source
-      +materialized: table
     staging:
       +schema: staging
       +materialized: table
@@ -38,6 +35,6 @@ models:
       +materialized: table
 
 snapshots:
-  Cams_Project:
+  camonairflow:
     path: snapshots
     +tags: snapshot_dependencies

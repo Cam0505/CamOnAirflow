@@ -1,9 +1,0 @@
-version: 2
-models:
-- name: staging_source_region_lookup
-  description: ''
-  columns:
-  - name: region
-    description: ''
-  - name: dim_region_sk
-    description: ''

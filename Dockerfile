@@ -14,7 +14,6 @@ COPY dbt/packages.yml dbt/dbt_project.yml ./dbt/
 RUN cd dbt && dbt deps
 
 USER astro
-# Switch back to Astronomer's default user
-WORKDIR /usr/local/airflow
+WORKDIR /workspaces/CamOnAirFlow 
 
 EXPOSE 8080

@@ -1,7 +1,0 @@
-version: 2
-models:
-- name: uv_data_dates
-  description: ''
-  columns:
-  - name: date_col
-    description: ''

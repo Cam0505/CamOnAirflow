@@ -1,0 +1,15 @@
+services:
+  scheduler:
+    volumes:
+      - ./dbt:/usr/local/airflow/dbt
+      - ./dags:/usr/local/airflow/dags
+
+  webserver:
+    volumes:
+      - ./dbt:/usr/local/airflow/dbt
+      - ./dags:/usr/local/airflow/dags
+
+  triggerer:
+    volumes:
+      - ./dbt:/usr/local/airflow/dbt
+      - ./dags:/usr/local/airflow/dags

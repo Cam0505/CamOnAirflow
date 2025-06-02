@@ -10,9 +10,19 @@ from datetime import datetime, time
 from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 import os
-from path_config import ENV_FILE, DLT_PIPELINE_DIR, DBT_DIR, CREDENTIALS
+from project_path import get_project_paths, set_dlt_env_vars
+
+paths = get_project_paths()
+set_dlt_env_vars(paths)
+
+DLT_PIPELINE_DIR = paths["DLT_PIPELINE_DIR"]
+ENV_FILE = paths["ENV_FILE"]
+DBT_DIR = paths["DBT_DIR"]
+CREDENTIALS = paths["CREDENTIALS"]
 
 load_dotenv(dotenv_path=ENV_FILE)
+
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 

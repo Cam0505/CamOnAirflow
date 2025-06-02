@@ -1,0 +1,32 @@
+version: 2
+
+sources:
+  - name: opensky
+    database: camonairflow
+    schema: flight_data
+
+    tables:
+      - name: flight_tracking
+        freshness:
+          warn_after: {count: 2, period: day}
+          error_after: {count: 9, period: day}
+        loaded_at_field: arrival_datetime
+        columns:
+          - name: icao24
+            description: "{{ doc('icao24') }}"
+          - name: departure_airport
+            description: "{{ doc('departure_airport') }}"
+          - name: callsign
+            description: "{{ doc('callsign') }}"
+          - name: departure_datetime
+            description: "{{ doc('departure_datetime') }}"
+          - name: arrival_datetime
+            description: "{{ doc('arrival_datetime') }}"
+          - name: _dlt_load_id
+            description: "{{ doc('_dlt_load_id') }}"
+          - name: _dlt_id
+            description: "{{ doc('_dlt_id') }}"
+          - name: arrival_airport
+            description: "{{ doc('arrival_airport') }}"
+          - name: distance_km
+            description: "{{ doc('distance_km') }}"

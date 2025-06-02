@@ -12,18 +12,21 @@ analysis-paths: ["analysis"]
 macro-paths: ["macros"]
 
 target-path: "target"
-clean-targets: ["target", "dbt_modules", "logs"]
+clean-targets: ["target", "dbt_packages", "logs"]
 
 require-dbt-version: [">=1.8.2", "<1.9.0"]
 
 models:
   camonairflow:
-  # This is an example.
     +pre-hook:
         - "{{ check_and_create_audit_log() }}"
     +post-hook:
-        - "INSERT INTO audit_log (model, run_at) VALUES ('{{ this }}', CURRENT_TIMESTAMP)"
-    base:
+         - "INSERT INTO audit_log (model, run_at, rows_processed) VALUES (
+          '{{ this }}', 
+          CURRENT_TIMESTAMP, 
+          (SELECT COUNT(*) FROM {{ this }})
+          )"
+    base: 
       +schema: base
       +materialized: table
       +tags: [base]

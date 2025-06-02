@@ -14,3 +14,4 @@ dlt==1.10.0
 dlt[parquet]==1.10.0
 python-dotenv==1.1.0
 astronomer-cosmos[dbt-duckdb]==1.10.1
+airportsdata==20250523

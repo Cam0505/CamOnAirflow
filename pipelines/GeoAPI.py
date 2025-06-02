@@ -6,9 +6,17 @@ import logging
 from dotenv import load_dotenv
 from time import sleep
 import subprocess
-from path_config import ENV_FILE, DLT_PIPELINE_DIR, DBT_DIR
+from project_path import get_project_paths, set_dlt_env_vars
 from dlt.pipeline.exceptions import PipelineNeverRan
 from dlt.destinations.exceptions import DatabaseUndefinedRelation
+
+
+paths = get_project_paths()
+set_dlt_env_vars(paths)
+
+DLT_PIPELINE_DIR = paths["DLT_PIPELINE_DIR"]
+ENV_FILE = paths["ENV_FILE"]
+DBT_DIR = paths["DBT_DIR"]
 
 # Load environment variables
 load_dotenv(dotenv_path=ENV_FILE)

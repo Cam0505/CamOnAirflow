@@ -39,7 +39,6 @@ __pycache__/
 
 # Docker-related
 .dockerignore
-docker-compose.override.yml
 airflow_settings.yaml
 
 # Editor and IDE specific files

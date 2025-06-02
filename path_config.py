@@ -7,7 +7,7 @@ import dlt
 def get_project_root():
     """Resolves the correct root path across all environments."""
     search_paths = [
-        Path("/workspaces/CamOnAirFlow"),  # Devcontainer
+        Path("/workspaces/camonairflow"),  # Devcontainer
         Path(__file__).parent.parent,      # Local dev
         Path.cwd()                         # Fallback
     ]
@@ -31,7 +31,7 @@ def get_project_root():
 # Standardized paths
 PROJECT_ROOT = get_project_root()
 DBT_DIR = PROJECT_ROOT / "dbt"
-PIPELINES_DIR = PROJECT_ROOT / "dlt_pipeline"
+PIPELINES_DIR = PROJECT_ROOT / "pipelines"
 CREDENTIALS = PIPELINES_DIR / "credentials.json"
 ENV_FILE = PROJECT_ROOT / ".env"
 REQUEST_CACHE_DIR = PROJECT_ROOT / "request_cache"

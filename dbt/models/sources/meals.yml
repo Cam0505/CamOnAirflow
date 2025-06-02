@@ -2,7 +2,7 @@ version: 2
 
 sources:
   - name: meals
-    database: testing_dbt
+    database: camonairflow
     schema: meals_data
     tables:
     # category Type

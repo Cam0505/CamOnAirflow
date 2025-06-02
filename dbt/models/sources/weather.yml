@@ -2,7 +2,7 @@ version: 2
 
 sources:
   - name: weather
-    database: testing_dbt
+    database: camonairflow
     schema: weather_data
 
     loaded_at_field: timestamp

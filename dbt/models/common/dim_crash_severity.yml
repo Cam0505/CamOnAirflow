@@ -1,9 +1,0 @@
-version: 2
-models:
-- name: dim_crash_severity
-  description: ''
-  columns:
-  - name: crashseverity
-    description: ''
-  - name: dim_crashseverity_sk
-    description: ''

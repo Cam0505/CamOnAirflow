@@ -2,7 +2,7 @@ version: 2
 
 sources:
   - name: beverages
-    database: testing_dbt
+    database: camonairflow
     schema: cocktail_data
     tables:
     # Alcoholic Type

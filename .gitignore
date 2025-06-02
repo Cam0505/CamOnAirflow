@@ -3,12 +3,12 @@
 
 # Environment files
 .env
-dlt_pipeline/.dlt/secrets.toml
-dlt_pipeline/credentials.json
+pipelines/.dlt/secrets.toml
+pipelines/credentials.json
 
-dlt_pipeline/.dlt/*/load
-dlt_pipeline/.dlt/*/normalize
-dlt_pipeline/.dlt/*/trace.pickle
+pipelines/.dlt/*/load
+pipelines/.dlt/*/normalize
+pipelines/.dlt/*/trace.pickle
 
 
 dbt/profiles.yml

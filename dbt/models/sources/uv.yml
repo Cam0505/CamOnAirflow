@@ -2,7 +2,7 @@ version: 2
 
 sources:
   - name: uv
-    database: testing_dbt
+    database: camonairflow
     schema: uv_data
 
     loaded_at_field: timestamp

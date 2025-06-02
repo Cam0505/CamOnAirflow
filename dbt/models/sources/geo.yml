@@ -2,7 +2,7 @@ version: 2
 
 sources:
   - name: geo
-    database: testing_dbt
+    database: camonairflow
     schema: geo_data
 
     tables:

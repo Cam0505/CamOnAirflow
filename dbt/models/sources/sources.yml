@@ -1,14 +1,8 @@
 version: 2
 
 sources:
-  - name: raw_csv
-    database: testing_dbt
-    schema: raw_csvs
-    tables:
-      - name: crash_data
-
   - name: gsheets
-    database: testing_dbt
+    database: camonairflow
     schema: google_sheets
 
     loaded_at_field: TO_TIMESTAMP(date_time, 'MM/DD/YYYY HH24:MI:SS')

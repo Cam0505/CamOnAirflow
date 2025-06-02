@@ -8,8 +8,9 @@ import os
 import psycopg2
 import logging
 from dotenv import load_dotenv
+from path_config import ENV_FILE, DLT_PIPELINE_DIR, DBT_DIR
 
-load_dotenv(dotenv_path="../.env")
+load_dotenv(dotenv_path=ENV_FILE)
 
 # Configure logging
 logging.basicConfig(
@@ -103,8 +104,9 @@ def meals_data():
 # pipeline
 pipeline = dlt.pipeline(
     pipeline_name="meals_pipeline",
-    destination="postgres",
+    destination=os.getenv("DLT_DESTINATION"),
     dataset_name="meals_data",
+    pipelines_dir=str(DLT_PIPELINE_DIR),
     dev_mode=False
 )
 # Run the pipeline

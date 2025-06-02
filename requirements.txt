@@ -11,5 +11,6 @@ gitdb==4.0.12
 psycopg-binary==3.2.9
 duckdb==1.2.2
 dlt==1.10.0
+dlt[parquet]==1.10.0
 python-dotenv==1.1.0
 astronomer-cosmos[dbt-duckdb]==1.10.1

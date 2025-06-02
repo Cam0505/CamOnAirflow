@@ -1,17 +1,29 @@
+-- ------------------------------------------------------------------------------
+-- Model: Dim Date
+-- Description: Dimension Table, date information
+-- ------------------------------------------------------------------------------
+-- Change Log:
+-- Date       | Author   | Description
+-- -----------|----------|-------------------------------------------------------
+-- 2025-05-25 | Cam      | Initial creation
+-- YYYY-MM-DD | NAME     | [Add future changes here]
+-- ------------------------------------------------------------------------------
+
+
 WITH RECURSIVE date_series AS (
     SELECT DATE '2000-01-01' AS date
     UNION ALL
-    SELECT (date + INTERVAL '1 day')::date
+    SELECT date + INTERVAL '1 day'
     FROM date_series
     WHERE date + INTERVAL '1 day' < DATE '2030-01-01'
 )
 SELECT
-    date as date_col,
+    date AS date_col,
     EXTRACT(YEAR FROM date) AS year,
     EXTRACT(MONTH FROM date) AS month,
     EXTRACT(DAY FROM date) AS day,
-    TO_CHAR(date, 'Month') AS month_name,
-    TO_CHAR(date, 'Day') AS weekday_name,
+    strftime('%B', date) AS month_name,  -- Replacing TO_CHAR with strftime
+    strftime('%A', date) AS weekday_name,  -- Replacing TO_CHAR with strftime
     EXTRACT(DOW FROM date) AS day_of_week,
     CASE WHEN EXTRACT(DOW FROM date) IN (0, 6) THEN TRUE ELSE FALSE END AS is_weekend,
     EXTRACT(DOY FROM date) AS day_of_year,

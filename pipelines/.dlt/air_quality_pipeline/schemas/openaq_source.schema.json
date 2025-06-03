@@ -1,0 +1,322 @@
+{
+  "version": 4,
+  "version_hash": "c7JAxxYX7PGfkKcbSw3wb2mmfJjJhMO/8krgQIisKnc=",
+  "engine_version": 11,
+  "name": "openaq_source",
+  "tables": {
+    "_dlt_version": {
+      "name": "_dlt_version",
+      "columns": {
+        "version": {
+          "name": "version",
+          "data_type": "bigint",
+          "nullable": false
+        },
+        "engine_version": {
+          "name": "engine_version",
+          "data_type": "bigint",
+          "nullable": false
+        },
+        "inserted_at": {
+          "name": "inserted_at",
+          "data_type": "timestamp",
+          "nullable": false
+        },
+        "schema_name": {
+          "name": "schema_name",
+          "data_type": "text",
+          "nullable": false
+        },
+        "version_hash": {
+          "name": "version_hash",
+          "data_type": "text",
+          "nullable": false
+        },
+        "schema": {
+          "name": "schema",
+          "data_type": "text",
+          "nullable": false
+        }
+      },
+      "write_disposition": "skip",
+      "resource": "_dlt_version",
+      "description": "Created by DLT. Tracks schema updates"
+    },
+    "_dlt_loads": {
+      "name": "_dlt_loads",
+      "columns": {
+        "load_id": {
+          "name": "load_id",
+          "data_type": "text",
+          "nullable": false
+        },
+        "schema_name": {
+          "name": "schema_name",
+          "data_type": "text",
+          "nullable": true
+        },
+        "status": {
+          "name": "status",
+          "data_type": "bigint",
+          "nullable": false
+        },
+        "inserted_at": {
+          "name": "inserted_at",
+          "data_type": "timestamp",
+          "nullable": false
+        },
+        "schema_version_hash": {
+          "name": "schema_version_hash",
+          "data_type": "text",
+          "nullable": true
+        }
+      },
+      "write_disposition": "skip",
+      "resource": "_dlt_loads",
+      "description": "Created by DLT. Tracks completed loads"
+    },
+    "_dlt_pipeline_state": {
+      "columns": {
+        "version": {
+          "name": "version",
+          "data_type": "bigint",
+          "nullable": false
+        },
+        "engine_version": {
+          "name": "engine_version",
+          "data_type": "bigint",
+          "nullable": false
+        },
+        "pipeline_name": {
+          "name": "pipeline_name",
+          "data_type": "text",
+          "nullable": false
+        },
+        "state": {
+          "name": "state",
+          "data_type": "text",
+          "nullable": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "data_type": "timestamp",
+          "nullable": false
+        },
+        "version_hash": {
+          "name": "version_hash",
+          "data_type": "text",
+          "nullable": true
+        },
+        "_dlt_load_id": {
+          "name": "_dlt_load_id",
+          "data_type": "text",
+          "nullable": false
+        },
+        "_dlt_id": {
+          "name": "_dlt_id",
+          "data_type": "text",
+          "nullable": false,
+          "unique": true,
+          "row_key": true
+        }
+      },
+      "write_disposition": "append",
+      "file_format": "preferred",
+      "name": "_dlt_pipeline_state",
+      "resource": "_dlt_pipeline_state",
+      "x-normalizer": {
+        "seen-data": true
+      }
+    },
+    "openaq_daily": {
+      "columns": {
+        "datetime": {
+          "name": "datetime",
+          "data_type": "date",
+          "nullable": true
+        },
+        "city": {
+          "name": "city",
+          "data_type": "text",
+          "nullable": true
+        },
+        "country": {
+          "name": "country",
+          "data_type": "text",
+          "nullable": true
+        },
+        "sensor_id": {
+          "name": "sensor_id",
+          "data_type": "bigint",
+          "nullable": true
+        },
+        "parameter": {
+          "name": "parameter",
+          "data_type": "text",
+          "nullable": true
+        },
+        "value": {
+          "name": "value",
+          "data_type": "double",
+          "nullable": true
+        },
+        "unit": {
+          "name": "unit",
+          "data_type": "text",
+          "nullable": true
+        },
+        "summary__min": {
+          "name": "summary__min",
+          "data_type": "double",
+          "nullable": true
+        },
+        "summary__q02": {
+          "name": "summary__q02",
+          "data_type": "double",
+          "nullable": true
+        },
+        "summary__q25": {
+          "name": "summary__q25",
+          "data_type": "double",
+          "nullable": true
+        },
+        "summary__median": {
+          "name": "summary__median",
+          "data_type": "double",
+          "nullable": true
+        },
+        "summary__q75": {
+          "name": "summary__q75",
+          "data_type": "double",
+          "nullable": true
+        },
+        "summary__q98": {
+          "name": "summary__q98",
+          "data_type": "double",
+          "nullable": true
+        },
+        "summary__max": {
+          "name": "summary__max",
+          "data_type": "double",
+          "nullable": true
+        },
+        "summary__avg": {
+          "name": "summary__avg",
+          "data_type": "double",
+          "nullable": true
+        },
+        "summary__sd": {
+          "name": "summary__sd",
+          "data_type": "double",
+          "nullable": true
+        },
+        "coverage__expected_count": {
+          "name": "coverage__expected_count",
+          "data_type": "bigint",
+          "nullable": true
+        },
+        "coverage__expected_interval": {
+          "name": "coverage__expected_interval",
+          "data_type": "text",
+          "nullable": true
+        },
+        "coverage__observed_count": {
+          "name": "coverage__observed_count",
+          "data_type": "bigint",
+          "nullable": true
+        },
+        "coverage__observed_interval": {
+          "name": "coverage__observed_interval",
+          "data_type": "text",
+          "nullable": true
+        },
+        "coverage__percent_complete": {
+          "name": "coverage__percent_complete",
+          "data_type": "double",
+          "nullable": true
+        },
+        "coverage__percent_coverage": {
+          "name": "coverage__percent_coverage",
+          "data_type": "double",
+          "nullable": true
+        },
+        "coverage__datetime_from__utc": {
+          "name": "coverage__datetime_from__utc",
+          "data_type": "timestamp",
+          "nullable": true
+        },
+        "coverage__datetime_from__local": {
+          "name": "coverage__datetime_from__local",
+          "data_type": "timestamp",
+          "nullable": true
+        },
+        "coverage__datetime_to__utc": {
+          "name": "coverage__datetime_to__utc",
+          "data_type": "timestamp",
+          "nullable": true
+        },
+        "coverage__datetime_to__local": {
+          "name": "coverage__datetime_to__local",
+          "data_type": "timestamp",
+          "nullable": true
+        },
+        "_dlt_load_id": {
+          "name": "_dlt_load_id",
+          "data_type": "text",
+          "nullable": false
+        },
+        "_dlt_id": {
+          "name": "_dlt_id",
+          "data_type": "text",
+          "nullable": false,
+          "unique": true,
+          "row_key": true
+        }
+      },
+      "write_disposition": "append",
+      "name": "openaq_daily",
+      "resource": "openaq_daily",
+      "x-normalizer": {
+        "seen-data": true
+      }
+    }
+  },
+  "settings": {
+    "detections": [
+      "iso_timestamp"
+    ],
+    "default_hints": {
+      "not_null": [
+        "_dlt_id",
+        "_dlt_root_id",
+        "_dlt_parent_id",
+        "_dlt_list_idx",
+        "_dlt_load_id"
+      ],
+      "parent_key": [
+        "_dlt_parent_id"
+      ],
+      "root_key": [
+        "_dlt_root_id"
+      ],
+      "unique": [
+        "_dlt_id"
+      ],
+      "row_key": [
+        "_dlt_id"
+      ]
+    }
+  },
+  "normalizers": {
+    "names": "snake_case",
+    "json": {
+      "module": "dlt.common.normalizers.json.relational"
+    }
+  },
+  "previous_hashes": [
+    "GlM8n2C35m5Phow84eoHt8NywQGYmQCA0oMT66tlKd8=",
+    "I1u9nmR6cEuq60Xc339EIFs0Tve2OFKqlt5iLNV/RYg=",
+    "IEOyKbj29YJ8LJi7uUUIurTcfkbYvd6FduPIgZrd11k=",
+    "yNvZy5LNko2+/kUkIgSKV12ZjYXQonTLAfZFzBngRa0="
+  ]
+}

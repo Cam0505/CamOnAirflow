@@ -4,8 +4,20 @@
 The ICAO code of the airport where the flight landed. Null if the arrival airport could not be determined.
 {% enddocs %}
 
+{% docs arrival_airport_flights %}
+The number of flights arriving at the most popular arrival airport for the given period.
+{% enddocs %}
+
 {% docs arrival_datetime %}
 The UTC datetime when the flight arrived, derived from the last seen timestamp.
+{% enddocs %}
+
+{% docs avg_distance_km %}
+The average great-circle distance (in kilometers) flown by flights in the given period.
+{% enddocs %}
+
+{% docs avg_flight_time_minutes %}
+The average flight time (in minutes) for flights in the given period.
 {% enddocs %}
 
 # B
@@ -37,6 +49,10 @@ The country where the city is located. Useful for aggregating or filtering by na
 The ICAO code of the airport where the flight departed. Null if the departure airport could not be determined.
 {% enddocs %}
 
+{% docs departure_airport_flights %}
+The number of flights departing from the most popular departure airport for the given period.
+{% enddocs %}
+
 {% docs departure_datetime %}
 The UTC datetime when the flight departed, derived from the first seen timestamp.
 {% enddocs %}
@@ -63,9 +79,29 @@ The latitude coordinate of the city in decimal degrees. Positive values indicate
 The longitude coordinate of the city in decimal degrees. Positive values indicate locations east of the Prime Meridian.
 {% enddocs %}
 # M
+
+{% docs month %}
+The first day of the month (UTC) for the aggregation period.
+{% enddocs %}
+
+{% docs most_popular_arrival_airport %}
+The ICAO code of the most popular arrival airport for the given period.
+{% enddocs %}
+
+{% docs most_popular_departure_airport %}
+The ICAO code of the most popular departure airport for the given period.
+{% enddocs %}
 # N
 # O
 # P
+
+{% docs pct_flights_arrival_airport %}
+The percentage of flights in the period that arrived at the most popular arrival airport.
+{% enddocs %}
+
+{% docs pct_flights_departure_airport %}
+The percentage of flights in the period that departed from the most popular departure airport.
+{% enddocs %}
 # Q
 # R
 {% docs region %}
@@ -73,11 +109,31 @@ A higher-level geographic grouping, such as a continent or internal administrati
 {% enddocs %}
 # S
 # T
+
+{% docs total_distance_km %}
+The total great-circle distance (in kilometers) flown by all flights in the given period.
+{% enddocs %}
+
+{% docs total_flight_time_minutes %}
+The total flight time (in minutes) for all flights in the given period.
+{% enddocs %}
+
+{% docs total_flights %}
+The total number of flights in the given period.
+{% enddocs %}
 # U
 # V
 # W
+
+{% docs week %}
+The first day of the week (UTC) for the aggregation period.
+{% enddocs %}
 # X
 # Y
+
+{% docs year %}
+The first day of the year (UTC) for the aggregation period.
+{% enddocs %}
 # Z
 {% docs _dlt_id %}
 The unique identifier assigned by DLT for this record.

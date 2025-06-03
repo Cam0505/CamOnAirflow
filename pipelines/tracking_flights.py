@@ -28,14 +28,26 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 logger = logging.getLogger(__name__)
 
 ICAO24_LIST = [
-    "a0f1bb",   # Delta Air Lines (USA, international)
-    "3c6444",   # Lufthansa (Germany, A320, international)
-    "a4b77c",   # Alaska Airlines (USA, international, sometimes used for charity/famous flights)
-    "a2c8c8",   # American Airlines (USA, international, often used for sports charters)
-    "43c553",   # NetJets (private jets, sometimes used by celebrities)
-    "4ca4e4",   # Ryanair (Ireland, European international, high volume/interesting routes)
+    # "3c6444",  # Lufthansa (D-AISA, A320)
+    # "3c675a",  # Lufthansa (D-AIUQ, A320)
+    # "3c4b26",  # Lufthansa (D-AISQ, A320)
+    # "3c4b1e",  # Lufthansa (D-AISP, A320)
+    "3c4b1d",  # Lufthansa (D-AISO, A320)
+    "3c4b1c",  # Lufthansa (D-AISN, A320)
+    "3c4b1b",  # Lufthansa (D-AISM, A320)
+    "3c4b1a",  # Lufthansa (D-AISL, A320)
+    "3c4b19",  # Lufthansa (D-AISK, A320)
+    "3c4b18",  # Lufthansa (D-AISJ, A320)
+    "3c4b17",  # Lufthansa (D-AISI, A320)
+    "3c4b16",  # Lufthansa (D-AISH, A320)
+    "3c4b15",  # Lufthansa (D-AISG, A320)
+    "3c4b14",  # Lufthansa (D-AISF, A320)
+    "3c4b13",  # Lufthansa (D-AISE, A320)
+    "3c4b12",  # Lufthansa (D-AISD, A320)
+    "3c4b11",  # Lufthansa (D-AISC, A320)
+    "3c4b10",  # Lufthansa (D-AISB, A320)
+    "3c4b0f",  # Lufthansa (D-AISA, A320)
 ]
-
 BASE_URL = "https://opensky-network.org/api/flights/aircraft"
 
 airports = load('ICAO') 
@@ -68,9 +80,11 @@ def myshiptracking_source(logger: logging.Logger, latest_timestamps):
     """
     @dlt.resource(write_disposition="append", name="flight_tracking")
     def vessel_positions() -> Iterator[Dict]:
-        # Get the current timestamp and default start timestamp (8 days ago)
+        # Get the current timestamp and default start timestamp (2000 days ago)
         now_ts = int(datetime.now(UTC).timestamp())
-        default_start_ts = int((datetime.now(UTC) - timedelta(days=8)).timestamp())
+        default_start_ts = int((datetime.now(UTC) - timedelta(days=14)).timestamp())
+        logger.info(f"now_ts: {now_ts}, default_start_ts: {default_start_ts}")
+        
         # Get an access token for OpenSky API
         token = get_opensky_token()
         headers = {"Authorization": f"Bearer {token}"}
@@ -87,6 +101,7 @@ def myshiptracking_source(logger: logging.Logger, latest_timestamps):
             logger.debug(f"Request params: {params}")
             try:
                 # Make the API request to OpenSky
+                logger.debug(f"Making API request for {icao24} with params: {params}")
                 response = requests.get(BASE_URL, params=params, headers=headers)
                 logger.debug(f"API URL: {response.url}")
                 response.raise_for_status()
@@ -99,8 +114,8 @@ def myshiptracking_source(logger: logging.Logger, latest_timestamps):
                     time.sleep(60)
                     continue
                 status_code = getattr(e.response, "status_code", None)
-                if status_code == 404:
-                    logger.warning(f"No flight data found for {icao24} in this time window.")
+                if status_code == 404 or status_code == 400:
+                    logger.info(f"No flight data found for {icao24} in this time window.")
                 else:
                     logger.error(f"Failed to fetch data for {icao24}: {e}")
                 continue

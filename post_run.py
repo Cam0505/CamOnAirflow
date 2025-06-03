@@ -70,6 +70,48 @@ def process_result(result: dict) -> dict:
         logger.warning(f"Skipping malformed result - missing key: {e}")
         return {}
 
+def summarize_results(results: list) -> dict:
+    """Aggregate dbt results into a single summary row."""
+    n_models = sum(1 for r in results if r.get("unique_id", "").startswith("model."))
+    n_tests = sum(1 for r in results if r.get("unique_id", "").startswith("test."))
+    tests = [r for r in results if r.get("unique_id", "").startswith("test.")]
+    models = [r for r in results if r.get("unique_id", "").startswith("model.")]
+    total_tests = len(tests)
+    total_models = len(models)
+    passed_tests = sum(1 for r in tests if r.get("status") == "pass")
+    successful_models = sum(1 for r in models if r.get("status") == "success")
+    thread_counts = {"Thread-1 (worker)": 0, "Thread-2 (worker)": 0, "Thread-3 (worker)": 0,
+                     "Thread-4 (worker)": 0, "Thread-5 (worker)": 0, "Thread-6 (worker)": 0}
+    for r in models:
+        thread = r.get("thread_id")
+        if thread in ("Thread-1 (worker)", "Thread-2 (worker)", "Thread-3 (worker)", 
+                      "Thread-4 (worker)", "Thread-5 (worker)", "Thread-6 (worker)"):
+            thread_counts[thread] += 1
+    total_model_threads = sum(thread_counts.values())
+    percent_tests_passed = (passed_tests / total_tests * 100) if total_tests else 0
+    percent_models_success = (successful_models / total_models * 100) if total_models else 0
+    percent_thread_1 = (thread_counts["Thread-1 (worker)"] / total_model_threads * 100) if total_model_threads else 0
+    percent_thread_2 = (thread_counts["Thread-2 (worker)"] / total_model_threads * 100) if total_model_threads else 0
+    percent_thread_3 = (thread_counts["Thread-3 (worker)"] / total_model_threads * 100) if total_model_threads else 0
+    percent_thread_4 = (thread_counts["Thread-4 (worker)"] / total_model_threads * 100) if total_model_threads else 0
+    percent_thread_5 = (thread_counts["Thread-5 (worker)"] / total_model_threads * 100) if total_model_threads else 0
+    percent_thread_6 = (thread_counts["Thread-6 (worker)"] / total_model_threads * 100) if total_model_threads else 0
+    total_duration = sum(r.get("execution_time", 0) or 0 for r in results)
+    return {
+        "executed_at": datetime.now().isoformat(),
+        "n_models": n_models,
+        "n_tests": n_tests,
+        "percent_tests_passed": percent_tests_passed,
+        "percent_models_success": percent_models_success,
+        "percent_thread_1": percent_thread_1,
+        "percent_thread_2": percent_thread_2,
+        "percent_thread_3": percent_thread_3,
+        "percent_thread_4": percent_thread_4,
+        "percent_thread_5": percent_thread_5,
+        "percent_thread_6": percent_thread_6,
+        "total_duration_seconds": total_duration
+    }
+
 def main():
     try:
         # Load environment
@@ -89,14 +131,8 @@ def main():
             logger.error("Invalid dbt run results structure")
             return 1
 
-        # Process results
-        audit_logs = [log for log in 
-                     (process_result(r) for r in results["results"]) 
-                     if log is not None]
-
-        if not audit_logs:
-            logger.info("No successful model runs to log")
-            return 0
+        # Summarize results
+        summary = summarize_results(results["results"])
 
         # Load to destination
         pipeline = dlt.pipeline(
@@ -108,12 +144,12 @@ def main():
         )
 
         load_info = pipeline.run(
-            audit_logs,
-            table_name="python_audit_log",
+            [summary],
+            table_name="summary_audit_log",
             write_disposition="append"
         )
         
-        logger.info(f"Successfully loaded {len(audit_logs)} audit logs")
+        logger.info(f"Successfully loaded summary audit log")
         logger.debug(f"Load info: {load_info}")
         return 0
 

@@ -5,9 +5,10 @@ sources:
     database: camonairflow
     schema: google_sheets_data
 
-    loaded_at_field: TO_TIMESTAMP(date_time, 'MM/DD/YYYY HH24:MI:SS')
+    loaded_at_field: date_time
     tables:
       - name: gsheets_finance
         freshness:
           warn_after: {count: 3, period: day}  # Warn if the data is older than 3 days
           error_after: {count: 9, period: day}  # Error if the data is older than 9 days
+         

@@ -29,16 +29,30 @@ logger = logging.getLogger(__name__)
 
 ICAO24_LIST = [
     "a0f1bb",   # Delta Air Lines (USA, international)
-    "4401d8",   # Austrian Airlines (Austria, international)
     "3c6444",   # Lufthansa (Germany, A320, international)
-    "a1d0c6",   # Southwest Airlines (USA, international)
-    "e8063d",   # Emirates (UAE, international)
-    "394c05",   # Air France (France, international)
+    "a4b77c",   # Alaska Airlines (USA, international, sometimes used for charity/famous flights)
+    "a2c8c8",   # American Airlines (USA, international, often used for sports charters)
+    "43c553",   # NetJets (private jets, sometimes used by celebrities)
+    "4ca4e4",   # Ryanair (Ireland, European international, high volume/interesting routes)
 ]
 
 BASE_URL = "https://opensky-network.org/api/flights/aircraft"
 
-airports = load('ICAO')  # or 'IATA'
+airports = load('ICAO') 
+
+
+def get_opensky_token():
+    url = "https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token"
+    data = {
+        "grant_type": "client_credentials",
+        "client_id": os.getenv("OPENSKY_CLIENT_ID"),
+        "client_secret": os.getenv("OPENSKY_CLIENT_SECRET"),
+    }
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+    resp = requests.post(url, data=data, headers=headers)
+    resp.raise_for_status()
+    return resp.json()["access_token"]
+
 
 def get_airport_coords(icao):
     info = airports.get(icao)
@@ -54,10 +68,16 @@ def myshiptracking_source(logger: logging.Logger, latest_timestamps):
     """
     @dlt.resource(write_disposition="append", name="flight_tracking")
     def vessel_positions() -> Iterator[Dict]:
+        # Get the current timestamp and default start timestamp (8 days ago)
         now_ts = int(datetime.now(UTC).timestamp())
-        default_start_ts = int((datetime.now(UTC) - timedelta(days=2)).timestamp())
+        default_start_ts = int((datetime.now(UTC) - timedelta(days=8)).timestamp())
+        # Get an access token for OpenSky API
+        token = get_opensky_token()
+        headers = {"Authorization": f"Bearer {token}"}
+        # Iterate over each aircraft ICAO24 code
         for icao24 in ICAO24_LIST:
             logger.info(f"Fetching flights for ICAO24: {icao24}")
+            # Get the last arrival timestamp for this aircraft, or use default
             last_ts = latest_timestamps.get(str(icao24), default_start_ts) + 1
             params = {
                 "icao24": icao24,
@@ -66,12 +86,14 @@ def myshiptracking_source(logger: logging.Logger, latest_timestamps):
             }
             logger.debug(f"Request params: {params}")
             try:
-                response = requests.get(BASE_URL, params=params)
+                # Make the API request to OpenSky
+                response = requests.get(BASE_URL, params=params, headers=headers)
                 logger.debug(f"API URL: {response.url}")
                 response.raise_for_status()
                 data = response.json()
                 logger.info(f"API returned {len(data) if isinstance(data, list) else 'non-list'} records for {icao24}")
             except requests.HTTPError as e:
+                # Handle rate limiting and other HTTP errors
                 if e.response is not None and e.response.status_code == 429:
                     logger.warning("Rate limit hit (429). Sleeping for 60 seconds.")
                     time.sleep(60)
@@ -86,10 +108,14 @@ def myshiptracking_source(logger: logging.Logger, latest_timestamps):
                 logger.error(f"Failed to fetch data for {icao24}: {e}")
                 continue
 
+            # Skip if no data returned
             if not isinstance(data, list) or not data:
                 logger.warning(f"No data returned for {icao24}")
                 continue
 
+            prev_arr_icao = None  # Track previous arrival airport for this aircraft
+
+            # Process each flight record
             for record in data:
                 logger.debug(f"Processing record: {record}")
                 dep_icao = record.get("estDepartureAirport")
@@ -98,6 +124,9 @@ def myshiptracking_source(logger: logging.Logger, latest_timestamps):
                 callsign = record.get("callsign")
                 dep_time = record.get("firstSeen")
                 arr_time = record.get("lastSeen")
+                # If departure airport is None, use previous arrival airport
+                if dep_icao is None and prev_arr_icao is not None:
+                    dep_icao = prev_arr_icao
                 # Convert UNIX timestamps to ISO datetime strings (UTC)
                 dep_datetime = (
                     datetime.fromtimestamp(dep_time, UTC).isoformat() if dep_time else None
@@ -105,7 +134,7 @@ def myshiptracking_source(logger: logging.Logger, latest_timestamps):
                 arr_datetime = (
                     datetime.fromtimestamp(arr_time, UTC).isoformat() if arr_time else None
                 )
-                # Only calculate if both airports are present
+                # Calculate distance if both airports are present and have coordinates
                 if dep_icao and arr_icao:
                     dep_lat, dep_lon = get_airport_coords(dep_icao)
                     arr_lat, arr_lon = get_airport_coords(arr_icao)
@@ -116,18 +145,23 @@ def myshiptracking_source(logger: logging.Logger, latest_timestamps):
                 else:
                     distance_km = None
 
-                yield {
-                    "icao24": icao24,
-                    "departure_airport": dep_icao,
-                    "arrival_airport": arr_icao,
-                    "callsign": callsign,
-                    "departure_datetime": dep_datetime,
-                    "arrival_datetime": arr_datetime,
-                    "distance_km": distance_km
-                }
+                # Only yield if both departure and arrival airports are present
+                if arr_icao and dep_icao:
+                    yield {
+                        "icao24": icao24,
+                        "departure_airport": dep_icao,
+                        "arrival_airport": arr_icao,
+                        "callsign": callsign,
+                        "departure_datetime": dep_datetime,
+                        "arrival_datetime": arr_datetime,
+                        "distance_km": distance_km
+                    }
+                # Update previous arrival airport for the next record
+                prev_arr_icao = arr_icao
     yield vessel_positions
 
 def haversine(lat1, lon1, lat2, lon2):
+    # Calculate the great-circle distance between two points on the Earth
     R = 6371  # Earth radius in km
     phi1, phi2 = radians(lat1), radians(lat2)
     dphi = radians(lat2 - lat1)
@@ -136,11 +170,9 @@ def haversine(lat1, lon1, lat2, lon2):
     return 2 * R * atan2(sqrt(a), sqrt(1 - a))
 
 
-
-
-
 if __name__ == "__main__":
 
+    # Initialize the DLT pipeline
     pipeline = dlt.pipeline(
         pipeline_name="opensky_flights",
         destination=os.getenv("DLT_DESTINATION"),
@@ -150,10 +182,11 @@ if __name__ == "__main__":
     )
     latest_timestamps = {}
     try:
+        # Try to load the latest dataset and extract the latest arrival datetimes
         dataset = pipeline.dataset()["flight_tracking"].df()
         if dataset is not None:
             try:
-            # Ensure 'mmsi' and 'arrival_datetime' columns exist
+                # For each aircraft, get the latest arrival_datetime
                 for icao24, group in dataset.groupby("icao24"):
                     latest_row = group.sort_values("arrival_datetime").iloc[-1]
                     try:
@@ -170,12 +203,13 @@ if __name__ == "__main__":
                 logger.warning(f"Could not extract previous arrival_datetime: {e}")
     except PipelineNeverRan:
         logger.warning(
-            "⚠️ No previous runs found for this pipeline. Assuming first run.")
+            "No previous runs found for this pipeline. Assuming first run.")
     except DatabaseUndefinedRelation:
         logger.warning(
-            "⚠️ Table Doesn't Exist. Assuming truncation.")
+            "Table Doesn't Exist. Assuming truncation.")
 
     try:
+        # Run the DLT pipeline with the source
         source = myshiptracking_source(logger, latest_timestamps)
         load_info = pipeline.run(source)
         logger.info(f"Load Info: {load_info}")

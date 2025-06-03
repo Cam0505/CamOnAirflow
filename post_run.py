@@ -4,9 +4,17 @@ import dlt
 from dotenv import load_dotenv
 import logging
 from pathlib import Path
-from path_config import DBT_RUN_RESULTS_DIR, DLT_PIPELINE_DIR, ENV_FILE
+from project_path import get_project_paths, set_dlt_env_vars
 import sys
 import os
+
+
+paths = get_project_paths()
+set_dlt_env_vars(paths)
+
+DLT_PIPELINE_DIR = paths["DLT_PIPELINE_DIR"]
+ENV_FILE = paths["ENV_FILE"]
+DBT_RUN_RESULTS_DIR = paths["DBT_RUN_RESULTS_DIR"]
 
 # Configure logging
 logging.basicConfig(

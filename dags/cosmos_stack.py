@@ -1,8 +1,14 @@
 from airflow.decorators import dag
 from pendulum import datetime
 from cosmos import DbtDag, ProjectConfig, ProfileConfig, ExecutionConfig
-from path_config import ENV_FILE, DLT_PIPELINE_DIR, DBT_DIR
+from project_path import get_project_paths, set_dlt_env_vars
 
+paths = get_project_paths()
+set_dlt_env_vars(paths)
+
+# DLT_PIPELINE_DIR = paths["DLT_PIPELINE_DIR"]
+# ENV_FILE = paths["ENV_FILE"]
+DBT_DIR = paths["DBT_DIR"]
 
 # Use a ProfileConfig that reads from your profiles.yml
 profile_config = ProfileConfig(

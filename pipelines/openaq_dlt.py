@@ -22,13 +22,15 @@ load_dotenv(dotenv_path=ENV_FILE)
 
 # List of dicts: city, sensor_id, country
 CITIES = [
-    {"city": "Melbourne", "sensor_id": 12345, "country": "AU"},
-    # {"city": "Sydney", "sensor_id": 2392564, "country": "AU"},
-    # {"city": "Brisbane", "sensor_id": 67890, "country": "AU"},
-    # {"city": "Perth", "sensor_id": 54321, "country": "AU"},
-    # {"city": "Auckland", "sensor_id": 98765, "country": "NZ"},
+    {"city": "Liège", "sensor_id": 12345, "country": "BE"},
+    {"city": "Madrid", "sensor_id": 10014, "country": "ES"},
+    {"city": "Paris", "sensor_id": 10042, "country": "FR"},
+    {"city": "Berlin", "sensor_id": 10077, "country": "DE"},
+    {"city": "Warsaw", "sensor_id": 10123, "country": "PL"},
+    {"city": "Milan", "sensor_id": 10234, "country": "IT"},
+    {"city": "Budapest", "sensor_id": 10345, "country": "HU"}
 ]
-START_DATE = datetime(2025, 1, 1).date()
+START_DATE = datetime(2024, 12, 1).date()
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
@@ -40,58 +42,77 @@ if not OPENAQ_API_KEY:
 
 
 def get_dates(logger, sensor_id, start_date, end_date):
+    """
+    Returns a tuple:
+      - list of missing dates for a given sensor_id between start_date and end_date
+      - boolean: True if any data exists for this sensor in the range, False otherwise
+    """
     try:
         pipeline = dlt.current.pipeline()
         with pipeline.sql_client() as client:
             result = client.execute_sql(
                 f"""
-                    WITH RECURSIVE all_dates AS (
+                WITH RECURSIVE all_dates AS (
                     SELECT DATE '{start_date}' AS date
                     UNION ALL
                     SELECT date + INTERVAL 1 DAY
                     FROM all_dates
                     WHERE date + INTERVAL 1 DAY <= DATE '{end_date}'
-                    ),
-                    existing_dates AS (
+                ),
+                existing_dates AS (
                     SELECT CAST(datetime AS DATE) AS dt
                     FROM camonairflow.main.openaq_daily
                     WHERE sensor_id = {sensor_id}
-                    )
-                    SELECT a.date AS missing_date
-                    FROM all_dates a
-                    LEFT JOIN existing_dates e ON a.date = e.dt
-                    WHERE e.dt IS NULL
-                    ORDER BY a.date
-                    """)
-            return [row[0] for row in result] if result else []
+                      AND datetime >= '{start_date}' AND datetime <= '{end_date}'
+                ),
+                stats AS (
+                    SELECT COUNT(*) AS total_dates FROM all_dates
+                ),
+                existing_count AS (
+                    SELECT COUNT(*) AS existing_dates_count FROM existing_dates
+                )
+                SELECT 
+                    a.date AS missing_date,
+                    (SELECT existing_dates_count FROM existing_count) > 0 AS has_data
+                FROM all_dates a
+                LEFT JOIN existing_dates e ON a.date = e.dt
+                WHERE e.dt IS NULL
+                ORDER BY a.date
+                """)
+            if result:
+                missing_dates = [row[0] for row in result]
+                has_data = any(row[1] for row in result)
+                return missing_dates, has_data
+            else:
+                return [], False
     except Exception as e:
-        logger.info("Failed to retrieve missing dates from the database.")
-        return []
-
-
+        logger.error(f"Failed to retrieve missing dates from the database: {e}")
+        # Fallback: return all dates in range, and False for has_data
+        return [start_date + timedelta(days=i) for i in range((end_date - start_date).days + 1)], False
 
 @dlt.source
-def openaq_source(logger: logging.Logger, row_counts_dict: set):
+def openaq_source(logger: logging.Logger):
     """
     DLT source for OpenAQ daily sensor air quality data.
     Fetches all daily summaries for each sensor and date range.
     """
     @dlt.resource(write_disposition="append", name="openaq_daily")
     def sensor_air_quality() -> Iterator[Dict]:
+        # Initialize or retrieve persistent state for tracking requests and flagged dates
         state = dlt.current.source_state().setdefault("open_aq", {
             "Daily_Requests": {},
             "Flagged_Requests": {},
+            "No_Data_Sensors": {},
         }) 
 
         logger.info(f"State: {state}")
-
 
         today = datetime.now(timezone.utc).date()
         today_str = str(today)
         end_date = today - timedelta(days=2)
         start_date = START_DATE
 
-        # Clean up Daily_Requests: keep only today's entry
+        # Only keep today's request count in state to avoid unbounded growth
         state["Daily_Requests"] = {
             k: v for k, v in state["Daily_Requests"].items()
             if k == today_str
@@ -113,23 +134,48 @@ def openaq_source(logger: logging.Logger, row_counts_dict: set):
 
             logger.info(f"Processing sensor {sensor_id} for {city}, {country}.")
 
-            # Get flagged dates as a set of strings
-            flagged_dates = set(state["Flagged_Requests"].get(sensor_id, []))
+            # Always use string keys for state to avoid mismatches
+            sensor_id_str = str(sensor_id)
+            flagged_dates = set(state.get("Flagged_Requests", {}).get(sensor_id_str, []))
+            # Ensure state is always a list for this sensor
+            state["Flagged_Requests"][sensor_id_str] = list(flagged_dates)
 
-            # Use get_dates to get missing dates for this sensor
-            missing_dates = get_dates(logger, sensor_id, start_date, end_date)
-            # Remove flagged dates from missing_dates 
-            logger.info(f"Missing dates for sensor {sensor_id} ({city}): {missing_dates}")
-            logger.info(f"Flagged dates for sensor {sensor_id} ({city}): {flagged_dates}")
+            new_flagged = set()
+
+            # Alternative Approach Using Python Pipeline Dataset
+            # sensor_dates = set(df[df["sensor_id"] == sensor_id]["datetime"].dt.date)
+            # all_dates = set(start_date + timedelta(days=i) for i in range((end_date - start_date).days + 1))
+            # missing_dates = sorted(all_dates - sensor_dates)
+
+            # Get missing dates for this sensor from the DB, minus already flagged dates
+            missing_dates, has_data = get_dates(logger, sensor_id, start_date, end_date)
+            # logger.info(f"Missing dates for sensor {sensor_id} ({city}): {missing_dates}")
+            logger.debug(f"Flagged dates for sensor {sensor_id} ({city}): {flagged_dates}")
             missing_dates = [d for d in missing_dates if d.isoformat() not in flagged_dates]
 
             if not missing_dates:
                 logger.info(f"No missing dates for sensor {sensor_id} ({city}). Skipping.")
                 continue
 
-            logger.info(f"Found {len(missing_dates)} missing date(s) for sensor {sensor_id} ({city}): {missing_dates}")
+            # Track if any data was ever yielded for this sensor
+            sensor_has_data = False
 
-            for missing_date in missing_dates:
+            # Group missing dates into contiguous ranges for efficient API requests
+            missing_ranges = []
+            if missing_dates:
+                start = prev = missing_dates[0]
+                for d in missing_dates[1:]:
+                    if d == prev + timedelta(days=1):
+                        prev = d
+                    else:
+                        missing_ranges.append((start, prev))
+                        start = prev = d
+                missing_ranges.append((start, prev))
+
+            logger.info(f"Found {len(missing_ranges)} missing range(s) for sensor {sensor_id} ({city}).")
+            logger.debug(f"Date ranges to be requested for sensor {sensor_id} ({city}): {missing_ranges}")
+
+            for date_from, date_to in missing_ranges:
                 # --- Rate limiting logic ---
                 now = time.time()
                 request_times = [t for t in request_times if now - t < 60]
@@ -140,19 +186,18 @@ def openaq_source(logger: logging.Logger, row_counts_dict: set):
                     now = time.time()
                     request_times = [t for t in request_times if now - t < 60]
 
-                # --- Prepare API request for a single date ---
+                # Prepare API request for a date range
                 url = f"https://api.openaq.org/v3/sensors/{sensor_id}/days"
                 params = {
-                    "date_from": str(missing_date),
-                    "date_to": str(missing_date + timedelta(days=1)),  # API expects exclusive end
+                    "date_from": str(date_from),
+                    "date_to": str(date_to + timedelta(days=1)),  # API expects exclusive end
                     "limit": 1000,
                 }
                 headers = {"x-api-key": OPENAQ_API_KEY}
-                logger.info(f"Requesting sensor {sensor_id} ({city}) for {missing_date}")
+                logger.info(f"Requesting sensor {sensor_id} ({city}) {date_from} to {date_to}")
 
                 try:
-                    # --- Make API request ---
-                    logger.info(f"Making request for sensor {sensor_id} ({city}) params {params} header {headers}")
+                    logger.debug(f"Making request for sensor {sensor_id} ({city}) params {params} header {headers}")
                     resp = requests.get(url, params=params, headers=headers)
                     request_times.append(time.time())
                     state["Daily_Requests"][today_str] += 1
@@ -163,37 +208,34 @@ def openaq_source(logger: logging.Logger, row_counts_dict: set):
                     results = resp.json().get("results", [])
 
                     if results:
-                        logger.info(f"Received {len(results)} records for sensor {sensor_id} ({city}) {missing_date}.")
+                        logger.info(f"Received {len(results)} records for sensor {sensor_id} ({city}) {date_from} to {date_to}.")
                     else:
-                        logger.info(f"No data returned for sensor {sensor_id} ({city}) {missing_date}.")
+                        logger.info(f"No data returned for sensor {sensor_id} ({city}) {date_from} to {date_to}.")
 
-                    # --- Process each result row ---
+                    # Process each result row, only yielding rows for dates in the requested range
+                    rows_yielded = 0
                     for r in results:
-                        logger.info(f"Processing row for sensor {sensor_id} {missing_date}: {r}")
+                        logger.debug(f"Processing row for sensor {sensor_id} {date_from} to {date_to}: {r}")
                         period = r["period"]["datetimeFrom"]
                         # Parse both UTC and local as datetimes
                         dt_from_utc = datetime.fromisoformat(period["utc"].replace("Z", "+00:00"))
                         dt_from_local = None
-                        logger.info(f"UTC datetime for sensor {sensor_id} {missing_date}: {dt_from_utc}")
+                        logger.debug(f"UTC datetime for sensor {sensor_id} {date_from} to {date_to}: {dt_from_utc}")
                         if "local" in period and period["local"]: 
                             try:
-                                logger.info(f"Local datetime for sensor {sensor_id} {missing_date}: {period['local']}")
+                                logger.debug(f"Local datetime for sensor {sensor_id} {date_from} to {date_to}: {period['local']}")
                                 dt_from_local = datetime.fromisoformat(period["local"])
                             except Exception:
-                                logger.error(f"Failed to parse local datetime for sensor {sensor_id} {missing_date}: {period['local']}")
+                                logger.error(f"Failed to parse local datetime for sensor {sensor_id} {date_from} to {date_to}: {period['local']}")
                                 dt_from_local = None
 
                         # Use the local date if available, else UTC date
                         dt_from = dt_from_local.date() if dt_from_local else dt_from_utc.date()
-                        logger.info(f"dt_from for sensor {sensor_id} {missing_date}: {dt_from}")
-                        if dt_from != missing_date:
-                            logger.debug(f"Skipping row for sensor {sensor_id} {dt_from}: not matching requested date {missing_date}")
+                        logger.debug(f"dt_from for sensor {sensor_id} {date_from} to {date_to}: {dt_from}")
+                        if not (date_from <= dt_from <= date_to):
+                            logger.debug(f"Skipping row for sensor {sensor_id} {dt_from}: outside requested range {date_from} to {date_to}")
                             continue
-                        row_key = (sensor_id, dt_from)
-                        logger.info(f"Row Key for sensor {sensor_id} {dt_from}: {row_key}")
-                        if row_key in row_counts_dict:
-                            logger.info(f"Row for sensor {sensor_id} {dt_from} already exists, skipping.")
-                            continue
+
                         row = {
                             "datetime": dt_from,
                             "city": city,
@@ -205,22 +247,40 @@ def openaq_source(logger: logging.Logger, row_counts_dict: set):
                             "summary": r.get("summary"),
                             "coverage": r.get("coverage"),
                         }
-                        logger.info(f"Yielding row for sensor {sensor_id} {dt_from}: {row}")
+                        # logger.info(f"Yielding row for sensor {sensor_id} {dt_from}: {row}")
                         yield row
+                        rows_yielded += 1
+                        sensor_has_data = True  # <-- Set this if any row is yielded
 
-                    if not results:
-                        # Flag this date as checked and empty (as ISO string)
-                        flagged = [missing_date.isoformat()]
-                        logger.info(f"Flagging this date {flagged} for this sensor id {sensor_id}")
-                        existing = set(state["Flagged_Requests"].setdefault(sensor_id, []))
-                        existing.update(flagged)
-                        state["Flagged_Requests"][sensor_id] = list(existing)
-                        logger.info(f"Flagged empty date for sensor {sensor_id} ({city}) {missing_date}.")
-                
+                    # If no rows were yielded for this range, flag all dates in the range as checked and empty
+                    if not results or rows_yielded == 0:
+                        flagged = [
+                            (date_from + timedelta(days=i)).isoformat()
+                            for i in range((date_to - date_from).days + 1)
+                        ]
+                        logger.info(f"No data yielded for sensor {sensor_id} ({city}) {date_from} to {date_to}, flagging dates: {flagged}")
+                        new_flagged.update(flagged)
+
                 except requests.RequestException as e:
-                    logger.error(f"Request failed for sensor {sensor_id} {missing_date}: {e}")
+                    logger.error(f"Request failed for sensor {sensor_id} {date_from} to {date_to}: {e}")
                 except Exception as e:
-                    logger.error(f"Unexpected error for sensor {sensor_id} {missing_date}: {e}")
+                    logger.error(f"Unexpected error for sensor {sensor_id} {date_from} to {date_to}: {e}")
+
+            logger.info(f"Completed processing sensor {sensor_id} ({city}).") 
+
+            # --- Update flagged dates in state for this sensor ---
+            # If the sensor has never returned data (not in DB and not this run), do NOT store all flagged dates.
+            # Instead, store only min/max attempted in No_Data_Sensors for tracking.
+            if not sensor_has_data and not has_data:
+                logger.info(f"Sensor {sensor_id} ({city}) has never returned data. Not storing flagged dates, only min/max attempted.")
+                state["Flagged_Requests"][sensor_id_str] = []
+                min_date = min(missing_dates).isoformat() if missing_dates else None
+                max_date = max(missing_dates).isoformat() if missing_dates else None
+                state["No_Data_Sensors"][sensor_id_str] = {"min_attempted": min_date, "max_attempted": max_date}
+            else:
+                # Otherwise, store flagged dates as usual
+                state["Flagged_Requests"][sensor_id_str] = list(flagged_dates.union(new_flagged))
+                logger.debug(f"Flagged dates for sensor {sensor_id} ({city}): {state['Flagged_Requests'][sensor_id_str]}")
 
         logger.info("Completed OpenAQ daily sensor data extraction.")
 
@@ -237,26 +297,22 @@ if __name__ == "__main__":
         dev_mode=False
     )
 
-    # Initialize row_counts_dict to ensure it is always defined
-    row_counts_dict = set()
     # Try to load existing dataset to avoid duplicate requests
-    try:
-        dataset = pipeline.dataset()["openaq_daily"].df()
-        if dataset is not None:
-            logger.info(f"Loaded existing dataset with {len(dataset)} rows.")
-            # Convert all datetimes to date for consistent comparison
-            dataset["datetime"] = dataset["datetime"].apply(lambda x: x.date() if hasattr(x, "date") else x)
-            row_counts_dict = set(zip(dataset["sensor_id"], dataset["datetime"]))
-    except PipelineNeverRan:
-        logger.warning("⚠️ No previous runs found for this pipeline. Assuming first run.")
-    except DatabaseUndefinedRelation:
-        logger.warning("⚠️ Table Doesn't Exist. Assuming truncation.")
+    # try:
+    #     dataset = pipeline.dataset()["openaq_daily"].df()
+        
+    # except PipelineNeverRan:
+    #     logger.warning("⚠️ No previous runs found for this pipeline. Assuming first run.")
+    #     dataset = None
+    # except DatabaseUndefinedRelation:
+    #     logger.warning("⚠️ Table Doesn't Exist. Assuming truncation.")
+    #     dataset = None
 
 
     # Run the pipeline and handle errors
     try:
         logger.info("Running OpenAQ pipeline...")
-        source = openaq_source(logger, row_counts_dict)
+        source = openaq_source(logger)
         load_info = pipeline.run(source)
 
         x = source.state.get('open_aq', {})
@@ -266,3 +322,8 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error(f"Pipeline run failed: {e}")
         raise
+
+# Wasteful operations:
+# - The flagged_dates set is re-created from state for each sensor on every run, but this is necessary for correct state tracking.
+# - The SQL in get_dates is executed for every sensor on every run, which could be slow for many sensors or a large date range.
+#   Consider optimizing by caching results or batching sensors if performance becomes an issue.

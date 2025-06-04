@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 4,
   "version_hash": "c7JAxxYX7PGfkKcbSw3wb2mmfJjJhMO/8krgQIisKnc=",
   "engine_version": 11,
   "name": "openaq_source",
@@ -74,6 +74,59 @@
       "write_disposition": "skip",
       "resource": "_dlt_loads",
       "description": "Created by DLT. Tracks completed loads"
+    },
+    "_dlt_pipeline_state": {
+      "columns": {
+        "version": {
+          "name": "version",
+          "data_type": "bigint",
+          "nullable": false
+        },
+        "engine_version": {
+          "name": "engine_version",
+          "data_type": "bigint",
+          "nullable": false
+        },
+        "pipeline_name": {
+          "name": "pipeline_name",
+          "data_type": "text",
+          "nullable": false
+        },
+        "state": {
+          "name": "state",
+          "data_type": "text",
+          "nullable": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "data_type": "timestamp",
+          "nullable": false
+        },
+        "version_hash": {
+          "name": "version_hash",
+          "data_type": "text",
+          "nullable": true
+        },
+        "_dlt_load_id": {
+          "name": "_dlt_load_id",
+          "data_type": "text",
+          "nullable": false
+        },
+        "_dlt_id": {
+          "name": "_dlt_id",
+          "data_type": "text",
+          "nullable": false,
+          "unique": true,
+          "row_key": true
+        }
+      },
+      "write_disposition": "append",
+      "file_format": "preferred",
+      "name": "_dlt_pipeline_state",
+      "resource": "_dlt_pipeline_state",
+      "x-normalizer": {
+        "seen-data": true
+      }
     },
     "openaq_daily": {
       "columns": {
@@ -226,59 +279,6 @@
       "x-normalizer": {
         "seen-data": true
       }
-    },
-    "_dlt_pipeline_state": {
-      "columns": {
-        "version": {
-          "name": "version",
-          "data_type": "bigint",
-          "nullable": false
-        },
-        "engine_version": {
-          "name": "engine_version",
-          "data_type": "bigint",
-          "nullable": false
-        },
-        "pipeline_name": {
-          "name": "pipeline_name",
-          "data_type": "text",
-          "nullable": false
-        },
-        "state": {
-          "name": "state",
-          "data_type": "text",
-          "nullable": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "data_type": "timestamp",
-          "nullable": false
-        },
-        "version_hash": {
-          "name": "version_hash",
-          "data_type": "text",
-          "nullable": true
-        },
-        "_dlt_load_id": {
-          "name": "_dlt_load_id",
-          "data_type": "text",
-          "nullable": false
-        },
-        "_dlt_id": {
-          "name": "_dlt_id",
-          "data_type": "text",
-          "nullable": false,
-          "unique": true,
-          "row_key": true
-        }
-      },
-      "write_disposition": "append",
-      "file_format": "preferred",
-      "name": "_dlt_pipeline_state",
-      "resource": "_dlt_pipeline_state",
-      "x-normalizer": {
-        "seen-data": true
-      }
     }
   },
   "settings": {
@@ -314,7 +314,9 @@
     }
   },
   "previous_hashes": [
-    "6bg7zHYUzOu4+DpHPuEfCL9R8idMUMjyURHn0VUWOAs=",
-    "4wHajLx2OtcPFNaBKwHgU/iuLdaQj3hd2jzUoygaKeU="
+    "GlM8n2C35m5Phow84eoHt8NywQGYmQCA0oMT66tlKd8=",
+    "I1u9nmR6cEuq60Xc339EIFs0Tve2OFKqlt5iLNV/RYg=",
+    "IEOyKbj29YJ8LJi7uUUIurTcfkbYvd6FduPIgZrd11k=",
+    "yNvZy5LNko2+/kUkIgSKV12ZjYXQonTLAfZFzBngRa0="
   ]
 }

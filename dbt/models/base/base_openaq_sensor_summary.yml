@@ -1,0 +1,114 @@
+version: 2
+
+models:
+  - name: base_openaq_sensor_summary
+    description: >
+      Monthly summary of OpenAQ sensor data by sensor, city, country, and parameter.
+      Includes record counts, days reported, value statistics, summary statistics, coverage, and null counts.
+    columns:
+      - name: year
+        description: Year of the data.
+        data_tests:
+          - not_null
+      - name: month
+        description: Month of the data (1-12).
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: [1,2,3,4,5,6,7,8,9,10,11,12]
+      - name: country
+        description: Country code of the sensor.
+        data_tests:
+          - not_null
+      - name: city
+        description: City name of the sensor.
+        data_tests:
+          - not_null
+      - name: sensor_id
+        description: Unique sensor identifier.
+        data_tests:
+          - not_null
+      - name: parameter
+        description: Air quality parameter measured (e.g., PM2.5, NO2).
+        data_tests:
+          - not_null
+      - name: unit
+        description: Unit of measurement for the parameter.
+      - name: num_records
+        description: Number of records for this group.
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "{{ column_name }} >= 0"
+      - name: days_reported
+        description: Number of unique days with data in this group.
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "{{ column_name }} >= 0"
+      - name: avg_value
+        description: Average value for the parameter.
+      - name: min_value
+        description: Minimum value for the parameter.
+      - name: max_value
+        description: Maximum value for the parameter.
+      - name: stddev_value
+        description: Standard deviation of the value for the parameter.
+      - name: num_nulls
+        description: Number of null values for the parameter.
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "{{ column_name }} >= 0"
+      # Summary statistics
+      - name: avg_min
+        description: Average of summary__min.
+      - name: min_min
+        description: Minimum of summary__min.
+      - name: max_min
+        description: Maximum of summary__min.
+      - name: avg_q02
+        description: Average of summary__q02.
+      - name: avg_q25
+        description: Average of summary__q25.
+      - name: avg_median
+        description: Average of summary__median.
+      - name: avg_q75
+        description: Average of summary__q75.
+      - name: avg_q98
+        description: Average of summary__q98.
+      - name: avg_max
+        description: Average of summary__max.
+      - name: min_max
+        description: Minimum of summary__max.
+      - name: max_max
+        description: Maximum of summary__max.
+      - name: avg_avg
+        description: Average of summary__avg.
+      - name: stddev_avg
+        description: Standard deviation of summary__avg.
+      - name: avg_sd
+        description: Average of summary__sd.
+      - name: stddev_sd
+        description: Standard deviation of summary__sd.
+      # Coverage statistics
+      - name: avg_expected_count
+        description: Average of coverage__expected_count.
+      - name: avg_observed_count
+        description: Average of coverage__observed_count.
+      - name: avg_percent_complete
+        description: Average of coverage__percent_complete.
+      - name: avg_percent_coverage
+        description: Average of coverage__percent_coverage.
+      - name: min_datetime_from_utc
+        description: Earliest coverage__datetime_from__utc in the group.
+      - name: min_datetime_from_local
+        description: Earliest coverage__datetime_from__local in the group.
+      - name: max_datetime_to_utc
+        description: Latest coverage__datetime_to__utc in the group.
+      - name: max_datetime_to_local
+        description: Latest coverage__datetime_to__local in the group.
+      - name: first_record
+        description: Timestamp of the first record in this group.
+      - name: last_record
+        description: Timestamp of the last record in this group.

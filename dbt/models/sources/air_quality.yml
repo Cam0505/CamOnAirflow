@@ -1,0 +1,13 @@
+version: 2
+
+sources:
+  - name: air_quality
+    database: camonairflow
+    schema: main
+
+    tables:
+      - name: openaq_daily
+        freshness:
+          warn_after: {count: 4, period: day}
+          error_after: {count: 9, period: day}
+        loaded_at_field: CAST(datetime AS TIMESTAMP)

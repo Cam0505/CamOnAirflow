@@ -28,9 +28,11 @@ CITIES = [
     {"city": "Berlin", "sensor_id": 10077, "country": "DE"},
     {"city": "Warsaw", "sensor_id": 10123, "country": "PL"},
     {"city": "Milan", "sensor_id": 10234, "country": "IT"},
-    {"city": "Budapest", "sensor_id": 10345, "country": "HU"}
+    {"city": "Budapest", "sensor_id": 10345, "country": "HU"},
+    # Test sensor known to return no data (example: 9999999)
+    {"city": "NoDataTest", "sensor_id": 9999999, "country": "XX"}
 ]
-START_DATE = datetime(2024, 12, 1).date()
+START_DATE = datetime(2024, 11, 1).date()
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
@@ -139,17 +141,18 @@ def openaq_source(logger: logging.Logger):
             flagged_dates = set(state.get("Flagged_Requests", {}).get(sensor_id_str, []))
             # Ensure state is always a list for this sensor
             state["Flagged_Requests"][sensor_id_str] = list(flagged_dates)
-
             new_flagged = set()
 
-            # Alternative Approach Using Python Pipeline Dataset
-            # sensor_dates = set(df[df["sensor_id"] == sensor_id]["datetime"].dt.date)
-            # all_dates = set(start_date + timedelta(days=i) for i in range((end_date - start_date).days + 1))
-            # missing_dates = sorted(all_dates - sensor_dates)
+            # --- Check if sensor is in No_Data_Sensors and adjust dates if needed ---
+            adjusted_start_date, adjusted_end_date = adjust_dates_for_no_data_sensor(
+                sensor_id_str, start_date, end_date, state
+            )
+            if adjusted_start_date is None or adjusted_end_date is None:
+                # All dates already checked, skip this sensor
+                continue
 
             # Get missing dates for this sensor from the DB, minus already flagged dates
-            missing_dates, has_data = get_dates(logger, sensor_id, start_date, end_date)
-            # logger.info(f"Missing dates for sensor {sensor_id} ({city}): {missing_dates}")
+            missing_dates, has_data = get_dates(logger, sensor_id, adjusted_start_date, adjusted_end_date)
             logger.debug(f"Flagged dates for sensor {sensor_id} ({city}): {flagged_dates}")
             missing_dates = [d for d in missing_dates if d.isoformat() not in flagged_dates]
 
@@ -276,6 +279,8 @@ def openaq_source(logger: logging.Logger):
                 state["Flagged_Requests"][sensor_id_str] = []
                 min_date = min(missing_dates).isoformat() if missing_dates else None
                 max_date = max(missing_dates).isoformat() if missing_dates else None
+                if "No_Data_Sensors" not in state:
+                    state["No_Data_Sensors"] = {}
                 state["No_Data_Sensors"][sensor_id_str] = {"min_attempted": min_date, "max_attempted": max_date}
             else:
                 # Otherwise, store flagged dates as usual
@@ -285,6 +290,55 @@ def openaq_source(logger: logging.Logger):
         logger.info("Completed OpenAQ daily sensor data extraction.")
 
     return sensor_air_quality
+
+def adjust_dates_for_no_data_sensor(sensor_id_str, start_date, end_date, state):
+    """
+    If the sensor is in No_Data_Sensors, adjust the start and end date to only search new, unchecked dates.
+    If all dates have already been checked, return None, None to indicate skipping.
+    """
+    no_data_info = state.get("No_Data_Sensors", {}).get(sensor_id_str)
+    if not no_data_info or not no_data_info.get("min_attempted") or not no_data_info.get("max_attempted"):
+        # Not in No_Data_Sensors, proceed as normal
+        return start_date, end_date
+
+    # Convert to date for safe comparison
+    prev_min = datetime.fromisoformat(no_data_info["min_attempted"]).date()
+    prev_max = datetime.fromisoformat(no_data_info["max_attempted"]).date()
+
+    # If the current search range is fully covered by previous attempts, skip
+    if start_date >= prev_min and end_date <= prev_max:
+        logger.info(
+            f"Sensor {sensor_id_str} has no data. Already checked {prev_min} to {prev_max}. Skipping."
+        )
+        return None, None
+
+    # Otherwise, adjust the search range to only new dates
+    if start_date < prev_min and end_date > prev_max:
+        # Search both before and after previous range (rare, but possible)
+        # Here, just search before the previous min
+        logger.info(
+            f"Sensor {sensor_id_str} has no data for previous range {prev_min} to {prev_max}. "
+            f"Now searching {start_date} to {prev_min - timedelta(days=1)}."
+        )
+        return start_date, prev_min - timedelta(days=1)
+    elif start_date < prev_min:
+        logger.info(
+            f"Sensor {sensor_id_str} has no data for previous range {prev_min} to {prev_max}. "
+            f"Now searching {start_date} to {prev_min - timedelta(days=1)}."
+        )
+        return start_date, prev_min - timedelta(days=1)
+    elif end_date > prev_max:
+        logger.info(
+            f"Sensor {sensor_id_str} has no data for previous range {prev_min} to {prev_max}. "
+            f"Now searching {prev_max + timedelta(days=1)} to {end_date}."
+        )
+        return prev_max + timedelta(days=1), end_date
+    else:
+        # Should not reach here, but fallback to skipping
+        logger.info(
+            f"Sensor {sensor_id_str} has no data. Already checked {prev_min} to {prev_max}. Skipping."
+        )
+        return None, None
 
 if __name__ == "__main__":
     logger.info("Starting OpenAQ DLT pipeline run.")
@@ -318,6 +372,7 @@ if __name__ == "__main__":
         x = source.state.get('open_aq', {})
         logger.info(f"Daily Requests: {x.get('Daily_Requests', {})}")
         logger.info(f"Flagged Requests: {x.get('Flagged_Requests', {})}")
+        logger.info(f"No Data Sensors: {x.get('No_Data_Sensors', {})}")
         logger.info(f"Pipeline run completed. Load Info: {load_info}")
     except Exception as e:
         logger.error(f"Pipeline run failed: {e}")

@@ -35,27 +35,22 @@ CITIES = [
     {"city": "Milan", "sensor_id": 10235, "country": "IT"},
     {"city": "Milan", "sensor_id": 10236, "country": "IT"},
     # London, United Kingdom
-    {"city": "London", "sensor_id": 10401, "country": "GB"},
-    {"city": "London", "sensor_id": 10402, "country": "GB"},
-    {"city": "London", "sensor_id": 10403, "country": "GB"},
     # Madrid, Spain
     {"city": "Madrid", "sensor_id": 10014, "country": "ES"},
-    {"city": "Madrid", "sensor_id": 10015, "country": "ES"},
     {"city": "Madrid", "sensor_id": 10016, "country": "ES"},
     # Vienna, Austria
     {"city": "Vienna", "sensor_id": 10510, "country": "AT"},
     {"city": "Vienna", "sensor_id": 10511, "country": "AT"},
-    # Prague, Czech Republic
-    {"city": "Prague", "sensor_id": 10620, "country": "CZ"},
-    {"city": "Prague", "sensor_id": 10621, "country": "CZ"},
     # Other existing sensors
     {"city": "Liège", "sensor_id": 12345, "country": "BE"},
     {"city": "Warsaw", "sensor_id": 10123, "country": "PL"},
     {"city": "Budapest", "sensor_id": 10345, "country": "HU"},
     # Test sensor known to return no data (example: 9999999)
-    {"city": "NoDataTest", "sensor_id": 9999999, "country": "XX"}
+    # {"city": "NoDataTest", "sensor_id": 9999999, "country": "XX"},
+    # Add more cities and sensors as needed
+    {"city": "Barcelona", "sensor_id": 10018, "country": "ES"}
 ]
-START_DATE = datetime(2024, 9, 1).date()
+START_DATE = datetime(2024, 3, 1).date()
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
@@ -183,9 +178,6 @@ def openaq_source(logger: logging.Logger):
                 logger.info(f"No missing dates for sensor {sensor_id} ({city}). Skipping.")
                 continue
 
-            # Track if any data was ever yielded for this sensor
-            sensor_has_data = False
-
             # Group missing dates into contiguous ranges for efficient API requests
             missing_ranges = []
             if missing_dates:
@@ -200,6 +192,9 @@ def openaq_source(logger: logging.Logger):
 
             logger.info(f"Found {len(missing_ranges)} missing range(s) for sensor {sensor_id} ({city}).")
             logger.debug(f"Date ranges to be requested for sensor {sensor_id} ({city}): {missing_ranges}")
+
+
+            yielded_dates = set()  # Track dates yielded in this run for this sensor
 
             for date_from, date_to in missing_ranges:
                 # --- Rate limiting logic ---
@@ -239,7 +234,8 @@ def openaq_source(logger: logging.Logger):
                         logger.info(f"No data returned for sensor {sensor_id} ({city}) {date_from} to {date_to}.")
 
                     # Process each result row, only yielding rows for dates in the requested range
-                    rows_yielded = 0
+                    yielded_dates = set()
+
                     for r in results:
                         logger.debug(f"Processing row for sensor {sensor_id} {date_from} to {date_to}: {r}")
                         period = r["period"]["datetimeFrom"]
@@ -275,17 +271,15 @@ def openaq_source(logger: logging.Logger):
                         }
                         # logger.info(f"Yielding row for sensor {sensor_id} {dt_from}: {row}")
                         yield row
-                        rows_yielded += 1
-                        sensor_has_data = True  # <-- Set this if any row is yielded
+                        yielded_dates.add(dt_from.isoformat())
 
-                    # If no rows were yielded for this range, flag all dates in the range as checked and empty
-                    if not results or rows_yielded == 0:
-                        flagged = [
-                            (date_from + timedelta(days=i)).isoformat()
-                            for i in range((date_to - date_from).days + 1)
-                        ]
-                        logger.info(f"No data yielded for sensor {sensor_id} ({city}) {date_from} to {date_to}, flagging dates: {flagged}")
-                        new_flagged.update(flagged)
+
+                    # After processing all results for this range:
+                    all_dates = set((date_from + timedelta(days=i)).isoformat() for i in range((date_to - date_from).days + 1))
+                    missing_in_range = all_dates - yielded_dates
+                    if missing_in_range:
+                        logger.info(f"No data yielded for sensor {sensor_id} ({city}) {date_from} to {date_to} for dates: {sorted(missing_in_range)}")
+                        new_flagged.update(missing_in_range)
 
                 except requests.RequestException as e:
                     logger.error(f"Request failed for sensor {sensor_id} {date_from} to {date_to}: {e}")
@@ -297,7 +291,7 @@ def openaq_source(logger: logging.Logger):
             # --- Update flagged dates in state for this sensor ---
             # If the sensor has never returned data (not in DB and not this run), do NOT store all flagged dates.
             # Instead, store only min/max attempted in No_Data_Sensors for tracking.
-            if not sensor_has_data and not has_data:
+            if not yielded_dates and not has_data:
                 logger.info(f"Sensor {sensor_id} ({city}) has never returned data. Not storing flagged dates, only min/max attempted.")
                 state["Flagged_Requests"][sensor_id_str] = []
                 min_date = min(missing_dates).isoformat() if missing_dates else None
@@ -326,7 +320,7 @@ def openaq_source(logger: logging.Logger):
                 state["Flagged_Requests"][sensor_id_str] = list(flagged_dates.union(new_flagged))
                 logger.debug(f"Flagged dates for sensor {sensor_id} ({city}): {state['Flagged_Requests'][sensor_id_str]}")
 
-            if sensor_has_data:
+            if yielded_dates:
                 # If this sensor was previously in No_Data_Sensors, remove it
                 if "No_Data_Sensors" in state and sensor_id_str in state["No_Data_Sensors"]:
                     logger.info(f"Sensor {sensor_id} ({city}) returned data after being marked as no-data. Removing from No_Data_Sensors.")

@@ -22,17 +22,40 @@ load_dotenv(dotenv_path=ENV_FILE)
 
 # List of dicts: city, sensor_id, country
 CITIES = [
-    {"city": "Liège", "sensor_id": 12345, "country": "BE"},
-    {"city": "Madrid", "sensor_id": 10014, "country": "ES"},
+    # Paris, France
     {"city": "Paris", "sensor_id": 10042, "country": "FR"},
+    {"city": "Paris", "sensor_id": 10043, "country": "FR"},
+    {"city": "Paris", "sensor_id": 10044, "country": "FR"},
+    # Berlin, Germany
     {"city": "Berlin", "sensor_id": 10077, "country": "DE"},
-    {"city": "Warsaw", "sensor_id": 10123, "country": "PL"},
+    {"city": "Berlin", "sensor_id": 10078, "country": "DE"},
+    {"city": "Berlin", "sensor_id": 10079, "country": "DE"},
+    # Milan, Italy
     {"city": "Milan", "sensor_id": 10234, "country": "IT"},
+    {"city": "Milan", "sensor_id": 10235, "country": "IT"},
+    {"city": "Milan", "sensor_id": 10236, "country": "IT"},
+    # London, United Kingdom
+    {"city": "London", "sensor_id": 10401, "country": "GB"},
+    {"city": "London", "sensor_id": 10402, "country": "GB"},
+    {"city": "London", "sensor_id": 10403, "country": "GB"},
+    # Madrid, Spain
+    {"city": "Madrid", "sensor_id": 10014, "country": "ES"},
+    {"city": "Madrid", "sensor_id": 10015, "country": "ES"},
+    {"city": "Madrid", "sensor_id": 10016, "country": "ES"},
+    # Vienna, Austria
+    {"city": "Vienna", "sensor_id": 10510, "country": "AT"},
+    {"city": "Vienna", "sensor_id": 10511, "country": "AT"},
+    # Prague, Czech Republic
+    {"city": "Prague", "sensor_id": 10620, "country": "CZ"},
+    {"city": "Prague", "sensor_id": 10621, "country": "CZ"},
+    # Other existing sensors
+    {"city": "Liège", "sensor_id": 12345, "country": "BE"},
+    {"city": "Warsaw", "sensor_id": 10123, "country": "PL"},
     {"city": "Budapest", "sensor_id": 10345, "country": "HU"},
     # Test sensor known to return no data (example: 9999999)
     {"city": "NoDataTest", "sensor_id": 9999999, "country": "XX"}
 ]
-START_DATE = datetime(2024, 11, 1).date()
+START_DATE = datetime(2024, 9, 1).date()
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
@@ -107,7 +130,7 @@ def openaq_source(logger: logging.Logger):
             "No_Data_Sensors": {},
         }) 
 
-        logger.info(f"State: {state}")
+        # logger.info(f"State: {state}")
 
         today = datetime.now(timezone.utc).date()
         today_str = str(today)
@@ -281,11 +304,33 @@ def openaq_source(logger: logging.Logger):
                 max_date = max(missing_dates).isoformat() if missing_dates else None
                 if "No_Data_Sensors" not in state:
                     state["No_Data_Sensors"] = {}
-                state["No_Data_Sensors"][sensor_id_str] = {"min_attempted": min_date, "max_attempted": max_date}
+                prev = state["No_Data_Sensors"].get(sensor_id_str)
+                # Only update if we have new min/max, otherwise keep previous
+                if prev:
+                    # Both prev and new min/max must not be None to compare
+                    min_attempted = min(
+                        [d for d in [prev.get("min_attempted"), min_date] if d is not None]
+                    )
+                    max_attempted = max(
+                        [d for d in [prev.get("max_attempted"), max_date] if d is not None]
+                    )
+                else:
+                    min_attempted = min_date
+                    max_attempted = max_date
+                state["No_Data_Sensors"][sensor_id_str] = {
+                    "min_attempted": min_attempted,
+                    "max_attempted": max_attempted,
+                }
             else:
                 # Otherwise, store flagged dates as usual
                 state["Flagged_Requests"][sensor_id_str] = list(flagged_dates.union(new_flagged))
                 logger.debug(f"Flagged dates for sensor {sensor_id} ({city}): {state['Flagged_Requests'][sensor_id_str]}")
+
+            if sensor_has_data:
+                # If this sensor was previously in No_Data_Sensors, remove it
+                if "No_Data_Sensors" in state and sensor_id_str in state["No_Data_Sensors"]:
+                    logger.info(f"Sensor {sensor_id} ({city}) returned data after being marked as no-data. Removing from No_Data_Sensors.")
+                    del state["No_Data_Sensors"][sensor_id_str]
 
         logger.info("Completed OpenAQ daily sensor data extraction.")
 

@@ -44,6 +44,47 @@ The continent where the city is located. This field helps in broader geographic 
 {% docs country %}
 The country where the city is located. Useful for aggregating or filtering by national boundaries.
 {% enddocs %}
+
+{% docs coverage__datetime_from__local %}
+The local datetime of the first measurement for the day.
+{% enddocs %}
+
+{% docs coverage__datetime_from__utc %}
+The UTC datetime of the first measurement for the day.
+{% enddocs %}
+
+{% docs coverage__datetime_to__local %}
+The local datetime of the last measurement for the day.
+{% enddocs %}
+
+{% docs coverage__datetime_to__utc %}
+The UTC datetime of the last measurement for the day.
+{% enddocs %}
+
+{% docs coverage__expected_count %}
+The expected number of measurements for the day, based on the sensor's reporting frequency.
+{% enddocs %}
+
+{% docs coverage__expected_interval %}
+The expected interval (in seconds) between measurements for the sensor.
+{% enddocs %}
+
+{% docs coverage__observed_count %}
+The actual number of measurements observed for the day.
+{% enddocs %}
+
+{% docs coverage__observed_interval %}
+The observed average interval (in seconds) between measurements for the sensor on this day.
+{% enddocs %}
+
+{% docs coverage__percent_complete %}
+The percentage of expected measurements that were actually observed for the day.
+{% enddocs %}
+
+{% docs coverage__percent_coverage %}
+The percentage of the day for which measurements were available.
+{% enddocs %}
+
 # D
 {% docs departure_airport %}
 The ICAO code of the airport where the flight departed. Null if the departure airport could not be determined.
@@ -108,6 +149,42 @@ The percentage of flights in the period that departed from the most popular depa
 A higher-level geographic grouping, such as a continent or internal administrative region. Optional but useful for rollups and segmentation.
 {% enddocs %}
 # S
+
+{% docs summary__avg %}
+The average value observed for the parameter in the daily summary.
+{% enddocs %}
+
+{% docs summary__max %}
+The maximum value observed for the parameter in the daily summary.
+{% enddocs %}
+
+{% docs summary__median %}
+The median value observed for the parameter in the daily summary.
+{% enddocs %}
+
+{% docs summary__min %}
+The minimum value observed for the parameter in the daily summary.
+{% enddocs %}
+
+{% docs summary__q02 %}
+The 2nd percentile value observed for the parameter in the daily summary.
+{% enddocs %}
+
+{% docs summary__q25 %}
+The 25th percentile value observed for the parameter in the daily summary.
+{% enddocs %}
+
+{% docs summary__q75 %}
+The 75th percentile value observed for the parameter in the daily summary.
+{% enddocs %}
+
+{% docs summary__q98 %}
+The 98th percentile value observed for the parameter in the daily summary.
+{% enddocs %}
+
+{% docs summary__sd %}
+The standard deviation of values for the parameter in the daily summary.
+{% enddocs %}
 # T
 
 {% docs total_distance_km %}

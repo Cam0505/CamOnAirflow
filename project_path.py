@@ -31,6 +31,7 @@ def get_project_paths():
     paths = {
         "PROJECT_ROOT": project_root,
         "DBT_DIR": project_root / "dbt",
+        "REQUIREMENTS_PATH": project_root / "requirements.txt",
         "DBT_TARGETS_DIR": project_root / "dbt" / "target",
         "DBT_RUN_RESULTS_DIR": project_root / "dbt" / "target" / "run_results.json",
         "PIPELINES_DIR": project_root / "pipelines",

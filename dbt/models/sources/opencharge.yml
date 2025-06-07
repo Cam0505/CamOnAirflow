@@ -1,0 +1,13 @@
+version: 2
+
+sources:
+  - name: opencharge
+    database: camonairflow
+    schema: open_charge
+
+    tables:
+      - name: opencharge_stations
+        freshness:
+          warn_after: {count: 3, period: day}
+          error_after: {count: 6, period: day}
+        loaded_at_field: CAST(last_updated AS TIMESTAMP)

@@ -1,6 +1,16 @@
-{{ config(materialized='table') }}
+-- ==============================================================================
+-- Model: base_openaq_sensor_summary
+-- Description: Monthly summary statistics for OpenAQ sensor data
+-- ==============================================================================
+-- Change Log:
+-- Date       | Author   | Description
+-- -----------|----------|------------------------------------------------------
+-- 2025-06-02 | Cam      | Initial creation
+-- YYYY-MM-DD | NAME     | [Add future changes here]
+-- ==============================================================================
 
--- Base model: Summarize OpenAQ sensor data by year, month, country, city, sensor, and parameter
+
+
 with base as (
     select
         sensor_id,

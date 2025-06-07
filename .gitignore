@@ -37,6 +37,8 @@ __pycache__/
 *.pyd
 .venv
 
+request_cache/*.json
+
 # Docker-related
 .dockerignore
 airflow_settings.yaml

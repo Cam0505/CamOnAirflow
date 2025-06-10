@@ -1,0 +1,246 @@
+##
+## Configuration for Draw.io CSV Import
+#
+# label: %name%<br><i style="color:gray;">%summary%</i><br><small>Updated: %upload_time%<br>Depth: %depth%</small>
+# style: shape=rectangle;html=1;whiteSpace=wrap;rounded=1;fillColor=%color%;strokeColor=#000000;strokeWidth=1;fontColor=#000000;
+# connect: {"from": "target_node", "to": "source_name", "style":"endArrow=classic;endFill=1;html=1;fontSize=10;"}
+# identity: pythonpackage_id
+# namespace: csvimport-
+# layout: auto
+# nodespacing: 30
+# edgespacing: 40
+#
+## ---- CSV starts below ----
+pythonpackage_id,name,summary,upload_time,depth,color,source_name,target_node
+dbt-core,dbt-core,"With dbt, data analysts and engineers can build analytics the way engineers build applications.",2025-05-30T17:19:50,0,#FF5733,dbt-core,click
+dbt-core,dbt-core,"With dbt, data analysts and engineers can build analytics the way engineers build applications.",2025-05-30T17:19:50,0,#FF5733,dbt-core,networkx
+networkx,networkx,Python package for creating and manipulating graphs and networks,2025-05-09T15:49:39,1,#33C1FF,networkx,numpy
+networkx,networkx,Python package for creating and manipulating graphs and networks,2025-05-09T15:49:39,1,#33C1FF,networkx,scipy
+scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,2,#33FF57,scipy,asv
+asv,asv,Airspeed Velocity: A simple Python history benchmarking tool,2024-08-12T22:58:12,3,#FF33A8,asv,asv-runner
+asv,asv,Airspeed Velocity: A simple Python history benchmarking tool,2024-08-12T22:58:12,3,#FF33A8,asv,json5
+asv,asv,Airspeed Velocity: A simple Python history benchmarking tool,2024-08-12T22:58:12,3,#FF33A8,asv,pyyaml
+asv,asv,Airspeed Velocity: A simple Python history benchmarking tool,2024-08-12T22:58:12,3,#FF33A8,asv,pympler
+asv,asv,Airspeed Velocity: A simple Python history benchmarking tool,2024-08-12T22:58:12,3,#FF33A8,asv,tomli
+asv,asv,Airspeed Velocity: A simple Python history benchmarking tool,2024-08-12T22:58:12,3,#FF33A8,asv,sphinx-bootstrap-theme
+asv,asv,Airspeed Velocity: A simple Python history benchmarking tool,2024-08-12T22:58:12,3,#FF33A8,asv,python-hglib
+asv,asv,Airspeed Velocity: A simple Python history benchmarking tool,2024-08-12T22:58:12,3,#FF33A8,asv,asv-bench-memray
+asv,asv,Airspeed Velocity: A simple Python history benchmarking tool,2024-08-12T22:58:12,3,#FF33A8,asv,filelock
+asv,asv,Airspeed Velocity: A simple Python history benchmarking tool,2024-08-12T22:58:12,3,#FF33A8,asv,selenium
+asv,asv,Airspeed Velocity: A simple Python history benchmarking tool,2024-08-12T22:58:12,3,#FF33A8,asv,flaky
+asv,asv,Airspeed Velocity: A simple Python history benchmarking tool,2024-08-12T22:58:12,3,#FF33A8,asv,rpy2
+scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,2,#33FF57,scipy,mpmath
+mpmath,mpmath,Python library for arbitrary-precision floating-point arithmetic,2025-04-30T07:39:58,3,#FF33A8,mpmath,codecov
+scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,2,#33FF57,scipy,threadpoolctl
+scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,2,#33FF57,scipy,scikit-umfpack
+scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,2,#33FF57,scipy,pooch
+pooch,pooch,A friend to fetch your data files,2024-06-06T16:53:44,3,#FF33A8,pooch,platformdirs
+pooch,pooch,A friend to fetch your data files,2024-06-06T16:53:44,3,#FF33A8,pooch,requests
+pooch,pooch,A friend to fetch your data files,2024-06-06T16:53:44,3,#FF33A8,pooch,tqdm
+pooch,pooch,A friend to fetch your data files,2024-06-06T16:53:44,3,#FF33A8,pooch,paramiko
+pooch,pooch,A friend to fetch your data files,2024-06-06T16:53:44,3,#FF33A8,pooch,xxhash
+scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,2,#33FF57,scipy,array-api-strict
+scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,2,#33FF57,scipy,intersphinx_registry
+intersphinx_registry,intersphinx-registry,This package provides convenient utilities and data to write a sphinx config file.,2025-01-23T08:43:28,3,#FF33A8,intersphinx-registry,requests
+scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,2,#33FF57,scipy,matplotlib
+matplotlib,matplotlib,Python plotting package,2024-12-13T05:54:24,3,#FF33A8,matplotlib,contourpy
+matplotlib,matplotlib,Python plotting package,2024-12-13T05:54:24,3,#FF33A8,matplotlib,pillow
+matplotlib,matplotlib,Python plotting package,2024-12-13T05:54:24,3,#FF33A8,matplotlib,python-dateutil
+matplotlib,matplotlib,Python plotting package,2024-12-13T05:54:24,3,#FF33A8,matplotlib,meson-python
+matplotlib,matplotlib,Python plotting package,2024-12-13T05:54:24,3,#FF33A8,matplotlib,setuptools_scm
+scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,2,#33FF57,scipy,myst-nb
+myst-nb,myst-nb,A Jupyter Notebook Sphinx reader built on top of the MyST markdown parser.,2025-02-07T18:27:00,3,#FF33A8,myst-nb,ipython
+myst-nb,myst-nb,A Jupyter Notebook Sphinx reader built on top of the MyST markdown parser.,2025-02-07T18:27:00,3,#FF33A8,myst-nb,jupyter-cache
+myst-nb,myst-nb,A Jupyter Notebook Sphinx reader built on top of the MyST markdown parser.,2025-02-07T18:27:00,3,#FF33A8,myst-nb,nbclient
+myst-nb,myst-nb,A Jupyter Notebook Sphinx reader built on top of the MyST markdown parser.,2025-02-07T18:27:00,3,#FF33A8,myst-nb,pyyaml
+myst-nb,myst-nb,A Jupyter Notebook Sphinx reader built on top of the MyST markdown parser.,2025-02-07T18:27:00,3,#FF33A8,myst-nb,pandas
+scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,2,#33FF57,scipy,jupyterlite-pyodide-kernel
+jupyterlite-pyodide-kernel,jupyterlite-pyodide-kernel,Python kernel for JupyterLite powered by Pyodide,2025-06-05T10:12:08,3,#FF33A8,jupyterlite-pyodide-kernel,jupyterlite-core
+jupyterlite-pyodide-kernel,jupyterlite-pyodide-kernel,Python kernel for JupyterLite powered by Pyodide,2025-06-05T10:12:08,3,#FF33A8,jupyterlite-pyodide-kernel,pkginfo
+jupyterlite-pyodide-kernel,jupyterlite-pyodide-kernel,Python kernel for JupyterLite powered by Pyodide,2025-06-05T10:12:08,3,#FF33A8,jupyterlite-pyodide-kernel,jupyter-server-mathjax
+jupyterlite-pyodide-kernel,jupyterlite-pyodide-kernel,Python kernel for JupyterLite powered by Pyodide,2025-06-05T10:12:08,3,#FF33A8,jupyterlite-pyodide-kernel,jupyterlab-language-pack-fr-fr
+jupyterlite-pyodide-kernel,jupyterlite-pyodide-kernel,Python kernel for JupyterLite powered by Pyodide,2025-06-05T10:12:08,3,#FF33A8,jupyterlite-pyodide-kernel,jupyterlab-language-pack-zh-cn
+jupyterlite-pyodide-kernel,jupyterlite-pyodide-kernel,Python kernel for JupyterLite powered by Pyodide,2025-06-05T10:12:08,3,#FF33A8,jupyterlite-pyodide-kernel,libarchive-c
+scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,2,#33FF57,scipy,typing_extensions
+scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,2,#33FF57,scipy,cython-lint
+cython-lint,cython-lint,Lint Cython files,2022-11-24T17:28:55,3,#FF33A8,cython-lint,tokenize-rt
+cython-lint,cython-lint,Lint Cython files,2022-11-24T17:28:55,3,#FF33A8,cython-lint,tomli
+scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,2,#33FF57,scipy,rich-click
+rich-click,rich-click,Format click help output nicely with rich,2025-05-19T21:33:04,3,#FF33A8,rich-click,rich
+rich-click,rich-click,Format click help output nicely with rich,2025-05-19T21:33:04,3,#FF33A8,rich-click,rich-codex
+rich-click,rich-click,Format click help output nicely with rich,2025-05-19T21:33:04,3,#FF33A8,rich-click,markdown_include
+scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,2,#33FF57,scipy,doit
+networkx,networkx,Python package for creating and manipulating graphs and networks,2025-05-09T15:49:39,1,#33C1FF,networkx,pandas
+pandas,pandas,"Powerful data structures for data analysis, time series, and statistics",2025-06-05T03:25:48,2,#33FF57,pandas,python-dateutil
+pandas,pandas,"Powerful data structures for data analysis, time series, and statistics",2025-06-05T03:25:48,2,#33FF57,pandas,pytz
+pandas,pandas,"Powerful data structures for data analysis, time series, and statistics",2025-06-05T03:25:48,2,#33FF57,pandas,tzdata
+pandas,pandas,"Powerful data structures for data analysis, time series, and statistics",2025-06-05T03:25:48,2,#33FF57,pandas,sqlalchemy
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,greenlet
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,pyodbc
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,pymssql
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,mysqlclient
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,mysql-connector-python
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,mariadb
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,cx_oracle
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,oracledb
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,psycopg2
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,pg8000
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,asyncpg
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,psycopg2-binary
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,psycopg2cffi
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,psycopg
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,pymysql
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,aiomysql
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,aioodbc
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,asyncmy
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,aiosqlite
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,sqlcipher3_binary
+pandas,pandas,"Powerful data structures for data analysis, time series, and statistics",2025-06-05T03:25:48,2,#33FF57,pandas,psycopg2
+pandas,pandas,"Powerful data structures for data analysis, time series, and statistics",2025-06-05T03:25:48,2,#33FF57,pandas,pymysql
+pymysql,pymysql,Pure Python MySQL Driver,2024-05-21T11:03:41,3,#FF33A8,pymysql,pynacl
+pymysql,pymysql,Pure Python MySQL Driver,2024-05-21T11:03:41,3,#FF33A8,pymysql,cryptography
+networkx,networkx,Python package for creating and manipulating graphs and networks,2025-05-09T15:49:39,1,#33C1FF,networkx,pillow
+pillow,pillow,Python Imaging Library (Fork),2023-04-01T09:28:03,2,#33FF57,pillow,olefile
+pillow,pillow,Python Imaging Library (Fork),2023-04-01T09:28:03,2,#33FF57,pillow,sphinx-inline-tabs
+pillow,pillow,Python Imaging Library (Fork),2023-04-01T09:28:03,2,#33FF57,pillow,defusedxml
+pillow,pillow,Python Imaging Library (Fork),2023-04-01T09:28:03,2,#33FF57,pillow,pyroma
+pyroma,pyroma,Test your project's packaging friendliness,2023-02-25T12:57:36,3,#FF33A8,pyroma,requests
+pyroma,pyroma,Test your project's packaging friendliness,2023-02-25T12:57:36,3,#FF33A8,pyroma,trove-classifiers
+pyroma,pyroma,Test your project's packaging friendliness,2023-02-25T12:57:36,3,#FF33A8,pyroma,zest.releaser
+pillow,pillow,Python Imaging Library (Fork),2023-04-01T09:28:03,2,#33FF57,pillow,trove-classifiers
+networkx,networkx,Python package for creating and manipulating graphs and networks,2025-05-09T15:49:39,1,#33C1FF,networkx,texext
+networkx,networkx,Python package for creating and manipulating graphs and networks,2025-05-09T15:49:39,1,#33C1FF,networkx,intersphinx-registry
+networkx,networkx,Python package for creating and manipulating graphs and networks,2025-05-09T15:49:39,1,#33C1FF,networkx,osmnx
+osmnx,osmnx,"Download, model, analyze, and visualize street networks and other geospatial features from OpenStreetMap",2025-05-06T17:47:29,2,#33FF57,osmnx,geopandas
+geopandas,geopandas,Geographic pandas extensions,2025-06-01T16:54:29,3,#FF33A8,geopandas,pyogrio
+geopandas,geopandas,Geographic pandas extensions,2025-06-01T16:54:29,3,#FF33A8,geopandas,pyproj
+geopandas,geopandas,Geographic pandas extensions,2025-06-01T16:54:29,3,#FF33A8,geopandas,shapely
+geopandas,geopandas,Geographic pandas extensions,2025-06-01T16:54:29,3,#FF33A8,geopandas,psycopg
+geopandas,geopandas,Geographic pandas extensions,2025-06-01T16:54:29,3,#FF33A8,geopandas,geopy
+geopandas,geopandas,Geographic pandas extensions,2025-06-01T16:54:29,3,#FF33A8,geopandas,mapclassify
+geopandas,geopandas,Geographic pandas extensions,2025-06-01T16:54:29,3,#FF33A8,geopandas,xyzservices
+geopandas,geopandas,Geographic pandas extensions,2025-06-01T16:54:29,3,#FF33A8,geopandas,folium
+geopandas,geopandas,Geographic pandas extensions,2025-06-01T16:54:29,3,#FF33A8,geopandas,geoalchemy2
+geopandas,geopandas,Geographic pandas extensions,2025-06-01T16:54:29,3,#FF33A8,geopandas,codecov
+osmnx,osmnx,"Download, model, analyze, and visualize street networks and other geospatial features from OpenStreetMap",2025-05-06T17:47:29,2,#33FF57,osmnx,requests
+requests,requests,Python HTTP for Humans.,2016-04-29T21:57:23,3,#FF33A8,requests,urllib3
+osmnx,osmnx,"Download, model, analyze, and visualize street networks and other geospatial features from OpenStreetMap",2025-05-06T17:47:29,2,#33FF57,osmnx,shapely
+osmnx,osmnx,"Download, model, analyze, and visualize street networks and other geospatial features from OpenStreetMap",2025-05-06T17:47:29,2,#33FF57,osmnx,scikit-learn
+scikit-learn,scikit-learn,A set of python modules for machine learning and data mining,2025-05-09T15:01:29,3,#FF33A8,scikit-learn,meson-python
+scikit-learn,scikit-learn,A set of python modules for machine learning and data mining,2025-05-09T15:01:29,3,#FF33A8,scikit-learn,memory_profiler
+scikit-learn,scikit-learn,A set of python modules for machine learning and data mining,2025-05-09T15:01:29,3,#FF33A8,scikit-learn,scikit-image
+scikit-learn,scikit-learn,A set of python modules for machine learning and data mining,2025-05-09T15:01:29,3,#FF33A8,scikit-learn,polars
+scikit-learn,scikit-learn,A set of python modules for machine learning and data mining,2025-05-09T15:01:29,3,#FF33A8,scikit-learn,pyamg
+osmnx,osmnx,"Download, model, analyze, and visualize street networks and other geospatial features from OpenStreetMap",2025-05-06T17:47:29,2,#33FF57,osmnx,rasterio
+rasterio,rasterio,Fast and direct raster I/O for use with Numpy and SciPy,2024-08-31T13:30:36,3,#FF33A8,rasterio,affine
+rasterio,rasterio,Fast and direct raster I/O for use with Numpy and SciPy,2024-08-31T13:30:36,3,#FF33A8,rasterio,cligj
+rasterio,rasterio,Fast and direct raster I/O for use with Numpy and SciPy,2024-08-31T13:30:36,3,#FF33A8,rasterio,click-plugins
+rasterio,rasterio,Fast and direct raster I/O for use with Numpy and SciPy,2024-08-31T13:30:36,3,#FF33A8,rasterio,ghp-import
+rasterio,rasterio,Fast and direct raster I/O for use with Numpy and SciPy,2024-08-31T13:30:36,3,#FF33A8,rasterio,sphinx-click
+rasterio,rasterio,Fast and direct raster I/O for use with Numpy and SciPy,2024-08-31T13:30:36,3,#FF33A8,rasterio,sphinx-rtd-theme
+rasterio,rasterio,Fast and direct raster I/O for use with Numpy and SciPy,2024-08-31T13:30:36,3,#FF33A8,rasterio,ipython
+rasterio,rasterio,Fast and direct raster I/O for use with Numpy and SciPy,2024-08-31T13:30:36,3,#FF33A8,rasterio,boto3
+osmnx,osmnx,"Download, model, analyze, and visualize street networks and other geospatial features from OpenStreetMap",2025-05-06T17:47:29,2,#33FF57,osmnx,rio-vrt
+rio-vrt,rio-vrt,A simple librairy to build a vrt from multiple raster source relying only on rasterio,2024-08-19T21:50:59,3,#FF33A8,rio-vrt,commitizen
+rio-vrt,rio-vrt,A simple librairy to build a vrt from multiple raster source relying only on rasterio,2024-08-19T21:50:59,3,#FF33A8,rio-vrt,sphinx-icon
+rio-vrt,rio-vrt,A simple librairy to build a vrt from multiple raster source relying only on rasterio,2024-08-19T21:50:59,3,#FF33A8,rio-vrt,sphinx-btn
+rio-vrt,rio-vrt,A simple librairy to build a vrt from multiple raster source relying only on rasterio,2024-08-19T21:50:59,3,#FF33A8,rio-vrt,xmlschema
+rio-vrt,rio-vrt,A simple librairy to build a vrt from multiple raster source relying only on rasterio,2024-08-19T21:50:59,3,#FF33A8,rio-vrt,natsort
+networkx,networkx,Python package for creating and manipulating graphs and networks,2025-05-09T15:49:39,1,#33C1FF,networkx,momepy
+momepy,momepy,Urban Morphology Measuring Toolkit,2024-11-29T09:35:53,2,#33FF57,momepy,libpysal
+libpysal,libpysal,Core components of PySAL - A library of spatial analysis functions,2023-11-05T21:11:08,3,#FF33A8,libpysal,platformdirs
+libpysal,libpysal,Core components of PySAL - A library of spatial analysis functions,2023-11-05T21:11:08,3,#FF33A8,libpysal,zstd
+libpysal,libpysal,Core components of PySAL - A library of spatial analysis functions,2023-11-05T21:11:08,3,#FF33A8,libpysal,watermark
+libpysal,libpysal,Core components of PySAL - A library of spatial analysis functions,2023-11-05T21:11:08,3,#FF33A8,libpysal,sphinx_bootstrap_theme
+libpysal,libpysal,Core components of PySAL - A library of spatial analysis functions,2023-11-05T21:11:08,3,#FF33A8,libpysal,codecov
+libpysal,libpysal,Core components of PySAL - A library of spatial analysis functions,2023-11-05T21:11:08,3,#FF33A8,libpysal,geodatasets
+momepy,momepy,Urban Morphology Measuring Toolkit,2024-11-29T09:35:53,2,#33FF57,momepy,tqdm
+tqdm,tqdm,"Fast, Extensible Progress Meter",2016-10-31T16:24:19,3,#FF33A8,tqdm,nbval
+tqdm,tqdm,"Fast, Extensible Progress Meter",2016-10-31T16:24:19,3,#FF33A8,tqdm,slack-sdk
+momepy,momepy,Urban Morphology Measuring Toolkit,2024-11-29T09:35:53,2,#33FF57,momepy,inequality
+inequality,inequality,inequality: Spatial inequality analysis,2025-01-29T19:28:25,3,#FF33A8,inequality,sphinx_bootstrap_theme
+inequality,inequality,inequality: Spatial inequality analysis,2025-01-29T19:28:25,3,#FF33A8,inequality,codecov
+inequality,inequality,inequality: Spatial inequality analysis,2025-01-29T19:28:25,3,#FF33A8,inequality,mapclassify
+inequality,inequality,inequality: Spatial inequality analysis,2025-01-29T19:28:25,3,#FF33A8,inequality,folium
+momepy,momepy,Urban Morphology Measuring Toolkit,2024-11-29T09:35:53,2,#33FF57,momepy,mapclassify
+mapclassify,mapclassify,Classification Schemes for Choropleth Maps.,2025-05-28T05:34:37,3,#FF33A8,mapclassify,watermark
+mapclassify,mapclassify,Classification Schemes for Choropleth Maps.,2025-05-28T05:34:37,3,#FF33A8,mapclassify,sphinx_bootstrap_theme
+mapclassify,mapclassify,Classification Schemes for Choropleth Maps.,2025-05-28T05:34:37,3,#FF33A8,mapclassify,geodatasets
+mapclassify,mapclassify,Classification Schemes for Choropleth Maps.,2025-05-28T05:34:37,3,#FF33A8,mapclassify,lonboard
+mapclassify,mapclassify,Classification Schemes for Choropleth Maps.,2025-05-28T05:34:37,3,#FF33A8,mapclassify,pydeck
+momepy,momepy,Urban Morphology Measuring Toolkit,2024-11-29T09:35:53,2,#33FF57,momepy,esda
+esda,esda,Exploratory Spatial Data Analysis in PySAL,2025-02-06T17:30:26,3,#FF33A8,esda,rtree
+esda,esda,Exploratory Spatial Data Analysis in PySAL,2025-02-06T17:30:26,3,#FF33A8,esda,codecov
+esda,esda,Exploratory Spatial Data Analysis in PySAL,2025-02-06T17:30:26,3,#FF33A8,esda,folium
+esda,esda,Exploratory Spatial Data Analysis in PySAL,2025-02-06T17:30:26,3,#FF33A8,esda,sphinx_bootstrap_theme
+esda,esda,Exploratory Spatial Data Analysis in PySAL,2025-02-06T17:30:26,3,#FF33A8,esda,matplotlib-scalebar
+esda,esda,Exploratory Spatial Data Analysis in PySAL,2025-02-06T17:30:26,3,#FF33A8,esda,watermark
+networkx,networkx,Python package for creating and manipulating graphs and networks,2025-05-09T15:49:39,1,#33C1FF,networkx,contextily
+contextily,contextily,Context geo-tiles in Python,2024-09-03T09:14:43,2,#33FF57,contextily,geopy
+geopy,geopy,Python Geocoding Toolbox,2023-11-23T21:49:30,3,#FF33A8,geopy,geographiclib
+geopy,geopy,Python Geocoding Toolbox,2023-11-23T21:49:30,3,#FF33A8,geopy,aiohttp
+geopy,geopy,Python Geocoding Toolbox,2023-11-23T21:49:30,3,#FF33A8,geopy,sphinx-rtd-theme
+geopy,geopy,Python Geocoding Toolbox,2023-11-23T21:49:30,3,#FF33A8,geopy,urllib3
+contextily,contextily,Context geo-tiles in Python,2024-09-03T09:14:43,2,#33FF57,contextily,mercantile
+contextily,contextily,Context geo-tiles in Python,2024-09-03T09:14:43,2,#33FF57,contextily,xyzservices
+networkx,networkx,Python package for creating and manipulating graphs and networks,2025-05-09T15:49:39,1,#33C1FF,networkx,cairocffi
+cairocffi,cairocffi,cffi-based cairo bindings for Python,2024-06-18T10:55:59,2,#33FF57,cairocffi,cffi
+cffi,cffi,Foreign Function Interface for Python calling C code.,2016-11-12T13:54:08,3,#FF33A8,cffi,pycparser
+cairocffi,cairocffi,cffi-based cairo bindings for Python,2024-06-18T10:55:59,2,#33FF57,cairocffi,pikepdf
+pikepdf,pikepdf,"Read and write PDFs with Python, powered by qpdf",2025-05-27T20:37:47,3,#FF33A8,pikepdf,deprecated
+pikepdf,pikepdf,"Read and write PDFs with Python, powered by qpdf",2025-05-27T20:37:47,3,#FF33A8,pikepdf,typer
+pikepdf,pikepdf,"Read and write PDFs with Python, powered by qpdf",2025-05-27T20:37:47,3,#FF33A8,pikepdf,sphinx-rtd-theme
+pikepdf,pikepdf,"Read and write PDFs with Python, powered by qpdf",2025-05-27T20:37:47,3,#FF33A8,pikepdf,tomli
+pikepdf,pikepdf,"Read and write PDFs with Python, powered by qpdf",2025-05-27T20:37:47,3,#FF33A8,pikepdf,lxml-stubs
+pikepdf,pikepdf,"Read and write PDFs with Python, powered by qpdf",2025-05-27T20:37:47,3,#FF33A8,pikepdf,psutil
+pikepdf,pikepdf,"Read and write PDFs with Python, powered by qpdf",2025-05-27T20:37:47,3,#FF33A8,pikepdf,python-xmp-toolkit
+cairocffi,cairocffi,cffi-based cairo bindings for Python,2024-06-18T10:55:59,2,#33FF57,cairocffi,xcffib
+networkx,networkx,Python package for creating and manipulating graphs and networks,2025-05-09T15:49:39,1,#33C1FF,networkx,igraph
+igraph,igraph,High performance graph data structures and algorithms,2022-01-10T14:39:25,2,#33FF57,igraph,texttable
+igraph,igraph,High performance graph data structures and algorithms,2022-01-10T14:39:25,2,#33FF57,igraph,sphinx-rtd-theme
+sphinx-rtd-theme,sphinx-rtd-theme,Read the Docs theme for Sphinx,2024-11-13T11:06:02,3,#FF33A8,sphinx-rtd-theme,sphinxcontrib-jquery
+sphinx-rtd-theme,sphinx-rtd-theme,Read the Docs theme for Sphinx,2024-11-13T11:06:02,3,#FF33A8,sphinx-rtd-theme,transifex-client
+networkx,networkx,Python package for creating and manipulating graphs and networks,2025-05-09T15:49:39,1,#33C1FF,networkx,pygraphviz
+networkx,networkx,Python package for creating and manipulating graphs and networks,2025-05-09T15:49:39,1,#33C1FF,networkx,pydot
+pydot,pydot,Python interface to Graphviz's Dot,2025-05-04T11:13:01,2,#33FF57,pydot,parameterized
+pydot,pydot,Python interface to Graphviz's Dot,2025-05-04T11:13:01,2,#33FF57,pydot,zest.releaser
+zest.releaser,zest.releaser,Software releasing made easy and repeatable,2025-04-11T09:57:58,3,#FF33A8,zest.releaser,readme_renderer
+zest.releaser,zest.releaser,Software releasing made easy and repeatable,2025-04-11T09:57:58,3,#FF33A8,zest.releaser,tomli
+zest.releaser,zest.releaser,Software releasing made easy and repeatable,2025-04-11T09:57:58,3,#FF33A8,zest.releaser,pep440
+dbt-core,dbt-core,"With dbt, data analysts and engineers can build analytics the way engineers build applications.",2025-05-30T17:19:50,0,#FF5733,dbt-core,protobuf
+dbt-core,dbt-core,"With dbt, data analysts and engineers can build analytics the way engineers build applications.",2025-05-30T17:19:50,0,#FF5733,dbt-core,snowplow-tracker
+dbt-core,dbt-core,"With dbt, data analysts and engineers can build analytics the way engineers build applications.",2025-05-30T17:19:50,0,#FF5733,dbt-core,sqlparse
+dbt-core,dbt-core,"With dbt, data analysts and engineers can build analytics the way engineers build applications.",2025-05-30T17:19:50,0,#FF5733,dbt-core,dbt-extractor
+dbt-core,dbt-core,"With dbt, data analysts and engineers can build analytics the way engineers build applications.",2025-05-30T17:19:50,0,#FF5733,dbt-core,dbt-semantic-interfaces
+dbt-semantic-interfaces,dbt-semantic-interfaces,The shared semantic layer definitions that dbt-core and MetricFlow use,2024-12-03T04:25:33,1,#33C1FF,dbt-semantic-interfaces,more-itertools
+dbt-semantic-interfaces,dbt-semantic-interfaces,The shared semantic layer definitions that dbt-core and MetricFlow use,2024-12-03T04:25:33,1,#33C1FF,dbt-semantic-interfaces,pydantic
+pydantic,pydantic,Data validation using Python type hints,2024-09-17T15:59:51,2,#33FF57,pydantic,annotated-types
+pydantic,pydantic,Data validation using Python type hints,2024-09-17T15:59:51,2,#33FF57,pydantic,pydantic-core
+pydantic,pydantic,Data validation using Python type hints,2024-09-17T15:59:51,2,#33FF57,pydantic,typing-inspection
+pydantic,pydantic,Data validation using Python type hints,2024-09-17T15:59:51,2,#33FF57,pydantic,email-validator
+email-validator,email-validator,A robust email address syntax and deliverability validation library.,2024-06-20T11:30:28,3,#FF33A8,email-validator,dnspython
+dbt-semantic-interfaces,dbt-semantic-interfaces,The shared semantic layer definitions that dbt-core and MetricFlow use,2024-12-03T04:25:33,1,#33C1FF,dbt-semantic-interfaces,pyyaml
+dbt-core,dbt-core,"With dbt, data analysts and engineers can build analytics the way engineers build applications.",2025-05-30T17:19:50,0,#FF5733,dbt-core,dbt-common
+dbt-common,dbt-common,The shared common utilities that dbt-core and adapter implementations use,2025-05-19T14:34:49,1,#33C1FF,dbt-common,dbt-protos
+dbt-common,dbt-common,The shared common utilities that dbt-core and adapter implementations use,2025-05-19T14:34:49,1,#33C1FF,dbt-common,deepdiff
+deepdiff,deepdiff,Deep Difference and Search of any Python object/data. Recreate objects by adding adding deltas to each other.,2025-05-09T18:44:07,2,#33FF57,deepdiff,orjson
+deepdiff,deepdiff,Deep Difference and Search of any Python object/data. Recreate objects by adding adding deltas to each other.,2025-05-09T18:44:07,2,#33FF57,deepdiff,tomli
+deepdiff,deepdiff,Deep Difference and Search of any Python object/data. Recreate objects by adding adding deltas to each other.,2025-05-09T18:44:07,2,#33FF57,deepdiff,tomli-w
+deepdiff,deepdiff,Deep Difference and Search of any Python object/data. Recreate objects by adding adding deltas to each other.,2025-05-09T18:44:07,2,#33FF57,deepdiff,polars
+polars,polars,Blazingly fast DataFrame library,2024-10-01T19:53:08,3,#FF33A8,polars,polars-cloud
+polars,polars,Blazingly fast DataFrame library,2024-10-01T19:53:08,3,#FF33A8,polars,fastexcel
+polars,polars,Blazingly fast DataFrame library,2024-10-01T19:53:08,3,#FF33A8,polars,xlsx2csv
+polars,polars,Blazingly fast DataFrame library,2024-10-01T19:53:08,3,#FF33A8,polars,connectorx
+polars,polars,Blazingly fast DataFrame library,2024-10-01T19:53:08,3,#FF33A8,polars,deltalake
+polars,polars,Blazingly fast DataFrame library,2024-10-01T19:53:08,3,#FF33A8,polars,pyiceberg
+polars,polars,Blazingly fast DataFrame library,2024-10-01T19:53:08,3,#FF33A8,polars,gevent
+polars,polars,Blazingly fast DataFrame library,2024-10-01T19:53:08,3,#FF33A8,polars,cloudpickle
+polars,polars,Blazingly fast DataFrame library,2024-10-01T19:53:08,3,#FF33A8,polars,great-tables
+polars,polars,Blazingly fast DataFrame library,2024-10-01T19:53:08,3,#FF33A8,polars,cudf-polars-cu12
+deepdiff,deepdiff,Deep Difference and Search of any Python object/data. Recreate objects by adding adding deltas to each other.,2025-05-09T18:44:07,2,#33FF57,deepdiff,sphinx-sitemap
+deepdiff,deepdiff,Deep Difference and Search of any Python object/data. Recreate objects by adding adding deltas to each other.,2025-05-09T18:44:07,2,#33FF57,deepdiff,sphinxemoji
+deepdiff,deepdiff,Deep Difference and Search of any Python object/data. Recreate objects by adding adding deltas to each other.,2025-05-09T18:44:07,2,#33FF57,deepdiff,flake8-pyproject
+deepdiff,deepdiff,Deep Difference and Search of any Python object/data. Recreate objects by adding adding deltas to each other.,2025-05-09T18:44:07,2,#33FF57,deepdiff,python-dotenv
+dbt-common,dbt-common,The shared common utilities that dbt-core and adapter implementations use,2025-05-19T14:34:49,1,#33C1FF,dbt-common,isodate
+dbt-core,dbt-core,"With dbt, data analysts and engineers can build analytics the way engineers build applications.",2025-05-30T17:19:50,0,#FF5733,dbt-core,dbt-adapters
+dbt-core,dbt-core,"With dbt, data analysts and engineers can build analytics the way engineers build applications.",2025-05-30T17:19:50,0,#FF5733,dbt-core,daff

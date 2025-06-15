@@ -25,6 +25,33 @@ logger = logging.getLogger(__name__)
 OPENCHARGE_API_KEY = os.getenv("OPENCHARGE_API_KEY")
 BASE_URL = "https://api.openchargemap.io/v3/poi/"
 
+
+def normalize_region(region):
+    if not region or not region.strip():
+        return None
+    r = region.strip().lower()
+    mapping = {
+        'qld': 'Queensland',
+        'queensland': 'Queensland',
+        'nsw': 'New South Wales',
+        'new south wales': 'New South Wales',
+        'vic': 'Victoria',
+        'victoria': 'Victoria',
+        'tas': 'Tasmania',
+        'tasmania': 'Tasmania',
+        'sa': 'South Australia',
+        'south australia': 'South Australia',
+        'wa': 'Western Australia',
+        'western australia': 'Western Australia',
+        'western autralia': 'Western Australia',
+        'act': 'Australian Capital Territory',
+        'australian capital territory': 'Australian Capital Territory',
+        'nt': 'Northern Territory',
+    }
+    # Remove extra whitespace and invisible characters
+    r = r.replace('\u200e', '').strip()
+    return mapping.get(r, region.strip())
+
 @dlt.source
 def opencharge_source(logger: logging.Logger, db_count: int = -1):
     """
@@ -39,7 +66,7 @@ def opencharge_source(logger: logging.Logger, db_count: int = -1):
             'last_run_Status': None,
             "max_date_seen": None
         })
-
+        
         seen_keys = set(state.setdefault("seen_keys", []))
         state["seen_keys"] = list(seen_keys)
         new_keys = set()
@@ -62,9 +89,9 @@ def opencharge_source(logger: logging.Logger, db_count: int = -1):
                 limit_param="maxresults",
                 offset_param="offset",
                 total_path=None,
-                offset=10000,
-                limit=1000,
-                maximum_offset=8000,
+                offset=0,
+                limit=500,
+                maximum_offset=1000,
                 stop_after_empty_page=True
             ),
             headers={"Accept": "application/json"}
@@ -94,11 +121,9 @@ def opencharge_source(logger: logging.Logger, db_count: int = -1):
                     row = {
                         "id": item.get("ID"),
                         "name": address.get("Title"),
-                        "country": address.get("Country", {}).get("Title"),
                         "countrycode": address.get("Country", {}).get("ISOCode"),
-                        "region": address.get("StateOrProvince"),
+                        "region": normalize_region(address.get("StateOrProvince")),
                         "town": address.get("Town"),
-                        "address": address.get("AddressLine1"),
                         "lat": address.get("Latitude"),
                         "lon": address.get("Longitude"),
                         "operator": operator.get("Title"),
@@ -120,7 +145,6 @@ def opencharge_source(logger: logging.Logger, db_count: int = -1):
                             }
                             for c in item.get("Connections", [])
                         ],
-                        "status": status.get("Title"),
                         "last_updated": item.get("DateLastStatusUpdate"),
                         "NumberOfPoints": item.get("NumberOfPoints")
                     }

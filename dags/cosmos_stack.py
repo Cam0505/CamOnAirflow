@@ -1,4 +1,3 @@
-from airflow.decorators import dag
 from pendulum import datetime
 from cosmos import DbtDag, ProjectConfig, ProfileConfig, ExecutionConfig
 from project_path import get_project_paths, set_dlt_env_vars

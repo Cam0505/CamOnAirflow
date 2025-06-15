@@ -35,7 +35,8 @@
         "ms-python.python",
         "ms-python.vscode-pylance",
         "dbt-labs.dbt",
-        "ms-azuretools.vscode-docker"
+        "ms-azuretools.vscode-docker",
+        "GitHub.copilot"
       ]
     },
     "postCreateCommand": "",

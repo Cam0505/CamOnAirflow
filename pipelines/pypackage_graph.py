@@ -3,7 +3,6 @@ from pathlib import Path
 from project_path import get_project_paths
 from dotenv import load_dotenv
 import requests
-from pathlib import Path
 import re
 import json
 
@@ -89,6 +88,7 @@ def parse_requirement(line):
     # Remove any non-alphanumeric, underscore, or dash characters
     line = re.sub(r"[^A-Za-z0-9_\-\.]+", "", line)
     return line.strip()
+
 
 COMMON_PACKAGES = {
     # Core packaging and distribution
@@ -203,6 +203,9 @@ def crawl(package, parent, depth, seen, nodes, flat_table, edge_set):
             "target_node": ""
         })
 
+
+# ...existing code...
+
 def main():
     import sys
     if len(sys.argv) > 1:
@@ -212,7 +215,7 @@ def main():
     else:
         with REQUIREMENTS_PATH.open() as f:
             requirements = [parse_requirement(line) for line in f if line.strip() and not line.startswith("#")]
-        logger.info(f"Running for all packages in requirements.txt")
+        logger.info("Running for all packages in requirements.txt")
 
     nodes = {}
     flat_table = []
@@ -220,7 +223,8 @@ def main():
     edge_set = set()
     for pkg in requirements:
         crawl(pkg, None, 0, seen, nodes, flat_table, edge_set)
-
+        
+        
     # Write Draw.io CSV config and data to a .txt file
     csv_path = Path("drawio_pypackage_graph.txt")
     with csv_path.open("w", encoding="utf-8") as f:
@@ -245,6 +249,7 @@ pythonpackage_id,name,summary,upload_time,depth,color,source_name,target_node
                 summary = f'"{summary}"'
             f.write(f'{row["pythonpackage_id"]},{row["name"]},{summary},{row["upload_time"]},{row["depth"]},{row["color"]},{row["source_name"]},{row["target_node"]}\n')
     logger.info(f"Draw.io CSV config written to: {csv_path.resolve()}")
+
 
 if __name__ == "__main__":
     main()

@@ -12,235 +12,650 @@
 #
 ## ---- CSV starts below ----
 pythonpackage_id,name,summary,upload_time,depth,color,source_name,target_node
+airflow-provider-duckdb,airflow-provider-duckdb,DuckDB (duckdb.org) provider for Apache Airflow,2023-06-26T21:03:01,0,#FF5733,airflow-provider-duckdb,apache-airflow
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-core
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-task-sdk
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-amazon
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-airbyte
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-alibaba
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,amqp
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-apache-beam
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-apache-cassandra
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-apache-drill
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-apache-druid
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-apache-flink
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-apache-hdfs
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-apache-hive
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-apache-iceberg
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-apache-impala
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-apache-kafka
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-apache-kylin
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-apache-livy
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-apache-pig
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-apache-pinot
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-apache-spark
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-apprise
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-arangodb
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-asana
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-atlassian-jira
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-celery
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-cloudant
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-cncf-kubernetes
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-cohere
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-common-compat
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-common-io
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-common-messaging
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-common-sql
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-databricks
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-datadog
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-dbt-cloud
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-dingding
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-discord
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-edge3
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-elasticsearch
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-exasol
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-fab
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-facebook
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-ftp
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-git
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-github
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-google
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-grpc
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-hashicorp
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-http
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-imap
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-influxdb
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-jdbc
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-jenkins
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-microsoft-azure
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-microsoft-mssql
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-microsoft-psrp
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-microsoft-winrm
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-mongo
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-mysql
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-neo4j
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-odbc
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-openai
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-openfaas
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-openlineage
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-opensearch
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-opsgenie
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-oracle
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-pagerduty
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-papermill
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-pgvector
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-pinecone
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-postgres
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-presto
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-qdrant
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-redis
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-salesforce
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-samba
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-segment
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-sendgrid
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-sftp
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-singularity
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-slack
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-smtp
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-snowflake
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-sqlite
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-ssh
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-standard
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-tableau
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-telegram
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-teradata
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-trino
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-vertica
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-weaviate
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-yandex
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-ydb
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,apache-airflow-providers-zendesk
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,atlasclient
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,authlib
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,cloudpickle
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,python-ldap
+apache-airflow,apache-airflow,"Programmatically author, schedule and monitor data pipelines",2025-06-06T10:08:08,1,#33C1FF,apache-airflow,uv
+airflow-provider-duckdb,airflow-provider-duckdb,DuckDB (duckdb.org) provider for Apache Airflow,2023-06-26T21:03:01,0,#FF5733,airflow-provider-duckdb,duckdb
+airflow-provider-duckdb,airflow-provider-duckdb,DuckDB (duckdb.org) provider for Apache Airflow,2023-06-26T21:03:01,0,#FF5733,airflow-provider-duckdb,duckdb-engine
+duckdb-engine,duckdb-engine,SQLAlchemy driver for duckdb,2023-12-21T03:39:11,1,#33C1FF,duckdb-engine,sqlalchemy
 dbt-core,dbt-core,"With dbt, data analysts and engineers can build analytics the way engineers build applications.",2025-05-30T17:19:50,0,#FF5733,dbt-core,click
 dbt-core,dbt-core,"With dbt, data analysts and engineers can build analytics the way engineers build applications.",2025-05-30T17:19:50,0,#FF5733,dbt-core,networkx
 networkx,networkx,Python package for creating and manipulating graphs and networks,2025-05-09T15:49:39,1,#33C1FF,networkx,numpy
 networkx,networkx,Python package for creating and manipulating graphs and networks,2025-05-09T15:49:39,1,#33C1FF,networkx,scipy
-scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,2,#33FF57,scipy,asv
-asv,asv,Airspeed Velocity: A simple Python history benchmarking tool,2024-08-12T22:58:12,3,#FF33A8,asv,asv-runner
-asv,asv,Airspeed Velocity: A simple Python history benchmarking tool,2024-08-12T22:58:12,3,#FF33A8,asv,json5
-asv,asv,Airspeed Velocity: A simple Python history benchmarking tool,2024-08-12T22:58:12,3,#FF33A8,asv,pyyaml
-asv,asv,Airspeed Velocity: A simple Python history benchmarking tool,2024-08-12T22:58:12,3,#FF33A8,asv,pympler
-asv,asv,Airspeed Velocity: A simple Python history benchmarking tool,2024-08-12T22:58:12,3,#FF33A8,asv,tomli
-asv,asv,Airspeed Velocity: A simple Python history benchmarking tool,2024-08-12T22:58:12,3,#FF33A8,asv,sphinx-bootstrap-theme
-asv,asv,Airspeed Velocity: A simple Python history benchmarking tool,2024-08-12T22:58:12,3,#FF33A8,asv,python-hglib
-asv,asv,Airspeed Velocity: A simple Python history benchmarking tool,2024-08-12T22:58:12,3,#FF33A8,asv,asv-bench-memray
-asv,asv,Airspeed Velocity: A simple Python history benchmarking tool,2024-08-12T22:58:12,3,#FF33A8,asv,filelock
-asv,asv,Airspeed Velocity: A simple Python history benchmarking tool,2024-08-12T22:58:12,3,#FF33A8,asv,selenium
-asv,asv,Airspeed Velocity: A simple Python history benchmarking tool,2024-08-12T22:58:12,3,#FF33A8,asv,flaky
-asv,asv,Airspeed Velocity: A simple Python history benchmarking tool,2024-08-12T22:58:12,3,#FF33A8,asv,rpy2
-scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,2,#33FF57,scipy,mpmath
-mpmath,mpmath,Python library for arbitrary-precision floating-point arithmetic,2025-04-30T07:39:58,3,#FF33A8,mpmath,codecov
-scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,2,#33FF57,scipy,threadpoolctl
-scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,2,#33FF57,scipy,scikit-umfpack
-scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,2,#33FF57,scipy,pooch
-pooch,pooch,A friend to fetch your data files,2024-06-06T16:53:44,3,#FF33A8,pooch,platformdirs
-pooch,pooch,A friend to fetch your data files,2024-06-06T16:53:44,3,#FF33A8,pooch,requests
-pooch,pooch,A friend to fetch your data files,2024-06-06T16:53:44,3,#FF33A8,pooch,tqdm
-pooch,pooch,A friend to fetch your data files,2024-06-06T16:53:44,3,#FF33A8,pooch,paramiko
-pooch,pooch,A friend to fetch your data files,2024-06-06T16:53:44,3,#FF33A8,pooch,xxhash
-scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,2,#33FF57,scipy,array-api-strict
-scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,2,#33FF57,scipy,intersphinx_registry
-intersphinx_registry,intersphinx-registry,This package provides convenient utilities and data to write a sphinx config file.,2025-01-23T08:43:28,3,#FF33A8,intersphinx-registry,requests
-scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,2,#33FF57,scipy,matplotlib
-matplotlib,matplotlib,Python plotting package,2024-12-13T05:54:24,3,#FF33A8,matplotlib,contourpy
-matplotlib,matplotlib,Python plotting package,2024-12-13T05:54:24,3,#FF33A8,matplotlib,pillow
-matplotlib,matplotlib,Python plotting package,2024-12-13T05:54:24,3,#FF33A8,matplotlib,python-dateutil
-matplotlib,matplotlib,Python plotting package,2024-12-13T05:54:24,3,#FF33A8,matplotlib,meson-python
-matplotlib,matplotlib,Python plotting package,2024-12-13T05:54:24,3,#FF33A8,matplotlib,setuptools_scm
-scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,2,#33FF57,scipy,myst-nb
-myst-nb,myst-nb,A Jupyter Notebook Sphinx reader built on top of the MyST markdown parser.,2025-02-07T18:27:00,3,#FF33A8,myst-nb,ipython
-myst-nb,myst-nb,A Jupyter Notebook Sphinx reader built on top of the MyST markdown parser.,2025-02-07T18:27:00,3,#FF33A8,myst-nb,jupyter-cache
-myst-nb,myst-nb,A Jupyter Notebook Sphinx reader built on top of the MyST markdown parser.,2025-02-07T18:27:00,3,#FF33A8,myst-nb,nbclient
-myst-nb,myst-nb,A Jupyter Notebook Sphinx reader built on top of the MyST markdown parser.,2025-02-07T18:27:00,3,#FF33A8,myst-nb,pyyaml
-myst-nb,myst-nb,A Jupyter Notebook Sphinx reader built on top of the MyST markdown parser.,2025-02-07T18:27:00,3,#FF33A8,myst-nb,pandas
-scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,2,#33FF57,scipy,jupyterlite-pyodide-kernel
-jupyterlite-pyodide-kernel,jupyterlite-pyodide-kernel,Python kernel for JupyterLite powered by Pyodide,2025-06-05T10:12:08,3,#FF33A8,jupyterlite-pyodide-kernel,jupyterlite-core
-jupyterlite-pyodide-kernel,jupyterlite-pyodide-kernel,Python kernel for JupyterLite powered by Pyodide,2025-06-05T10:12:08,3,#FF33A8,jupyterlite-pyodide-kernel,pkginfo
-jupyterlite-pyodide-kernel,jupyterlite-pyodide-kernel,Python kernel for JupyterLite powered by Pyodide,2025-06-05T10:12:08,3,#FF33A8,jupyterlite-pyodide-kernel,jupyter-server-mathjax
-jupyterlite-pyodide-kernel,jupyterlite-pyodide-kernel,Python kernel for JupyterLite powered by Pyodide,2025-06-05T10:12:08,3,#FF33A8,jupyterlite-pyodide-kernel,jupyterlab-language-pack-fr-fr
-jupyterlite-pyodide-kernel,jupyterlite-pyodide-kernel,Python kernel for JupyterLite powered by Pyodide,2025-06-05T10:12:08,3,#FF33A8,jupyterlite-pyodide-kernel,jupyterlab-language-pack-zh-cn
-jupyterlite-pyodide-kernel,jupyterlite-pyodide-kernel,Python kernel for JupyterLite powered by Pyodide,2025-06-05T10:12:08,3,#FF33A8,jupyterlite-pyodide-kernel,libarchive-c
-scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,2,#33FF57,scipy,typing_extensions
-scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,2,#33FF57,scipy,cython-lint
-cython-lint,cython-lint,Lint Cython files,2022-11-24T17:28:55,3,#FF33A8,cython-lint,tokenize-rt
-cython-lint,cython-lint,Lint Cython files,2022-11-24T17:28:55,3,#FF33A8,cython-lint,tomli
-scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,2,#33FF57,scipy,rich-click
-rich-click,rich-click,Format click help output nicely with rich,2025-05-19T21:33:04,3,#FF33A8,rich-click,rich
-rich-click,rich-click,Format click help output nicely with rich,2025-05-19T21:33:04,3,#FF33A8,rich-click,rich-codex
-rich-click,rich-click,Format click help output nicely with rich,2025-05-19T21:33:04,3,#FF33A8,rich-click,markdown_include
-scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,2,#33FF57,scipy,doit
+networkx,networkx,Python package for creating and manipulating graphs and networks,2025-05-09T15:49:39,1,#33C1FF,networkx,matplotlib
 networkx,networkx,Python package for creating and manipulating graphs and networks,2025-05-09T15:49:39,1,#33C1FF,networkx,pandas
-pandas,pandas,"Powerful data structures for data analysis, time series, and statistics",2025-06-05T03:25:48,2,#33FF57,pandas,python-dateutil
-pandas,pandas,"Powerful data structures for data analysis, time series, and statistics",2025-06-05T03:25:48,2,#33FF57,pandas,pytz
-pandas,pandas,"Powerful data structures for data analysis, time series, and statistics",2025-06-05T03:25:48,2,#33FF57,pandas,tzdata
-pandas,pandas,"Powerful data structures for data analysis, time series, and statistics",2025-06-05T03:25:48,2,#33FF57,pandas,sqlalchemy
-sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,greenlet
-sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,pyodbc
-sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,pymssql
-sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,mysqlclient
-sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,mysql-connector-python
-sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,mariadb
-sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,cx_oracle
-sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,oracledb
-sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,psycopg2
-sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,pg8000
-sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,asyncpg
-sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,psycopg2-binary
-sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,psycopg2cffi
-sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,psycopg
-sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,pymysql
-sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,aiomysql
-sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,aioodbc
-sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,asyncmy
-sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,aiosqlite
-sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,3,#FF33A8,sqlalchemy,sqlcipher3_binary
-pandas,pandas,"Powerful data structures for data analysis, time series, and statistics",2025-06-05T03:25:48,2,#33FF57,pandas,psycopg2
-pandas,pandas,"Powerful data structures for data analysis, time series, and statistics",2025-06-05T03:25:48,2,#33FF57,pandas,pymysql
-pymysql,pymysql,Pure Python MySQL Driver,2024-05-21T11:03:41,3,#FF33A8,pymysql,pynacl
-pymysql,pymysql,Pure Python MySQL Driver,2024-05-21T11:03:41,3,#FF33A8,pymysql,cryptography
 networkx,networkx,Python package for creating and manipulating graphs and networks,2025-05-09T15:49:39,1,#33C1FF,networkx,pillow
-pillow,pillow,Python Imaging Library (Fork),2023-04-01T09:28:03,2,#33FF57,pillow,olefile
-pillow,pillow,Python Imaging Library (Fork),2023-04-01T09:28:03,2,#33FF57,pillow,sphinx-inline-tabs
-pillow,pillow,Python Imaging Library (Fork),2023-04-01T09:28:03,2,#33FF57,pillow,defusedxml
-pillow,pillow,Python Imaging Library (Fork),2023-04-01T09:28:03,2,#33FF57,pillow,pyroma
-pyroma,pyroma,Test your project's packaging friendliness,2023-02-25T12:57:36,3,#FF33A8,pyroma,requests
-pyroma,pyroma,Test your project's packaging friendliness,2023-02-25T12:57:36,3,#FF33A8,pyroma,trove-classifiers
-pyroma,pyroma,Test your project's packaging friendliness,2023-02-25T12:57:36,3,#FF33A8,pyroma,zest.releaser
-pillow,pillow,Python Imaging Library (Fork),2023-04-01T09:28:03,2,#33FF57,pillow,trove-classifiers
 networkx,networkx,Python package for creating and manipulating graphs and networks,2025-05-09T15:49:39,1,#33C1FF,networkx,texext
+networkx,networkx,Python package for creating and manipulating graphs and networks,2025-05-09T15:49:39,1,#33C1FF,networkx,myst-nb
 networkx,networkx,Python package for creating and manipulating graphs and networks,2025-05-09T15:49:39,1,#33C1FF,networkx,intersphinx-registry
 networkx,networkx,Python package for creating and manipulating graphs and networks,2025-05-09T15:49:39,1,#33C1FF,networkx,osmnx
-osmnx,osmnx,"Download, model, analyze, and visualize street networks and other geospatial features from OpenStreetMap",2025-05-06T17:47:29,2,#33FF57,osmnx,geopandas
-geopandas,geopandas,Geographic pandas extensions,2025-06-01T16:54:29,3,#FF33A8,geopandas,pyogrio
-geopandas,geopandas,Geographic pandas extensions,2025-06-01T16:54:29,3,#FF33A8,geopandas,pyproj
-geopandas,geopandas,Geographic pandas extensions,2025-06-01T16:54:29,3,#FF33A8,geopandas,shapely
-geopandas,geopandas,Geographic pandas extensions,2025-06-01T16:54:29,3,#FF33A8,geopandas,psycopg
-geopandas,geopandas,Geographic pandas extensions,2025-06-01T16:54:29,3,#FF33A8,geopandas,geopy
-geopandas,geopandas,Geographic pandas extensions,2025-06-01T16:54:29,3,#FF33A8,geopandas,mapclassify
-geopandas,geopandas,Geographic pandas extensions,2025-06-01T16:54:29,3,#FF33A8,geopandas,xyzservices
-geopandas,geopandas,Geographic pandas extensions,2025-06-01T16:54:29,3,#FF33A8,geopandas,folium
-geopandas,geopandas,Geographic pandas extensions,2025-06-01T16:54:29,3,#FF33A8,geopandas,geoalchemy2
-geopandas,geopandas,Geographic pandas extensions,2025-06-01T16:54:29,3,#FF33A8,geopandas,codecov
-osmnx,osmnx,"Download, model, analyze, and visualize street networks and other geospatial features from OpenStreetMap",2025-05-06T17:47:29,2,#33FF57,osmnx,requests
-requests,requests,Python HTTP for Humans.,2016-04-29T21:57:23,3,#FF33A8,requests,urllib3
-osmnx,osmnx,"Download, model, analyze, and visualize street networks and other geospatial features from OpenStreetMap",2025-05-06T17:47:29,2,#33FF57,osmnx,shapely
-osmnx,osmnx,"Download, model, analyze, and visualize street networks and other geospatial features from OpenStreetMap",2025-05-06T17:47:29,2,#33FF57,osmnx,scikit-learn
-scikit-learn,scikit-learn,A set of python modules for machine learning and data mining,2025-05-09T15:01:29,3,#FF33A8,scikit-learn,meson-python
-scikit-learn,scikit-learn,A set of python modules for machine learning and data mining,2025-05-09T15:01:29,3,#FF33A8,scikit-learn,memory_profiler
-scikit-learn,scikit-learn,A set of python modules for machine learning and data mining,2025-05-09T15:01:29,3,#FF33A8,scikit-learn,scikit-image
-scikit-learn,scikit-learn,A set of python modules for machine learning and data mining,2025-05-09T15:01:29,3,#FF33A8,scikit-learn,polars
-scikit-learn,scikit-learn,A set of python modules for machine learning and data mining,2025-05-09T15:01:29,3,#FF33A8,scikit-learn,pyamg
-osmnx,osmnx,"Download, model, analyze, and visualize street networks and other geospatial features from OpenStreetMap",2025-05-06T17:47:29,2,#33FF57,osmnx,rasterio
-rasterio,rasterio,Fast and direct raster I/O for use with Numpy and SciPy,2024-08-31T13:30:36,3,#FF33A8,rasterio,affine
-rasterio,rasterio,Fast and direct raster I/O for use with Numpy and SciPy,2024-08-31T13:30:36,3,#FF33A8,rasterio,cligj
-rasterio,rasterio,Fast and direct raster I/O for use with Numpy and SciPy,2024-08-31T13:30:36,3,#FF33A8,rasterio,click-plugins
-rasterio,rasterio,Fast and direct raster I/O for use with Numpy and SciPy,2024-08-31T13:30:36,3,#FF33A8,rasterio,ghp-import
-rasterio,rasterio,Fast and direct raster I/O for use with Numpy and SciPy,2024-08-31T13:30:36,3,#FF33A8,rasterio,sphinx-click
-rasterio,rasterio,Fast and direct raster I/O for use with Numpy and SciPy,2024-08-31T13:30:36,3,#FF33A8,rasterio,sphinx-rtd-theme
-rasterio,rasterio,Fast and direct raster I/O for use with Numpy and SciPy,2024-08-31T13:30:36,3,#FF33A8,rasterio,ipython
-rasterio,rasterio,Fast and direct raster I/O for use with Numpy and SciPy,2024-08-31T13:30:36,3,#FF33A8,rasterio,boto3
-osmnx,osmnx,"Download, model, analyze, and visualize street networks and other geospatial features from OpenStreetMap",2025-05-06T17:47:29,2,#33FF57,osmnx,rio-vrt
-rio-vrt,rio-vrt,A simple librairy to build a vrt from multiple raster source relying only on rasterio,2024-08-19T21:50:59,3,#FF33A8,rio-vrt,commitizen
-rio-vrt,rio-vrt,A simple librairy to build a vrt from multiple raster source relying only on rasterio,2024-08-19T21:50:59,3,#FF33A8,rio-vrt,sphinx-icon
-rio-vrt,rio-vrt,A simple librairy to build a vrt from multiple raster source relying only on rasterio,2024-08-19T21:50:59,3,#FF33A8,rio-vrt,sphinx-btn
-rio-vrt,rio-vrt,A simple librairy to build a vrt from multiple raster source relying only on rasterio,2024-08-19T21:50:59,3,#FF33A8,rio-vrt,xmlschema
-rio-vrt,rio-vrt,A simple librairy to build a vrt from multiple raster source relying only on rasterio,2024-08-19T21:50:59,3,#FF33A8,rio-vrt,natsort
 networkx,networkx,Python package for creating and manipulating graphs and networks,2025-05-09T15:49:39,1,#33C1FF,networkx,momepy
-momepy,momepy,Urban Morphology Measuring Toolkit,2024-11-29T09:35:53,2,#33FF57,momepy,libpysal
-libpysal,libpysal,Core components of PySAL - A library of spatial analysis functions,2023-11-05T21:11:08,3,#FF33A8,libpysal,platformdirs
-libpysal,libpysal,Core components of PySAL - A library of spatial analysis functions,2023-11-05T21:11:08,3,#FF33A8,libpysal,zstd
-libpysal,libpysal,Core components of PySAL - A library of spatial analysis functions,2023-11-05T21:11:08,3,#FF33A8,libpysal,watermark
-libpysal,libpysal,Core components of PySAL - A library of spatial analysis functions,2023-11-05T21:11:08,3,#FF33A8,libpysal,sphinx_bootstrap_theme
-libpysal,libpysal,Core components of PySAL - A library of spatial analysis functions,2023-11-05T21:11:08,3,#FF33A8,libpysal,codecov
-libpysal,libpysal,Core components of PySAL - A library of spatial analysis functions,2023-11-05T21:11:08,3,#FF33A8,libpysal,geodatasets
-momepy,momepy,Urban Morphology Measuring Toolkit,2024-11-29T09:35:53,2,#33FF57,momepy,tqdm
-tqdm,tqdm,"Fast, Extensible Progress Meter",2016-10-31T16:24:19,3,#FF33A8,tqdm,nbval
-tqdm,tqdm,"Fast, Extensible Progress Meter",2016-10-31T16:24:19,3,#FF33A8,tqdm,slack-sdk
-momepy,momepy,Urban Morphology Measuring Toolkit,2024-11-29T09:35:53,2,#33FF57,momepy,inequality
-inequality,inequality,inequality: Spatial inequality analysis,2025-01-29T19:28:25,3,#FF33A8,inequality,sphinx_bootstrap_theme
-inequality,inequality,inequality: Spatial inequality analysis,2025-01-29T19:28:25,3,#FF33A8,inequality,codecov
-inequality,inequality,inequality: Spatial inequality analysis,2025-01-29T19:28:25,3,#FF33A8,inequality,mapclassify
-inequality,inequality,inequality: Spatial inequality analysis,2025-01-29T19:28:25,3,#FF33A8,inequality,folium
-momepy,momepy,Urban Morphology Measuring Toolkit,2024-11-29T09:35:53,2,#33FF57,momepy,mapclassify
-mapclassify,mapclassify,Classification Schemes for Choropleth Maps.,2025-05-28T05:34:37,3,#FF33A8,mapclassify,watermark
-mapclassify,mapclassify,Classification Schemes for Choropleth Maps.,2025-05-28T05:34:37,3,#FF33A8,mapclassify,sphinx_bootstrap_theme
-mapclassify,mapclassify,Classification Schemes for Choropleth Maps.,2025-05-28T05:34:37,3,#FF33A8,mapclassify,geodatasets
-mapclassify,mapclassify,Classification Schemes for Choropleth Maps.,2025-05-28T05:34:37,3,#FF33A8,mapclassify,lonboard
-mapclassify,mapclassify,Classification Schemes for Choropleth Maps.,2025-05-28T05:34:37,3,#FF33A8,mapclassify,pydeck
-momepy,momepy,Urban Morphology Measuring Toolkit,2024-11-29T09:35:53,2,#33FF57,momepy,esda
-esda,esda,Exploratory Spatial Data Analysis in PySAL,2025-02-06T17:30:26,3,#FF33A8,esda,rtree
-esda,esda,Exploratory Spatial Data Analysis in PySAL,2025-02-06T17:30:26,3,#FF33A8,esda,codecov
-esda,esda,Exploratory Spatial Data Analysis in PySAL,2025-02-06T17:30:26,3,#FF33A8,esda,folium
-esda,esda,Exploratory Spatial Data Analysis in PySAL,2025-02-06T17:30:26,3,#FF33A8,esda,sphinx_bootstrap_theme
-esda,esda,Exploratory Spatial Data Analysis in PySAL,2025-02-06T17:30:26,3,#FF33A8,esda,matplotlib-scalebar
-esda,esda,Exploratory Spatial Data Analysis in PySAL,2025-02-06T17:30:26,3,#FF33A8,esda,watermark
 networkx,networkx,Python package for creating and manipulating graphs and networks,2025-05-09T15:49:39,1,#33C1FF,networkx,contextily
-contextily,contextily,Context geo-tiles in Python,2024-09-03T09:14:43,2,#33FF57,contextily,geopy
-geopy,geopy,Python Geocoding Toolbox,2023-11-23T21:49:30,3,#FF33A8,geopy,geographiclib
-geopy,geopy,Python Geocoding Toolbox,2023-11-23T21:49:30,3,#FF33A8,geopy,aiohttp
-geopy,geopy,Python Geocoding Toolbox,2023-11-23T21:49:30,3,#FF33A8,geopy,sphinx-rtd-theme
-geopy,geopy,Python Geocoding Toolbox,2023-11-23T21:49:30,3,#FF33A8,geopy,urllib3
-contextily,contextily,Context geo-tiles in Python,2024-09-03T09:14:43,2,#33FF57,contextily,mercantile
-contextily,contextily,Context geo-tiles in Python,2024-09-03T09:14:43,2,#33FF57,contextily,xyzservices
 networkx,networkx,Python package for creating and manipulating graphs and networks,2025-05-09T15:49:39,1,#33C1FF,networkx,cairocffi
-cairocffi,cairocffi,cffi-based cairo bindings for Python,2024-06-18T10:55:59,2,#33FF57,cairocffi,cffi
-cffi,cffi,Foreign Function Interface for Python calling C code.,2016-11-12T13:54:08,3,#FF33A8,cffi,pycparser
-cairocffi,cairocffi,cffi-based cairo bindings for Python,2024-06-18T10:55:59,2,#33FF57,cairocffi,pikepdf
-pikepdf,pikepdf,"Read and write PDFs with Python, powered by qpdf",2025-05-27T20:37:47,3,#FF33A8,pikepdf,deprecated
-pikepdf,pikepdf,"Read and write PDFs with Python, powered by qpdf",2025-05-27T20:37:47,3,#FF33A8,pikepdf,typer
-pikepdf,pikepdf,"Read and write PDFs with Python, powered by qpdf",2025-05-27T20:37:47,3,#FF33A8,pikepdf,sphinx-rtd-theme
-pikepdf,pikepdf,"Read and write PDFs with Python, powered by qpdf",2025-05-27T20:37:47,3,#FF33A8,pikepdf,tomli
-pikepdf,pikepdf,"Read and write PDFs with Python, powered by qpdf",2025-05-27T20:37:47,3,#FF33A8,pikepdf,lxml-stubs
-pikepdf,pikepdf,"Read and write PDFs with Python, powered by qpdf",2025-05-27T20:37:47,3,#FF33A8,pikepdf,psutil
-pikepdf,pikepdf,"Read and write PDFs with Python, powered by qpdf",2025-05-27T20:37:47,3,#FF33A8,pikepdf,python-xmp-toolkit
-cairocffi,cairocffi,cffi-based cairo bindings for Python,2024-06-18T10:55:59,2,#33FF57,cairocffi,xcffib
 networkx,networkx,Python package for creating and manipulating graphs and networks,2025-05-09T15:49:39,1,#33C1FF,networkx,igraph
-igraph,igraph,High performance graph data structures and algorithms,2022-01-10T14:39:25,2,#33FF57,igraph,texttable
-igraph,igraph,High performance graph data structures and algorithms,2022-01-10T14:39:25,2,#33FF57,igraph,sphinx-rtd-theme
-sphinx-rtd-theme,sphinx-rtd-theme,Read the Docs theme for Sphinx,2024-11-13T11:06:02,3,#FF33A8,sphinx-rtd-theme,sphinxcontrib-jquery
-sphinx-rtd-theme,sphinx-rtd-theme,Read the Docs theme for Sphinx,2024-11-13T11:06:02,3,#FF33A8,sphinx-rtd-theme,transifex-client
+networkx,networkx,Python package for creating and manipulating graphs and networks,2025-05-09T15:49:39,1,#33C1FF,networkx,scikit-learn
 networkx,networkx,Python package for creating and manipulating graphs and networks,2025-05-09T15:49:39,1,#33C1FF,networkx,pygraphviz
 networkx,networkx,Python package for creating and manipulating graphs and networks,2025-05-09T15:49:39,1,#33C1FF,networkx,pydot
-pydot,pydot,Python interface to Graphviz's Dot,2025-05-04T11:13:01,2,#33FF57,pydot,parameterized
-pydot,pydot,Python interface to Graphviz's Dot,2025-05-04T11:13:01,2,#33FF57,pydot,zest.releaser
-zest.releaser,zest.releaser,Software releasing made easy and repeatable,2025-04-11T09:57:58,3,#FF33A8,zest.releaser,readme_renderer
-zest.releaser,zest.releaser,Software releasing made easy and repeatable,2025-04-11T09:57:58,3,#FF33A8,zest.releaser,tomli
-zest.releaser,zest.releaser,Software releasing made easy and repeatable,2025-04-11T09:57:58,3,#FF33A8,zest.releaser,pep440
 dbt-core,dbt-core,"With dbt, data analysts and engineers can build analytics the way engineers build applications.",2025-05-30T17:19:50,0,#FF5733,dbt-core,protobuf
+dbt-core,dbt-core,"With dbt, data analysts and engineers can build analytics the way engineers build applications.",2025-05-30T17:19:50,0,#FF5733,dbt-core,requests
+requests,requests,Python HTTP for Humans.,2016-04-29T21:57:23,1,#33C1FF,requests,urllib3
 dbt-core,dbt-core,"With dbt, data analysts and engineers can build analytics the way engineers build applications.",2025-05-30T17:19:50,0,#FF5733,dbt-core,snowplow-tracker
 dbt-core,dbt-core,"With dbt, data analysts and engineers can build analytics the way engineers build applications.",2025-05-30T17:19:50,0,#FF5733,dbt-core,sqlparse
 dbt-core,dbt-core,"With dbt, data analysts and engineers can build analytics the way engineers build applications.",2025-05-30T17:19:50,0,#FF5733,dbt-core,dbt-extractor
 dbt-core,dbt-core,"With dbt, data analysts and engineers can build analytics the way engineers build applications.",2025-05-30T17:19:50,0,#FF5733,dbt-core,dbt-semantic-interfaces
 dbt-semantic-interfaces,dbt-semantic-interfaces,The shared semantic layer definitions that dbt-core and MetricFlow use,2024-12-03T04:25:33,1,#33C1FF,dbt-semantic-interfaces,more-itertools
 dbt-semantic-interfaces,dbt-semantic-interfaces,The shared semantic layer definitions that dbt-core and MetricFlow use,2024-12-03T04:25:33,1,#33C1FF,dbt-semantic-interfaces,pydantic
-pydantic,pydantic,Data validation using Python type hints,2024-09-17T15:59:51,2,#33FF57,pydantic,annotated-types
-pydantic,pydantic,Data validation using Python type hints,2024-09-17T15:59:51,2,#33FF57,pydantic,pydantic-core
-pydantic,pydantic,Data validation using Python type hints,2024-09-17T15:59:51,2,#33FF57,pydantic,typing-inspection
-pydantic,pydantic,Data validation using Python type hints,2024-09-17T15:59:51,2,#33FF57,pydantic,email-validator
-email-validator,email-validator,A robust email address syntax and deliverability validation library.,2024-06-20T11:30:28,3,#FF33A8,email-validator,dnspython
+dbt-semantic-interfaces,dbt-semantic-interfaces,The shared semantic layer definitions that dbt-core and MetricFlow use,2024-12-03T04:25:33,1,#33C1FF,dbt-semantic-interfaces,python-dateutil
 dbt-semantic-interfaces,dbt-semantic-interfaces,The shared semantic layer definitions that dbt-core and MetricFlow use,2024-12-03T04:25:33,1,#33C1FF,dbt-semantic-interfaces,pyyaml
 dbt-core,dbt-core,"With dbt, data analysts and engineers can build analytics the way engineers build applications.",2025-05-30T17:19:50,0,#FF5733,dbt-core,dbt-common
 dbt-common,dbt-common,The shared common utilities that dbt-core and adapter implementations use,2025-05-19T14:34:49,1,#33C1FF,dbt-common,dbt-protos
 dbt-common,dbt-common,The shared common utilities that dbt-core and adapter implementations use,2025-05-19T14:34:49,1,#33C1FF,dbt-common,deepdiff
-deepdiff,deepdiff,Deep Difference and Search of any Python object/data. Recreate objects by adding adding deltas to each other.,2025-05-09T18:44:07,2,#33FF57,deepdiff,orjson
-deepdiff,deepdiff,Deep Difference and Search of any Python object/data. Recreate objects by adding adding deltas to each other.,2025-05-09T18:44:07,2,#33FF57,deepdiff,tomli
-deepdiff,deepdiff,Deep Difference and Search of any Python object/data. Recreate objects by adding adding deltas to each other.,2025-05-09T18:44:07,2,#33FF57,deepdiff,tomli-w
-deepdiff,deepdiff,Deep Difference and Search of any Python object/data. Recreate objects by adding adding deltas to each other.,2025-05-09T18:44:07,2,#33FF57,deepdiff,polars
-polars,polars,Blazingly fast DataFrame library,2024-10-01T19:53:08,3,#FF33A8,polars,polars-cloud
-polars,polars,Blazingly fast DataFrame library,2024-10-01T19:53:08,3,#FF33A8,polars,fastexcel
-polars,polars,Blazingly fast DataFrame library,2024-10-01T19:53:08,3,#FF33A8,polars,xlsx2csv
-polars,polars,Blazingly fast DataFrame library,2024-10-01T19:53:08,3,#FF33A8,polars,connectorx
-polars,polars,Blazingly fast DataFrame library,2024-10-01T19:53:08,3,#FF33A8,polars,deltalake
-polars,polars,Blazingly fast DataFrame library,2024-10-01T19:53:08,3,#FF33A8,polars,pyiceberg
-polars,polars,Blazingly fast DataFrame library,2024-10-01T19:53:08,3,#FF33A8,polars,gevent
-polars,polars,Blazingly fast DataFrame library,2024-10-01T19:53:08,3,#FF33A8,polars,cloudpickle
-polars,polars,Blazingly fast DataFrame library,2024-10-01T19:53:08,3,#FF33A8,polars,great-tables
-polars,polars,Blazingly fast DataFrame library,2024-10-01T19:53:08,3,#FF33A8,polars,cudf-polars-cu12
-deepdiff,deepdiff,Deep Difference and Search of any Python object/data. Recreate objects by adding adding deltas to each other.,2025-05-09T18:44:07,2,#33FF57,deepdiff,sphinx-sitemap
-deepdiff,deepdiff,Deep Difference and Search of any Python object/data. Recreate objects by adding adding deltas to each other.,2025-05-09T18:44:07,2,#33FF57,deepdiff,sphinxemoji
-deepdiff,deepdiff,Deep Difference and Search of any Python object/data. Recreate objects by adding adding deltas to each other.,2025-05-09T18:44:07,2,#33FF57,deepdiff,flake8-pyproject
-deepdiff,deepdiff,Deep Difference and Search of any Python object/data. Recreate objects by adding adding deltas to each other.,2025-05-09T18:44:07,2,#33FF57,deepdiff,python-dotenv
 dbt-common,dbt-common,The shared common utilities that dbt-core and adapter implementations use,2025-05-19T14:34:49,1,#33C1FF,dbt-common,isodate
+dbt-common,dbt-common,The shared common utilities that dbt-core and adapter implementations use,2025-05-19T14:34:49,1,#33C1FF,dbt-common,python-dateutil
+dbt-common,dbt-common,The shared common utilities that dbt-core and adapter implementations use,2025-05-19T14:34:49,1,#33C1FF,dbt-common,flake8-pyproject
 dbt-core,dbt-core,"With dbt, data analysts and engineers can build analytics the way engineers build applications.",2025-05-30T17:19:50,0,#FF5733,dbt-core,dbt-adapters
+dbt-adapters,dbt-adapters,The set of adapter protocols and base functionality that supports integration with dbt-core,2024-11-13T18:40:24,1,#33C1FF,dbt-adapters,dbt-protos
+dbt-adapters,dbt-adapters,The set of adapter protocols and base functionality that supports integration with dbt-core,2024-11-13T18:40:24,1,#33C1FF,dbt-adapters,pytz
+dbt-core,dbt-core,"With dbt, data analysts and engineers can build analytics the way engineers build applications.",2025-05-30T17:19:50,0,#FF5733,dbt-core,pytz
+dbt-core,dbt-core,"With dbt, data analysts and engineers can build analytics the way engineers build applications.",2025-05-30T17:19:50,0,#FF5733,dbt-core,pyyaml
 dbt-core,dbt-core,"With dbt, data analysts and engineers can build analytics the way engineers build applications.",2025-05-30T17:19:50,0,#FF5733,dbt-core,daff
+dbt-duckdb,dbt-duckdb,The duckdb adapter plugin for dbt (data build tool),2025-04-21T21:01:26,0,#FF5733,dbt-duckdb,boto3
+boto3,boto3,The AWS SDK for Python,2019-02-20T19:49:46,1,#33C1FF,boto3,botocore
+boto3,boto3,The AWS SDK for Python,2019-02-20T19:49:46,1,#33C1FF,boto3,jmespath
+boto3,boto3,The AWS SDK for Python,2019-02-20T19:49:46,1,#33C1FF,boto3,s3transfer
+dbt-duckdb,dbt-duckdb,The duckdb adapter plugin for dbt (data build tool),2025-04-21T21:01:26,0,#FF5733,dbt-duckdb,mypy-boto3-glue
+google-auth,google-auth,Google Authentication Library,2022-07-12T22:52:25,0,#FF5733,google-auth,cachetools
+google-auth,google-auth,Google Authentication Library,2022-07-12T22:52:25,0,#FF5733,google-auth,pyasn1-modules
+pyasn1-modules,pyasn1-modules,A collection of ASN.1-based protocols modules,2025-03-28T02:41:19,1,#33C1FF,pyasn1-modules,pyasn1
+google-auth,google-auth,Google Authentication Library,2022-07-12T22:52:25,0,#FF5733,google-auth,rsa
+rsa,rsa,Pure-Python RSA implementation,2025-04-16T09:51:17,1,#33C1FF,rsa,pyasn1
+google-auth,google-auth,Google Authentication Library,2022-07-12T22:52:25,0,#FF5733,google-auth,aiohttp
+aiohttp,aiohttp,Async http client/server framework (asyncio),2019-10-09T11:29:30,1,#33C1FF,aiohttp,aiohappyeyeballs
+aiohttp,aiohttp,Async http client/server framework (asyncio),2019-10-09T11:29:30,1,#33C1FF,aiohttp,aiosignal
+aiohttp,aiohttp,Async http client/server framework (asyncio),2019-10-09T11:29:30,1,#33C1FF,aiohttp,async-timeout
+aiohttp,aiohttp,Async http client/server framework (asyncio),2019-10-09T11:29:30,1,#33C1FF,aiohttp,frozenlist
+aiohttp,aiohttp,Async http client/server framework (asyncio),2019-10-09T11:29:30,1,#33C1FF,aiohttp,multidict
+aiohttp,aiohttp,Async http client/server framework (asyncio),2019-10-09T11:29:30,1,#33C1FF,aiohttp,propcache
+aiohttp,aiohttp,Async http client/server framework (asyncio),2019-10-09T11:29:30,1,#33C1FF,aiohttp,yarl
+aiohttp,aiohttp,Async http client/server framework (asyncio),2019-10-09T11:29:30,1,#33C1FF,aiohttp,aiodns
+google-auth,google-auth,Google Authentication Library,2022-07-12T22:52:25,0,#FF5733,google-auth,cryptography
+cryptography,cryptography,cryptography is a package which provides cryptographic recipes and primitives to Python developers.,2025-05-25T14:16:12,1,#33C1FF,cryptography,cffi
+cryptography,cryptography,cryptography is a package which provides cryptographic recipes and primitives to Python developers.,2025-05-25T14:16:12,1,#33C1FF,cryptography,bcrypt
+cryptography,cryptography,cryptography is a package which provides cryptographic recipes and primitives to Python developers.,2025-05-25T14:16:12,1,#33C1FF,cryptography,cryptography-vectors
+cryptography,cryptography,cryptography is a package which provides cryptographic recipes and primitives to Python developers.,2025-05-25T14:16:12,1,#33C1FF,cryptography,sphinx-rtd-theme
+cryptography,cryptography,cryptography is a package which provides cryptographic recipes and primitives to Python developers.,2025-05-25T14:16:12,1,#33C1FF,cryptography,sphinx-inline-tabs
+cryptography,cryptography,cryptography is a package which provides cryptographic recipes and primitives to Python developers.,2025-05-25T14:16:12,1,#33C1FF,cryptography,pyenchant
+cryptography,cryptography,cryptography is a package which provides cryptographic recipes and primitives to Python developers.,2025-05-25T14:16:12,1,#33C1FF,cryptography,sphinxcontrib-spelling
+cryptography,cryptography,cryptography is a package which provides cryptographic recipes and primitives to Python developers.,2025-05-25T14:16:12,1,#33C1FF,cryptography,check-sdist
+google-auth,google-auth,Google Authentication Library,2022-07-12T22:52:25,0,#FF5733,google-auth,pyopenssl
+google-auth,google-auth,Google Authentication Library,2022-07-12T22:52:25,0,#FF5733,google-auth,pyjwt
+pyjwt,pyjwt,JSON Web Token implementation in Python,2024-08-01T15:01:06,1,#33C1FF,pyjwt,sphinx-rtd-theme
+pyjwt,pyjwt,JSON Web Token implementation in Python,2024-08-01T15:01:06,1,#33C1FF,pyjwt,zope.interface
+google-auth,google-auth,Google Authentication Library,2022-07-12T22:52:25,0,#FF5733,google-auth,pyu2f
+google-auth,google-auth,Google Authentication Library,2022-07-12T22:52:25,0,#FF5733,google-auth,flask
+flask,flask,A simple framework for building complex web applications.,2025-05-13T15:01:15,1,#33C1FF,flask,blinker
+flask,flask,A simple framework for building complex web applications.,2025-05-13T15:01:15,1,#33C1FF,flask,itsdangerous
+flask,flask,A simple framework for building complex web applications.,2025-05-13T15:01:15,1,#33C1FF,flask,werkzeug
+flask,flask,A simple framework for building complex web applications.,2025-05-13T15:01:15,1,#33C1FF,flask,asgiref
+flask,flask,A simple framework for building complex web applications.,2025-05-13T15:01:15,1,#33C1FF,flask,python-dotenv
+google-auth,google-auth,Google Authentication Library,2022-07-12T22:52:25,0,#FF5733,google-auth,freezegun
+freezegun,freezegun,Let your Python tests travel through time,2025-05-24T12:38:45,1,#33C1FF,freezegun,python-dateutil
+google-auth,google-auth,Google Authentication Library,2022-07-12T22:52:25,0,#FF5733,google-auth,mock
+mock,mock,Rolling backport of unittest.mock for all Pythons,2025-03-03T12:31:41,1,#33C1FF,mock,blurb
+google-auth,google-auth,Google Authentication Library,2022-07-12T22:52:25,0,#FF5733,google-auth,oauth2client
+oauth2client,oauth2client,OAuth 2.0 client library,2018-09-07T21:38:16,1,#33C1FF,oauth2client,httplib2
+oauth2client,oauth2client,OAuth 2.0 client library,2018-09-07T21:38:16,1,#33C1FF,oauth2client,pyasn1
+google-auth,google-auth,Google Authentication Library,2022-07-12T22:52:25,0,#FF5733,google-auth,responses
+responses,responses,A utility library for mocking out the `requests` Python library.,2018-04-04T16:59:34,1,#33C1FF,responses,urllib3
+responses,responses,A utility library for mocking out the `requests` Python library.,2018-04-04T16:59:34,1,#33C1FF,responses,tomli-w
+responses,responses,A utility library for mocking out the `requests` Python library.,2018-04-04T16:59:34,1,#33C1FF,responses,tomli
+google-auth,google-auth,Google Authentication Library,2022-07-12T22:52:25,0,#FF5733,google-auth,urllib3
+google-auth,google-auth,Google Authentication Library,2022-07-12T22:52:25,0,#FF5733,google-auth,aioresponses
+gspread,gspread,Google Spreadsheets Python API,2025-05-14T15:56:24,0,#FF5733,gspread,google-auth-oauthlib
+google-auth-oauthlib,google-auth-oauthlib,Google Authentication Library,2025-04-22T16:40:28,1,#33C1FF,google-auth-oauthlib,requests-oauthlib
+numpy,numpy,Fundamental package for array computing in Python,2025-05-25T14:56:45,0,#FF5733,numpy,
+pandas,pandas,"Powerful data structures for data analysis, time series, and statistics",2025-06-05T03:25:48,0,#FF5733,pandas,python-dateutil
+pandas,pandas,"Powerful data structures for data analysis, time series, and statistics",2025-06-05T03:25:48,0,#FF5733,pandas,tzdata
+pandas,pandas,"Powerful data structures for data analysis, time series, and statistics",2025-06-05T03:25:48,0,#FF5733,pandas,scipy
+scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,1,#33C1FF,scipy,asv
+scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,1,#33C1FF,scipy,mpmath
+scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,1,#33C1FF,scipy,threadpoolctl
+scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,1,#33C1FF,scipy,scikit-umfpack
+scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,1,#33C1FF,scipy,pooch
+scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,1,#33C1FF,scipy,array-api-strict
+scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,1,#33C1FF,scipy,intersphinx_registry
+scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,1,#33C1FF,scipy,matplotlib
+scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,1,#33C1FF,scipy,myst-nb
+scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,1,#33C1FF,scipy,jupyterlite-pyodide-kernel
+scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,1,#33C1FF,scipy,typing_extensions
+scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,1,#33C1FF,scipy,cython-lint
+scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,1,#33C1FF,scipy,rich-click
+scipy,scipy,Fundamental algorithms for scientific computing in Python,2022-10-20T00:42:06,1,#33C1FF,scipy,doit
+pandas,pandas,"Powerful data structures for data analysis, time series, and statistics",2025-06-05T03:25:48,0,#FF5733,pandas,sqlalchemy
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,1,#33C1FF,sqlalchemy,greenlet
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,1,#33C1FF,sqlalchemy,pyodbc
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,1,#33C1FF,sqlalchemy,pymssql
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,1,#33C1FF,sqlalchemy,mysqlclient
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,1,#33C1FF,sqlalchemy,mysql-connector-python
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,1,#33C1FF,sqlalchemy,mariadb
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,1,#33C1FF,sqlalchemy,cx_oracle
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,1,#33C1FF,sqlalchemy,oracledb
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,1,#33C1FF,sqlalchemy,psycopg2
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,1,#33C1FF,sqlalchemy,pg8000
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,1,#33C1FF,sqlalchemy,asyncpg
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,1,#33C1FF,sqlalchemy,psycopg2-binary
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,1,#33C1FF,sqlalchemy,psycopg2cffi
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,1,#33C1FF,sqlalchemy,psycopg
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,1,#33C1FF,sqlalchemy,pymysql
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,1,#33C1FF,sqlalchemy,aiomysql
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,1,#33C1FF,sqlalchemy,aioodbc
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,1,#33C1FF,sqlalchemy,asyncmy
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,1,#33C1FF,sqlalchemy,aiosqlite
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,1,#33C1FF,sqlalchemy,typing_extensions
+sqlalchemy,sqlalchemy,Database Abstraction Library,2023-04-06T00:53:19,1,#33C1FF,sqlalchemy,sqlcipher3_binary
+pandas,pandas,"Powerful data structures for data analysis, time series, and statistics",2025-06-05T03:25:48,0,#FF5733,pandas,psycopg2
+pandas,pandas,"Powerful data structures for data analysis, time series, and statistics",2025-06-05T03:25:48,0,#FF5733,pandas,pymysql
+pymysql,pymysql,Pure Python MySQL Driver,2024-05-21T11:03:41,1,#33C1FF,pymysql,pynacl
+pandas,pandas,"Powerful data structures for data analysis, time series, and statistics",2025-06-05T03:25:48,0,#FF5733,pandas,matplotlib
+matplotlib,matplotlib,Python plotting package,2024-12-13T05:54:24,1,#33C1FF,matplotlib,contourpy
+matplotlib,matplotlib,Python plotting package,2024-12-13T05:54:24,1,#33C1FF,matplotlib,pillow
+matplotlib,matplotlib,Python plotting package,2024-12-13T05:54:24,1,#33C1FF,matplotlib,meson-python
+matplotlib,matplotlib,Python plotting package,2024-12-13T05:54:24,1,#33C1FF,matplotlib,setuptools_scm
+black,black,The uncompromising code formatter.,2025-01-29T05:37:06,0,#FF5733,black,mypy-extensions
+black,black,The uncompromising code formatter.,2025-01-29T05:37:06,0,#FF5733,black,platformdirs
+platformdirs,platformdirs,"A small Python package for determining appropriate platform-specific dirs, e.g. a `user data dir`.",2025-05-07T22:47:40,1,#33C1FF,platformdirs,proselint
+platformdirs,platformdirs,"A small Python package for determining appropriate platform-specific dirs, e.g. a `user data dir`.",2025-05-07T22:47:40,1,#33C1FF,platformdirs,appdirs
+platformdirs,platformdirs,"A small Python package for determining appropriate platform-specific dirs, e.g. a `user data dir`.",2025-05-07T22:47:40,1,#33C1FF,platformdirs,covdefaults
+black,black,The uncompromising code formatter.,2025-01-29T05:37:06,0,#FF5733,black,tomli
+black,black,The uncompromising code formatter.,2025-01-29T05:37:06,0,#FF5733,black,ipython
+ipython,ipython,IPython: Productive Interactive Computing,2025-05-31T16:34:52,1,#33C1FF,ipython,ipython-pygments-lexers
+ipython,ipython,IPython: Productive Interactive Computing,2025-05-31T16:34:52,1,#33C1FF,ipython,jedi
+ipython,ipython,IPython: Productive Interactive Computing,2025-05-31T16:34:52,1,#33C1FF,ipython,matplotlib-inline
+ipython,ipython,IPython: Productive Interactive Computing,2025-05-31T16:34:52,1,#33C1FF,ipython,pexpect
+ipython,ipython,IPython: Productive Interactive Computing,2025-05-31T16:34:52,1,#33C1FF,ipython,prompt_toolkit
+ipython,ipython,IPython: Productive Interactive Computing,2025-05-31T16:34:52,1,#33C1FF,ipython,stack_data
+ipython,ipython,IPython: Productive Interactive Computing,2025-05-31T16:34:52,1,#33C1FF,ipython,traitlets
+ipython,ipython,IPython: Productive Interactive Computing,2025-05-31T16:34:52,1,#33C1FF,ipython,typing_extensions
+ipython,ipython,IPython: Productive Interactive Computing,2025-05-31T16:34:52,1,#33C1FF,ipython,exceptiongroup
+ipython,ipython,IPython: Productive Interactive Computing,2025-05-31T16:34:52,1,#33C1FF,ipython,intersphinx_registry
+ipython,ipython,IPython: Productive Interactive Computing,2025-05-31T16:34:52,1,#33C1FF,ipython,sphinx_toml
+ipython,ipython,IPython: Productive Interactive Computing,2025-05-31T16:34:52,1,#33C1FF,ipython,sphinx-rtd-theme
+ipython,ipython,IPython: Productive Interactive Computing,2025-05-31T16:34:52,1,#33C1FF,ipython,curio
+ipython,ipython,IPython: Productive Interactive Computing,2025-05-31T16:34:52,1,#33C1FF,ipython,jupyter_ai
+ipython,ipython,IPython: Productive Interactive Computing,2025-05-31T16:34:52,1,#33C1FF,ipython,nbclient
+ipython,ipython,IPython: Productive Interactive Computing,2025-05-31T16:34:52,1,#33C1FF,ipython,trio
+black,black,The uncompromising code formatter.,2025-01-29T05:37:06,0,#FF5733,black,tokenize-rt
+black,black,The uncompromising code formatter.,2025-01-29T05:37:06,0,#FF5733,black,uvloop
+uvloop,uvloop,Fast implementation of asyncio event loop on top of libuv,2017-11-29T03:15:29,1,#33C1FF,uvloop,sphinxcontrib-asyncio
+uvloop,uvloop,Fast implementation of asyncio event loop on top of libuv,2017-11-29T03:15:29,1,#33C1FF,uvloop,sphinx-rtd-theme
+uvloop,uvloop,Fast implementation of asyncio event loop on top of libuv,2017-11-29T03:15:29,1,#33C1FF,uvloop,psutil
+gitdb,gitdb,Git Object Database,2021-10-24T13:40:41,0,#FF5733,gitdb,smmap
+psycopg-binary,psycopg-binary,PostgreSQL database adapter for Python -- C optimisation distribution,2025-05-13T16:06:29,0,#FF5733,psycopg-binary,
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,pendulum
+pendulum,pendulum,Python datetimes made easy,2025-04-19T14:00:56,1,#33C1FF,pendulum,time-machine
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,semver
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,hexbytes
+hexbytes,hexbytes,"hexbytes: Python `bytes` subclass that decodes hex, with a readable console output",2025-05-14T16:45:16,1,#33C1FF,hexbytes,bump_my_version
+hexbytes,hexbytes,"hexbytes: Python `bytes` subclass that decodes hex, with a readable console output",2025-05-14T16:45:16,1,#33C1FF,hexbytes,sphinx-autobuild
+hexbytes,hexbytes,"hexbytes: Python `bytes` subclass that decodes hex, with a readable console output",2025-05-14T16:45:16,1,#33C1FF,hexbytes,eth_utils
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,tomlkit
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,pathvalidate
+pathvalidate,pathvalidate,pathvalidate is a Python library to sanitize/validate a string such as filenames/file-paths/etc.,2025-01-03T14:06:39,1,#33C1FF,pathvalidate,readmemaker
+pathvalidate,pathvalidate,pathvalidate is a Python library to sanitize/validate a string such as filenames/file-paths/etc.,2025-01-03T14:06:39,1,#33C1FF,pathvalidate,path
+pathvalidate,pathvalidate,pathvalidate is a Python library to sanitize/validate a string such as filenames/file-paths/etc.,2025-01-03T14:06:39,1,#33C1FF,pathvalidate,allpairspy
+pathvalidate,pathvalidate,pathvalidate is a Python library to sanitize/validate a string such as filenames/file-paths/etc.,2025-01-03T14:06:39,1,#33C1FF,pathvalidate,faker
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,makefun
+makefun,makefun,Small library to dynamically create python functions.,2020-12-02T16:03:52,1,#33C1FF,makefun,funcsigs
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,requirements-parser
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,humanize
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,gitpython
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,giturlparse
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,orjson
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,tenacity
+tenacity,tenacity,Retry code until it succeeds,2025-04-02T08:25:07,1,#33C1FF,tenacity,reno
+tenacity,tenacity,Retry code until it succeeds,2025-04-02T08:25:07,1,#33C1FF,tenacity,tornado
+tenacity,tenacity,Retry code until it succeeds,2025-04-02T08:25:07,1,#33C1FF,tenacity,typeguard
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,jsonpath-ng
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,win-precise-time
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,sqlglot
+sqlglot,sqlglot,An easily customizable SQL parser and transpiler,2022-10-29T19:31:35,1,#33C1FF,sqlglot,pandas-stubs
+sqlglot,sqlglot,An easily customizable SQL parser and transpiler,2022-10-29T19:31:35,1,#33C1FF,sqlglot,types-pytz
+sqlglot,sqlglot,An easily customizable SQL parser and transpiler,2022-10-29T19:31:35,1,#33C1FF,sqlglot,typing_extensions
+sqlglot,sqlglot,An easily customizable SQL parser and transpiler,2022-10-29T19:31:35,1,#33C1FF,sqlglot,maturin
+sqlglot,sqlglot,An easily customizable SQL parser and transpiler,2022-10-29T19:31:35,1,#33C1FF,sqlglot,pyperf
+sqlglot,sqlglot,An easily customizable SQL parser and transpiler,2022-10-29T19:31:35,1,#33C1FF,sqlglot,sqlglotrs
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,psycopg2-binary
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,psycopg2cffi
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,google-cloud-bigquery
+google-cloud-bigquery,google-cloud-bigquery,Google BigQuery API client library,2023-03-28T16:33:36,1,#33C1FF,google-cloud-bigquery,google-api-core
+google-cloud-bigquery,google-cloud-bigquery,Google BigQuery API client library,2023-03-28T16:33:36,1,#33C1FF,google-cloud-bigquery,google-cloud-core
+google-cloud-bigquery,google-cloud-bigquery,Google BigQuery API client library,2023-03-28T16:33:36,1,#33C1FF,google-cloud-bigquery,google-resumable-media
+google-cloud-bigquery,google-cloud-bigquery,Google BigQuery API client library,2023-03-28T16:33:36,1,#33C1FF,google-cloud-bigquery,proto-plus
+google-cloud-bigquery,google-cloud-bigquery,Google BigQuery API client library,2023-03-28T16:33:36,1,#33C1FF,google-cloud-bigquery,google-cloud-bigquery-storage
+google-cloud-bigquery,google-cloud-bigquery,Google BigQuery API client library,2023-03-28T16:33:36,1,#33C1FF,google-cloud-bigquery,geopandas
+google-cloud-bigquery,google-cloud-bigquery,Google BigQuery API client library,2023-03-28T16:33:36,1,#33C1FF,google-cloud-bigquery,shapely
+google-cloud-bigquery,google-cloud-bigquery,Google BigQuery API client library,2023-03-28T16:33:36,1,#33C1FF,google-cloud-bigquery,bigquery-magics
+google-cloud-bigquery,google-cloud-bigquery,Google BigQuery API client library,2023-03-28T16:33:36,1,#33C1FF,google-cloud-bigquery,opentelemetry-api
+google-cloud-bigquery,google-cloud-bigquery,Google BigQuery API client library,2023-03-28T16:33:36,1,#33C1FF,google-cloud-bigquery,opentelemetry-sdk
+google-cloud-bigquery,google-cloud-bigquery,Google BigQuery API client library,2023-03-28T16:33:36,1,#33C1FF,google-cloud-bigquery,opentelemetry-instrumentation
+google-cloud-bigquery,google-cloud-bigquery,Google BigQuery API client library,2023-03-28T16:33:36,1,#33C1FF,google-cloud-bigquery,db-dtypes
+google-cloud-bigquery,google-cloud-bigquery,Google BigQuery API client library,2023-03-28T16:33:36,1,#33C1FF,google-cloud-bigquery,tqdm
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,botocore
+botocore,botocore,"Low-level, data-driven core of boto 3.",2018-03-14T21:20:24,1,#33C1FF,botocore,jmespath
+botocore,botocore,"Low-level, data-driven core of boto 3.",2018-03-14T21:20:24,1,#33C1FF,botocore,awscrt
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,snowflake-connector-python
+snowflake-connector-python,snowflake-connector-python,Snowflake Connector for Python,2024-04-22T19:36:36,1,#33C1FF,snowflake-connector-python,asn1crypto
+snowflake-connector-python,snowflake-connector-python,Snowflake Connector for Python,2024-04-22T19:36:36,1,#33C1FF,snowflake-connector-python,cffi
+snowflake-connector-python,snowflake-connector-python,Snowflake Connector for Python,2024-04-22T19:36:36,1,#33C1FF,snowflake-connector-python,charset_normalizer
+snowflake-connector-python,snowflake-connector-python,Snowflake Connector for Python,2024-04-22T19:36:36,1,#33C1FF,snowflake-connector-python,typing_extensions
+snowflake-connector-python,snowflake-connector-python,Snowflake Connector for Python,2024-04-22T19:36:36,1,#33C1FF,snowflake-connector-python,filelock
+snowflake-connector-python,snowflake-connector-python,Snowflake Connector for Python,2024-04-22T19:36:36,1,#33C1FF,snowflake-connector-python,sortedcontainers
+snowflake-connector-python,snowflake-connector-python,Snowflake Connector for Python,2024-04-22T19:36:36,1,#33C1FF,snowflake-connector-python,more-itertools
+snowflake-connector-python,snowflake-connector-python,Snowflake Connector for Python,2024-04-22T19:36:36,1,#33C1FF,snowflake-connector-python,pexpect
+snowflake-connector-python,snowflake-connector-python,Snowflake Connector for Python,2024-04-22T19:36:36,1,#33C1FF,snowflake-connector-python,pytzdata
+snowflake-connector-python,snowflake-connector-python,Snowflake Connector for Python,2024-04-22T19:36:36,1,#33C1FF,snowflake-connector-python,keyring
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,cron-descriptor
+cron-descriptor,cron-descriptor,A Python library that converts cron expressions into human readable strings.,2024-08-24T18:16:46,1,#33C1FF,cron-descriptor,polib
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,pyathena
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,weaviate-client
+weaviate-client,weaviate-client,A python native Weaviate client,2024-12-03T13:15:54,1,#33C1FF,weaviate-client,httpx
+weaviate-client,weaviate-client,A python native Weaviate client,2024-12-03T13:15:54,1,#33C1FF,weaviate-client,validators
+weaviate-client,weaviate-client,A python native Weaviate client,2024-12-03T13:15:54,1,#33C1FF,weaviate-client,authlib
+weaviate-client,weaviate-client,A python native Weaviate client,2024-12-03T13:15:54,1,#33C1FF,weaviate-client,pydantic
+weaviate-client,weaviate-client,A python native Weaviate client,2024-12-03T13:15:54,1,#33C1FF,weaviate-client,grpcio-tools
+weaviate-client,weaviate-client,A python native Weaviate client,2024-12-03T13:15:54,1,#33C1FF,weaviate-client,grpcio-health-checking
+weaviate-client,weaviate-client,A python native Weaviate client,2024-12-03T13:15:54,1,#33C1FF,weaviate-client,deprecation
+weaviate-client,weaviate-client,A python native Weaviate client,2024-12-03T13:15:54,1,#33C1FF,weaviate-client,weaviate-agents
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,adlfs
+adlfs,adlfs,Access Azure Datalake Gen1 with fsspec and dask,2024-07-22T12:10:32,1,#33C1FF,adlfs,azure-core
+adlfs,adlfs,Access Azure Datalake Gen1 with fsspec and dask,2024-07-22T12:10:32,1,#33C1FF,adlfs,azure-datalake-store
+adlfs,adlfs,Access Azure Datalake Gen1 with fsspec and dask,2024-07-22T12:10:32,1,#33C1FF,adlfs,azure-identity
+adlfs,adlfs,Access Azure Datalake Gen1 with fsspec and dask,2024-07-22T12:10:32,1,#33C1FF,adlfs,azure-storage-blob
+adlfs,adlfs,Access Azure Datalake Gen1 with fsspec and dask,2024-07-22T12:10:32,1,#33C1FF,adlfs,dask
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,pyodbc
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,qdrant-client
+qdrant-client,qdrant-client,Client library for the Qdrant vector search engine,2024-06-20T11:19:51,1,#33C1FF,qdrant-client,fastembed
+qdrant-client,qdrant-client,Client library for the Qdrant vector search engine,2024-06-20T11:19:51,1,#33C1FF,qdrant-client,fastembed-gpu
+qdrant-client,qdrant-client,Client library for the Qdrant vector search engine,2024-06-20T11:19:51,1,#33C1FF,qdrant-client,httpx
+qdrant-client,qdrant-client,Client library for the Qdrant vector search engine,2024-06-20T11:19:51,1,#33C1FF,qdrant-client,portalocker
+qdrant-client,qdrant-client,Client library for the Qdrant vector search engine,2024-06-20T11:19:51,1,#33C1FF,qdrant-client,pydantic
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,databricks-sql-connector
+databricks-sql-connector,databricks-sql-connector,Databricks SQL Connector for Python,2025-04-22T07:48:00,1,#33C1FF,databricks-sql-connector,lz4
+databricks-sql-connector,databricks-sql-connector,Databricks SQL Connector for Python,2025-04-22T07:48:00,1,#33C1FF,databricks-sql-connector,oauthlib
+databricks-sql-connector,databricks-sql-connector,Databricks SQL Connector for Python,2025-04-22T07:48:00,1,#33C1FF,databricks-sql-connector,thrift
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,clickhouse-driver
+clickhouse-driver,clickhouse-driver,Python driver with native interface for ClickHouse,2024-08-16T18:02:51,1,#33C1FF,clickhouse-driver,tzlocal
+clickhouse-driver,clickhouse-driver,Python driver with native interface for ClickHouse,2024-08-16T18:02:51,1,#33C1FF,clickhouse-driver,clickhouse-cityhash
+clickhouse-driver,clickhouse-driver,Python driver with native interface for ClickHouse,2024-08-16T18:02:51,1,#33C1FF,clickhouse-driver,lz4
+clickhouse-driver,clickhouse-driver,Python driver with native interface for ClickHouse,2024-08-16T18:02:51,1,#33C1FF,clickhouse-driver,zstd
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,clickhouse-connect
+clickhouse-connect,clickhouse-connect,"ClickHouse Database Core Driver for Python, Pandas, and Superset",2024-12-02T13:17:47,1,#33C1FF,clickhouse-connect,lz4
+clickhouse-connect,clickhouse-connect,"ClickHouse Database Core Driver for Python, Pandas, and Superset",2024-12-02T13:17:47,1,#33C1FF,clickhouse-connect,tzlocal
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,lancedb
+lancedb,lancedb,lancedb,2025-05-28T17:23:03,1,#33C1FF,lancedb,deprecation
+lancedb,lancedb,lancedb,2025-05-28T17:23:03,1,#33C1FF,lancedb,overrides
+lancedb,lancedb,lancedb,2025-05-28T17:23:03,1,#33C1FF,lancedb,pydantic
+lancedb,lancedb,lancedb,2025-05-28T17:23:03,1,#33C1FF,lancedb,tqdm
+lancedb,lancedb,lancedb,2025-05-28T17:23:03,1,#33C1FF,lancedb,polars
+lancedb,lancedb,lancedb,2025-05-28T17:23:03,1,#33C1FF,lancedb,tantivy
+lancedb,lancedb,lancedb,2025-05-28T17:23:03,1,#33C1FF,lancedb,pyarrow-stubs
+lancedb,lancedb,lancedb,2025-05-28T17:23:03,1,#33C1FF,lancedb,datafusion
+lancedb,lancedb,lancedb,2025-05-28T17:23:03,1,#33C1FF,lancedb,torch
+lancedb,lancedb,lancedb,2025-05-28T17:23:03,1,#33C1FF,lancedb,pillow
+lancedb,lancedb,lancedb,2025-05-28T17:23:03,1,#33C1FF,lancedb,open-clip-torch
+lancedb,lancedb,lancedb,2025-05-28T17:23:03,1,#33C1FF,lancedb,openai
+lancedb,lancedb,lancedb,2025-05-28T17:23:03,1,#33C1FF,lancedb,sentence-transformers
+lancedb,lancedb,lancedb,2025-05-28T17:23:03,1,#33C1FF,lancedb,cohere
+lancedb,lancedb,lancedb,2025-05-28T17:23:03,1,#33C1FF,lancedb,colpali-engine
+lancedb,lancedb,lancedb,2025-05-28T17:23:03,1,#33C1FF,lancedb,huggingface-hub
+lancedb,lancedb,lancedb,2025-05-28T17:23:03,1,#33C1FF,lancedb,instructorembedding
+lancedb,lancedb,lancedb,2025-05-28T17:23:03,1,#33C1FF,lancedb,google-generativeai
+lancedb,lancedb,lancedb,2025-05-28T17:23:03,1,#33C1FF,lancedb,awscli
+lancedb,lancedb,lancedb,2025-05-28T17:23:03,1,#33C1FF,lancedb,ollama
+lancedb,lancedb,lancedb,2025-05-28T17:23:03,1,#33C1FF,lancedb,ibm-watsonx-ai
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,tantivy
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,deltalake
+deltalake,deltalake,Native Delta Lake Python binding based on delta-rs with Pandas integration,2025-06-02T11:08:17,1,#33C1FF,deltalake,arro3-core
+deltalake,deltalake,Native Delta Lake Python binding based on delta-rs with Pandas integration,2025-06-02T11:08:17,1,#33C1FF,deltalake,deprecated
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,alembic
+alembic,alembic,A database migration tool for SQLAlchemy.,2023-02-16T17:37:50,1,#33C1FF,alembic,mako
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,paramiko
+paramiko,paramiko,SSH2 protocol library,2025-02-04T02:37:57,1,#33C1FF,paramiko,bcrypt
+paramiko,paramiko,SSH2 protocol library,2025-02-04T02:37:57,1,#33C1FF,paramiko,pynacl
+paramiko,paramiko,SSH2 protocol library,2025-02-04T02:37:57,1,#33C1FF,paramiko,pyasn1
+paramiko,paramiko,SSH2 protocol library,2025-02-04T02:37:57,1,#33C1FF,paramiko,gssapi
+paramiko,paramiko,SSH2 protocol library,2025-02-04T02:37:57,1,#33C1FF,paramiko,pywin32
+paramiko,paramiko,SSH2 protocol library,2025-02-04T02:37:57,1,#33C1FF,paramiko,invoke
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,db-dtypes
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,pyiceberg
+pyiceberg,pyiceberg,Apache Iceberg is an open table format for huge analytic datasets,2025-04-25T14:59:15,1,#33C1FF,pyiceberg,getdaft
+pyiceberg,pyiceberg,Apache Iceberg is an open table format for huge analytic datasets,2025-04-25T14:59:15,1,#33C1FF,pyiceberg,kerberos
+pyiceberg,pyiceberg,Apache Iceberg is an open table format for huge analytic datasets,2025-04-25T14:59:15,1,#33C1FF,pyiceberg,mmh3
+pyiceberg,pyiceberg,Apache Iceberg is an open table format for huge analytic datasets,2025-04-25T14:59:15,1,#33C1FF,pyiceberg,polars
+pyiceberg,pyiceberg,Apache Iceberg is an open table format for huge analytic datasets,2025-04-25T14:59:15,1,#33C1FF,pyiceberg,pydantic
+pyiceberg,pyiceberg,Apache Iceberg is an open table format for huge analytic datasets,2025-04-25T14:59:15,1,#33C1FF,pyiceberg,pyiceberg-core
+pyiceberg,pyiceberg,Apache Iceberg is an open table format for huge analytic datasets,2025-04-25T14:59:15,1,#33C1FF,pyiceberg,python-snappy
+pyiceberg,pyiceberg,Apache Iceberg is an open table format for huge analytic datasets,2025-04-25T14:59:15,1,#33C1FF,pyiceberg,ray
+pyiceberg,pyiceberg,Apache Iceberg is an open table format for huge analytic datasets,2025-04-25T14:59:15,1,#33C1FF,pyiceberg,rich
+pyiceberg,pyiceberg,Apache Iceberg is an open table format for huge analytic datasets,2025-04-25T14:59:15,1,#33C1FF,pyiceberg,sortedcontainers
+pyiceberg,pyiceberg,Apache Iceberg is an open table format for huge analytic datasets,2025-04-25T14:59:15,1,#33C1FF,pyiceberg,strictyaml
+pyiceberg,pyiceberg,Apache Iceberg is an open table format for huge analytic datasets,2025-04-25T14:59:15,1,#33C1FF,pyiceberg,thrift
+pyiceberg,pyiceberg,Apache Iceberg is an open table format for huge analytic datasets,2025-04-25T14:59:15,1,#33C1FF,pyiceberg,thrift-sasl
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,databricks-sdk
+databricks-sdk,databricks-sdk,Databricks SDK for Python (Beta),2023-09-20T15:57:38,1,#33C1FF,databricks-sdk,requests-mock
+databricks-sdk,databricks-sdk,Databricks SDK for Python (Beta),2023-09-20T15:57:38,1,#33C1FF,databricks-sdk,databricks-connect
+databricks-sdk,databricks-sdk,Databricks SDK for Python (Beta),2023-09-20T15:57:38,1,#33C1FF,databricks-sdk,openai
+databricks-sdk,databricks-sdk,Databricks SDK for Python (Beta),2023-09-20T15:57:38,1,#33C1FF,databricks-sdk,langchain-openai
+databricks-sdk,databricks-sdk,Databricks SDK for Python (Beta),2023-09-20T15:57:38,1,#33C1FF,databricks-sdk,httpx
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,pywin32
+dlt,dlt,dlt is an open-source python-first scalable data loading library that does not require any backend to run.,2025-04-07T16:30:08,0,#FF5733,dlt,rich-argparse
+rich-argparse,rich-argparse,Rich help formatters for argparse and optparse,2025-05-25T20:20:33,1,#33C1FF,rich-argparse,rich
+astronomer-cosmos,astronomer-cosmos,Orchestrate your dbt projects in Airflow,2025-03-18T20:26:29,0,#FF5733,astronomer-cosmos,aenum
+astronomer-cosmos,astronomer-cosmos,Orchestrate your dbt projects in Airflow,2025-03-18T20:26:29,0,#FF5733,astronomer-cosmos,deprecation
+astronomer-cosmos,astronomer-cosmos,Orchestrate your dbt projects in Airflow,2025-03-18T20:26:29,0,#FF5733,astronomer-cosmos,pydantic
+pydantic,pydantic,Data validation using Python type hints,2024-09-17T15:59:51,1,#33C1FF,pydantic,annotated-types
+pydantic,pydantic,Data validation using Python type hints,2024-09-17T15:59:51,1,#33C1FF,pydantic,pydantic-core
+pydantic,pydantic,Data validation using Python type hints,2024-09-17T15:59:51,1,#33C1FF,pydantic,typing-inspection
+pydantic,pydantic,Data validation using Python type hints,2024-09-17T15:59:51,1,#33C1FF,pydantic,email-validator
+astronomer-cosmos,astronomer-cosmos,Orchestrate your dbt projects in Airflow,2025-03-18T20:26:29,0,#FF5733,astronomer-cosmos,apache-airflow-providers-amazon
+apache-airflow-providers-amazon,apache-airflow-providers-amazon,Provider package apache-airflow-providers-amazon for Apache Airflow,2025-05-14T11:52:41,1,#33C1FF,apache-airflow-providers-amazon,apache-airflow-providers-common-compat
+apache-airflow-providers-amazon,apache-airflow-providers-amazon,Provider package apache-airflow-providers-amazon for Apache Airflow,2025-05-14T11:52:41,1,#33C1FF,apache-airflow-providers-amazon,apache-airflow-providers-common-sql
+apache-airflow-providers-amazon,apache-airflow-providers-amazon,Provider package apache-airflow-providers-amazon for Apache Airflow,2025-05-14T11:52:41,1,#33C1FF,apache-airflow-providers-amazon,apache-airflow-providers-http
+apache-airflow-providers-amazon,apache-airflow-providers-amazon,Provider package apache-airflow-providers-amazon for Apache Airflow,2025-05-14T11:52:41,1,#33C1FF,apache-airflow-providers-amazon,inflection
+apache-airflow-providers-amazon,apache-airflow-providers-amazon,Provider package apache-airflow-providers-amazon for Apache Airflow,2025-05-14T11:52:41,1,#33C1FF,apache-airflow-providers-amazon,watchtower
+apache-airflow-providers-amazon,apache-airflow-providers-amazon,Provider package apache-airflow-providers-amazon for Apache Airflow,2025-05-14T11:52:41,1,#33C1FF,apache-airflow-providers-amazon,jsonpath_ng
+apache-airflow-providers-amazon,apache-airflow-providers-amazon,Provider package apache-airflow-providers-amazon for Apache Airflow,2025-05-14T11:52:41,1,#33C1FF,apache-airflow-providers-amazon,redshift_connector
+apache-airflow-providers-amazon,apache-airflow-providers-amazon,Provider package apache-airflow-providers-amazon for Apache Airflow,2025-05-14T11:52:41,1,#33C1FF,apache-airflow-providers-amazon,asgiref
+apache-airflow-providers-amazon,apache-airflow-providers-amazon,Provider package apache-airflow-providers-amazon for Apache Airflow,2025-05-14T11:52:41,1,#33C1FF,apache-airflow-providers-amazon,jmespath
+apache-airflow-providers-amazon,apache-airflow-providers-amazon,Provider package apache-airflow-providers-amazon for Apache Airflow,2025-05-14T11:52:41,1,#33C1FF,apache-airflow-providers-amazon,python3-saml
+apache-airflow-providers-amazon,apache-airflow-providers-amazon,Provider package apache-airflow-providers-amazon for Apache Airflow,2025-05-14T11:52:41,1,#33C1FF,apache-airflow-providers-amazon,xmlsec
+apache-airflow-providers-amazon,apache-airflow-providers-amazon,Provider package apache-airflow-providers-amazon for Apache Airflow,2025-05-14T11:52:41,1,#33C1FF,apache-airflow-providers-amazon,sagemaker-studio
+apache-airflow-providers-amazon,apache-airflow-providers-amazon,Provider package apache-airflow-providers-amazon for Apache Airflow,2025-05-14T11:52:41,1,#33C1FF,apache-airflow-providers-amazon,marshmallow
+apache-airflow-providers-amazon,apache-airflow-providers-amazon,Provider package apache-airflow-providers-amazon for Apache Airflow,2025-05-14T11:52:41,1,#33C1FF,apache-airflow-providers-amazon,aiobotocore
+apache-airflow-providers-amazon,apache-airflow-providers-amazon,Provider package apache-airflow-providers-amazon for Apache Airflow,2025-05-14T11:52:41,1,#33C1FF,apache-airflow-providers-amazon,apache-airflow-providers-apache-hive
+apache-airflow-providers-amazon,apache-airflow-providers-amazon,Provider package apache-airflow-providers-amazon for Apache Airflow,2025-05-14T11:52:41,1,#33C1FF,apache-airflow-providers-amazon,apache-airflow-providers-cncf-kubernetes
+apache-airflow-providers-amazon,apache-airflow-providers-amazon,Provider package apache-airflow-providers-amazon for Apache Airflow,2025-05-14T11:52:41,1,#33C1FF,apache-airflow-providers-amazon,apache-airflow-providers-common-messaging
+apache-airflow-providers-amazon,apache-airflow-providers-amazon,Provider package apache-airflow-providers-amazon for Apache Airflow,2025-05-14T11:52:41,1,#33C1FF,apache-airflow-providers-amazon,apache-airflow-providers-exasol
+apache-airflow-providers-amazon,apache-airflow-providers-amazon,Provider package apache-airflow-providers-amazon for Apache Airflow,2025-05-14T11:52:41,1,#33C1FF,apache-airflow-providers-amazon,apache-airflow-providers-fab
+apache-airflow-providers-amazon,apache-airflow-providers-amazon,Provider package apache-airflow-providers-amazon for Apache Airflow,2025-05-14T11:52:41,1,#33C1FF,apache-airflow-providers-amazon,apache-airflow-providers-ftp
+apache-airflow-providers-amazon,apache-airflow-providers-amazon,Provider package apache-airflow-providers-amazon for Apache Airflow,2025-05-14T11:52:41,1,#33C1FF,apache-airflow-providers-amazon,apache-airflow-providers-google
+apache-airflow-providers-amazon,apache-airflow-providers-amazon,Provider package apache-airflow-providers-amazon for Apache Airflow,2025-05-14T11:52:41,1,#33C1FF,apache-airflow-providers-amazon,apache-airflow-providers-imap
+apache-airflow-providers-amazon,apache-airflow-providers-amazon,Provider package apache-airflow-providers-amazon for Apache Airflow,2025-05-14T11:52:41,1,#33C1FF,apache-airflow-providers-amazon,apache-airflow-providers-microsoft-azure
+apache-airflow-providers-amazon,apache-airflow-providers-amazon,Provider package apache-airflow-providers-amazon for Apache Airflow,2025-05-14T11:52:41,1,#33C1FF,apache-airflow-providers-amazon,apache-airflow-providers-mongo
+apache-airflow-providers-amazon,apache-airflow-providers-amazon,Provider package apache-airflow-providers-amazon for Apache Airflow,2025-05-14T11:52:41,1,#33C1FF,apache-airflow-providers-amazon,apache-airflow-providers-openlineage
+apache-airflow-providers-amazon,apache-airflow-providers-amazon,Provider package apache-airflow-providers-amazon for Apache Airflow,2025-05-14T11:52:41,1,#33C1FF,apache-airflow-providers-amazon,apache-airflow-providers-salesforce
+apache-airflow-providers-amazon,apache-airflow-providers-amazon,Provider package apache-airflow-providers-amazon for Apache Airflow,2025-05-14T11:52:41,1,#33C1FF,apache-airflow-providers-amazon,apache-airflow-providers-ssh
+apache-airflow-providers-amazon,apache-airflow-providers-amazon,Provider package apache-airflow-providers-amazon for Apache Airflow,2025-05-14T11:52:41,1,#33C1FF,apache-airflow-providers-amazon,apache-airflow-providers-standard
+astronomer-cosmos,astronomer-cosmos,Orchestrate your dbt projects in Airflow,2025-03-18T20:26:29,0,#FF5733,astronomer-cosmos,apache-airflow-providers-google
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,apache-airflow-providers-common-compat
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,apache-airflow-providers-common-sql
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,asgiref
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,dill
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,gcloud-aio-auth
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,gcloud-aio-bigquery
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,gcloud-aio-storage
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-ads
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-analytics-admin
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-api-core
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-api-python-client
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-auth-httplib2
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-aiplatform
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-alloydb
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-automl
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-bigquery-datatransfer
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-bigtable
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-build
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-compute
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-container
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-datacatalog
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-dataflow-client
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-dataform
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-dataplex
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-dataproc
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-dataproc-metastore
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-dlp
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-kms
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-language
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-logging
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-managedkafka
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-memcache
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-monitoring
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-orchestration-airflow
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-os-login
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-pubsub
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-redis
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-secret-manager
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-spanner
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-speech
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-storage
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-storage-transfer
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-tasks
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-texttospeech
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-translate
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-videointelligence
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-vision
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-workflows
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-run
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,google-cloud-batch
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,grpcio-gcp
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,httpx
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,looker-sdk
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,proto-plus
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,sqlalchemy-bigquery
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,sqlalchemy-spanner
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,immutabledict
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,apache-beam
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,apache-airflow-providers-apache-cassandra
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,apache-airflow-providers-cncf-kubernetes
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,apache-airflow-providers-fab
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,apache-airflow-providers-facebook
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,plyvel
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,apache-airflow-providers-microsoft-azure
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,apache-airflow-providers-microsoft-mssql
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,apache-airflow-providers-mysql
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,apache-airflow-providers-openlineage
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,apache-airflow-providers-oracle
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,apache-airflow-providers-postgres
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,apache-airflow-providers-presto
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,apache-airflow-providers-salesforce
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,apache-airflow-providers-sftp
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,apache-airflow-providers-ssh
+apache-airflow-providers-google,apache-airflow-providers-google,Provider package apache-airflow-providers-google for Apache Airflow,2023-04-12T17:51:42,1,#33C1FF,apache-airflow-providers-google,apache-airflow-providers-trino
+astronomer-cosmos,astronomer-cosmos,Orchestrate your dbt projects in Airflow,2025-03-18T20:26:29,0,#FF5733,astronomer-cosmos,apache-airflow-providers-microsoft-azure
+apache-airflow-providers-microsoft-azure,apache-airflow-providers-microsoft-azure,Provider package apache-airflow-providers-microsoft-azure for Apache Airflow,2024-03-04T20:59:06,1,#33C1FF,apache-airflow-providers-microsoft-azure,azure-batch
+apache-airflow-providers-microsoft-azure,apache-airflow-providers-microsoft-azure,Provider package apache-airflow-providers-microsoft-azure for Apache Airflow,2024-03-04T20:59:06,1,#33C1FF,apache-airflow-providers-microsoft-azure,azure-cosmos
+apache-airflow-providers-microsoft-azure,apache-airflow-providers-microsoft-azure,Provider package apache-airflow-providers-microsoft-azure for Apache Airflow,2024-03-04T20:59:06,1,#33C1FF,apache-airflow-providers-microsoft-azure,azure-mgmt-cosmosdb
+apache-airflow-providers-microsoft-azure,apache-airflow-providers-microsoft-azure,Provider package apache-airflow-providers-microsoft-azure for Apache Airflow,2024-03-04T20:59:06,1,#33C1FF,apache-airflow-providers-microsoft-azure,azure-datalake-store
+apache-airflow-providers-microsoft-azure,apache-airflow-providers-microsoft-azure,Provider package apache-airflow-providers-microsoft-azure for Apache Airflow,2024-03-04T20:59:06,1,#33C1FF,apache-airflow-providers-microsoft-azure,azure-identity
+apache-airflow-providers-microsoft-azure,apache-airflow-providers-microsoft-azure,Provider package apache-airflow-providers-microsoft-azure for Apache Airflow,2024-03-04T20:59:06,1,#33C1FF,apache-airflow-providers-microsoft-azure,azure-keyvault-secrets
+apache-airflow-providers-microsoft-azure,apache-airflow-providers-microsoft-azure,Provider package apache-airflow-providers-microsoft-azure for Apache Airflow,2024-03-04T20:59:06,1,#33C1FF,apache-airflow-providers-microsoft-azure,azure-mgmt-datalake-store
+apache-airflow-providers-microsoft-azure,apache-airflow-providers-microsoft-azure,Provider package apache-airflow-providers-microsoft-azure for Apache Airflow,2024-03-04T20:59:06,1,#33C1FF,apache-airflow-providers-microsoft-azure,azure-mgmt-resource
+apache-airflow-providers-microsoft-azure,apache-airflow-providers-microsoft-azure,Provider package apache-airflow-providers-microsoft-azure for Apache Airflow,2024-03-04T20:59:06,1,#33C1FF,apache-airflow-providers-microsoft-azure,azure-storage-blob
+apache-airflow-providers-microsoft-azure,apache-airflow-providers-microsoft-azure,Provider package apache-airflow-providers-microsoft-azure for Apache Airflow,2024-03-04T20:59:06,1,#33C1FF,apache-airflow-providers-microsoft-azure,azure-mgmt-storage
+apache-airflow-providers-microsoft-azure,apache-airflow-providers-microsoft-azure,Provider package apache-airflow-providers-microsoft-azure for Apache Airflow,2024-03-04T20:59:06,1,#33C1FF,apache-airflow-providers-microsoft-azure,azure-storage-file-share
+apache-airflow-providers-microsoft-azure,apache-airflow-providers-microsoft-azure,Provider package apache-airflow-providers-microsoft-azure for Apache Airflow,2024-03-04T20:59:06,1,#33C1FF,apache-airflow-providers-microsoft-azure,azure-servicebus
+apache-airflow-providers-microsoft-azure,apache-airflow-providers-microsoft-azure,Provider package apache-airflow-providers-microsoft-azure for Apache Airflow,2024-03-04T20:59:06,1,#33C1FF,apache-airflow-providers-microsoft-azure,azure-synapse-spark
+apache-airflow-providers-microsoft-azure,apache-airflow-providers-microsoft-azure,Provider package apache-airflow-providers-microsoft-azure for Apache Airflow,2024-03-04T20:59:06,1,#33C1FF,apache-airflow-providers-microsoft-azure,azure-synapse-artifacts
+apache-airflow-providers-microsoft-azure,apache-airflow-providers-microsoft-azure,Provider package apache-airflow-providers-microsoft-azure for Apache Airflow,2024-03-04T20:59:06,1,#33C1FF,apache-airflow-providers-microsoft-azure,adal
+apache-airflow-providers-microsoft-azure,apache-airflow-providers-microsoft-azure,Provider package apache-airflow-providers-microsoft-azure for Apache Airflow,2024-03-04T20:59:06,1,#33C1FF,apache-airflow-providers-microsoft-azure,azure-storage-file-datalake
+apache-airflow-providers-microsoft-azure,apache-airflow-providers-microsoft-azure,Provider package apache-airflow-providers-microsoft-azure for Apache Airflow,2024-03-04T20:59:06,1,#33C1FF,apache-airflow-providers-microsoft-azure,azure-kusto-data
+apache-airflow-providers-microsoft-azure,apache-airflow-providers-microsoft-azure,Provider package apache-airflow-providers-microsoft-azure for Apache Airflow,2024-03-04T20:59:06,1,#33C1FF,apache-airflow-providers-microsoft-azure,azure-mgmt-datafactory
+apache-airflow-providers-microsoft-azure,apache-airflow-providers-microsoft-azure,Provider package apache-airflow-providers-microsoft-azure for Apache Airflow,2024-03-04T20:59:06,1,#33C1FF,apache-airflow-providers-microsoft-azure,azure-mgmt-containerregistry
+apache-airflow-providers-microsoft-azure,apache-airflow-providers-microsoft-azure,Provider package apache-airflow-providers-microsoft-azure for Apache Airflow,2024-03-04T20:59:06,1,#33C1FF,apache-airflow-providers-microsoft-azure,azure-mgmt-containerinstance
+apache-airflow-providers-microsoft-azure,apache-airflow-providers-microsoft-azure,Provider package apache-airflow-providers-microsoft-azure for Apache Airflow,2024-03-04T20:59:06,1,#33C1FF,apache-airflow-providers-microsoft-azure,flask-appbuilder
+apache-airflow-providers-microsoft-azure,apache-airflow-providers-microsoft-azure,Provider package apache-airflow-providers-microsoft-azure for Apache Airflow,2024-03-04T20:59:06,1,#33C1FF,apache-airflow-providers-microsoft-azure,msgraph-core
+apache-airflow-providers-microsoft-azure,apache-airflow-providers-microsoft-azure,Provider package apache-airflow-providers-microsoft-azure for Apache Airflow,2024-03-04T20:59:06,1,#33C1FF,apache-airflow-providers-microsoft-azure,microsoft-kiota-http
+apache-airflow-providers-microsoft-azure,apache-airflow-providers-microsoft-azure,Provider package apache-airflow-providers-microsoft-azure for Apache Airflow,2024-03-04T20:59:06,1,#33C1FF,apache-airflow-providers-microsoft-azure,microsoft-kiota-serialization-json
+apache-airflow-providers-microsoft-azure,apache-airflow-providers-microsoft-azure,Provider package apache-airflow-providers-microsoft-azure for Apache Airflow,2024-03-04T20:59:06,1,#33C1FF,apache-airflow-providers-microsoft-azure,microsoft-kiota-serialization-text
+apache-airflow-providers-microsoft-azure,apache-airflow-providers-microsoft-azure,Provider package apache-airflow-providers-microsoft-azure for Apache Airflow,2024-03-04T20:59:06,1,#33C1FF,apache-airflow-providers-microsoft-azure,microsoft-kiota-abstractions
+apache-airflow-providers-microsoft-azure,apache-airflow-providers-microsoft-azure,Provider package apache-airflow-providers-microsoft-azure for Apache Airflow,2024-03-04T20:59:06,1,#33C1FF,apache-airflow-providers-microsoft-azure,microsoft-kiota-authentication-azure
+apache-airflow-providers-microsoft-azure,apache-airflow-providers-microsoft-azure,Provider package apache-airflow-providers-microsoft-azure for Apache Airflow,2024-03-04T20:59:06,1,#33C1FF,apache-airflow-providers-microsoft-azure,msal-extensions
+apache-airflow-providers-microsoft-azure,apache-airflow-providers-microsoft-azure,Provider package apache-airflow-providers-microsoft-azure for Apache Airflow,2024-03-04T20:59:06,1,#33C1FF,apache-airflow-providers-microsoft-azure,portalocker
+apache-airflow-providers-microsoft-azure,apache-airflow-providers-microsoft-azure,Provider package apache-airflow-providers-microsoft-azure for Apache Airflow,2024-03-04T20:59:06,1,#33C1FF,apache-airflow-providers-microsoft-azure,apache-airflow-providers-common-compat
+apache-airflow-providers-microsoft-azure,apache-airflow-providers-microsoft-azure,Provider package apache-airflow-providers-microsoft-azure for Apache Airflow,2024-03-04T20:59:06,1,#33C1FF,apache-airflow-providers-microsoft-azure,apache-airflow-providers-oracle
+apache-airflow-providers-microsoft-azure,apache-airflow-providers-microsoft-azure,Provider package apache-airflow-providers-microsoft-azure for Apache Airflow,2024-03-04T20:59:06,1,#33C1FF,apache-airflow-providers-microsoft-azure,apache-airflow-providers-sftp
+astronomer-cosmos,astronomer-cosmos,Orchestrate your dbt projects in Airflow,2025-03-18T20:26:29,0,#FF5733,astronomer-cosmos,dbt-athena
+dbt-athena,dbt-athena,The athena adapter plugin for dbt (data build tool),2025-04-28T23:06:50,1,#33C1FF,dbt-athena,boto3-stubs
+dbt-athena,dbt-athena,The athena adapter plugin for dbt (data build tool),2025-04-28T23:06:50,1,#33C1FF,dbt-athena,mmh3
+astronomer-cosmos,astronomer-cosmos,Orchestrate your dbt projects in Airflow,2025-03-18T20:26:29,0,#FF5733,astronomer-cosmos,dbt-bigquery
+dbt-bigquery,dbt-bigquery,The BigQuery adapter plugin for dbt,2025-05-22T04:55:14,1,#33C1FF,dbt-bigquery,google-api-core
+dbt-bigquery,dbt-bigquery,The BigQuery adapter plugin for dbt,2025-05-22T04:55:14,1,#33C1FF,dbt-bigquery,google-cloud-aiplatform
+dbt-bigquery,dbt-bigquery,The BigQuery adapter plugin for dbt,2025-05-22T04:55:14,1,#33C1FF,dbt-bigquery,google-cloud-dataproc
+dbt-bigquery,dbt-bigquery,The BigQuery adapter plugin for dbt,2025-05-22T04:55:14,1,#33C1FF,dbt-bigquery,google-cloud-storage
+astronomer-cosmos,astronomer-cosmos,Orchestrate your dbt projects in Airflow,2025-03-18T20:26:29,0,#FF5733,astronomer-cosmos,dbt-clickhouse
+astronomer-cosmos,astronomer-cosmos,Orchestrate your dbt projects in Airflow,2025-03-18T20:26:29,0,#FF5733,astronomer-cosmos,dbt-databricks
+dbt-databricks,dbt-databricks,The Databricks adapter plugin for dbt,2024-05-08T19:39:48,1,#33C1FF,dbt-databricks,dbt-spark
+dbt-databricks,dbt-databricks,The Databricks adapter plugin for dbt,2024-05-08T19:39:48,1,#33C1FF,dbt-databricks,keyring
+astronomer-cosmos,astronomer-cosmos,Orchestrate your dbt projects in Airflow,2025-03-18T20:26:29,0,#FF5733,astronomer-cosmos,dbt-exasol
+dbt-exasol,dbt-exasol,Adapter to dbt-core for warehouse Exasol,2025-01-19T19:45:27,1,#33C1FF,dbt-exasol,hologram
+dbt-exasol,dbt-exasol,Adapter to dbt-core for warehouse Exasol,2025-01-19T19:45:27,1,#33C1FF,dbt-exasol,pyexasol
+dbt-exasol,dbt-exasol,Adapter to dbt-core for warehouse Exasol,2025-01-19T19:45:27,1,#33C1FF,dbt-exasol,sqlfluff
+astronomer-cosmos,astronomer-cosmos,Orchestrate your dbt projects in Airflow,2025-03-18T20:26:29,0,#FF5733,astronomer-cosmos,dbt-oracle
+dbt-oracle,dbt-oracle,dbt (data build tool) adapter for Oracle Autonomous Database,2025-05-16T06:32:59,1,#33C1FF,dbt-oracle,oracledb
+astronomer-cosmos,astronomer-cosmos,Orchestrate your dbt projects in Airflow,2025-03-18T20:26:29,0,#FF5733,astronomer-cosmos,dbt-postgres
+astronomer-cosmos,astronomer-cosmos,Orchestrate your dbt projects in Airflow,2025-03-18T20:26:29,0,#FF5733,astronomer-cosmos,dbt-redshift
+dbt-redshift,dbt-redshift,The Redshift adapter plugin for dbt,2025-05-13T15:35:43,1,#33C1FF,dbt-redshift,redshift-connector
+astronomer-cosmos,astronomer-cosmos,Orchestrate your dbt projects in Airflow,2025-03-18T20:26:29,0,#FF5733,astronomer-cosmos,dbt-snowflake
+astronomer-cosmos,astronomer-cosmos,Orchestrate your dbt projects in Airflow,2025-03-18T20:26:29,0,#FF5733,astronomer-cosmos,dbt-spark
+dbt-spark,dbt-spark,The Apache Spark adapter plugin for dbt,2025-03-07T19:18:24,1,#33C1FF,dbt-spark,sqlparams
+dbt-spark,dbt-spark,The Apache Spark adapter plugin for dbt,2025-03-07T19:18:24,1,#33C1FF,dbt-spark,pyhive
+dbt-spark,dbt-spark,The Apache Spark adapter plugin for dbt,2025-03-07T19:18:24,1,#33C1FF,dbt-spark,pyspark
+dbt-spark,dbt-spark,The Apache Spark adapter plugin for dbt,2025-03-07T19:18:24,1,#33C1FF,dbt-spark,thrift
+astronomer-cosmos,astronomer-cosmos,Orchestrate your dbt projects in Airflow,2025-03-18T20:26:29,0,#FF5733,astronomer-cosmos,dbt-teradata
+dbt-teradata,dbt-teradata,The Teradata adapter plugin for dbt (data build tool),2025-03-17T13:08:09,1,#33C1FF,dbt-teradata,teradatasql
+astronomer-cosmos,astronomer-cosmos,Orchestrate your dbt projects in Airflow,2025-03-18T20:26:29,0,#FF5733,astronomer-cosmos,dbt-vertica
+dbt-vertica,dbt-vertica,Official vertica adapter plugin for dbt (data build tool),2023-12-22T12:21:02,1,#33C1FF,dbt-vertica,vertica-python
+astronomer-cosmos,astronomer-cosmos,Orchestrate your dbt projects in Airflow,2025-03-18T20:26:29,0,#FF5733,astronomer-cosmos,openlineage-airflow
+openlineage-airflow,openlineage-airflow,OpenLineage integration with Airflow,2024-02-26T15:05:37,1,#33C1FF,openlineage-airflow,openlineage-integration-common
+openlineage-airflow,openlineage-airflow,OpenLineage integration with Airflow,2024-02-26T15:05:37,1,#33C1FF,openlineage-airflow,openlineage-python
+openlineage-airflow,openlineage-airflow,OpenLineage integration with Airflow,2024-02-26T15:05:37,1,#33C1FF,openlineage-airflow,flask-sqlalchemy
+openlineage-airflow,openlineage-airflow,OpenLineage integration with Airflow,2024-02-26T15:05:37,1,#33C1FF,openlineage-airflow,apache-airflow-providers-postgres
+openlineage-airflow,openlineage-airflow,OpenLineage integration with Airflow,2024-02-26T15:05:37,1,#33C1FF,openlineage-airflow,apache-airflow-providers-mysql
+openlineage-airflow,openlineage-airflow,OpenLineage integration with Airflow,2024-02-26T15:05:37,1,#33C1FF,openlineage-airflow,apache-airflow-providers-trino
+openlineage-airflow,openlineage-airflow,OpenLineage integration with Airflow,2024-02-26T15:05:37,1,#33C1FF,openlineage-airflow,apache-airflow-providers-snowflake
+openlineage-airflow,openlineage-airflow,OpenLineage integration with Airflow,2024-02-26T15:05:37,1,#33C1FF,openlineage-airflow,apache-airflow-providers-sftp
+openlineage-airflow,openlineage-airflow,OpenLineage integration with Airflow,2024-02-26T15:05:37,1,#33C1FF,openlineage-airflow,apache-airflow-providers-ssh
+openlineage-airflow,openlineage-airflow,OpenLineage integration with Airflow,2024-02-26T15:05:37,1,#33C1FF,openlineage-airflow,apache-airflow-providers-ftp
+openlineage-airflow,openlineage-airflow,OpenLineage integration with Airflow,2024-02-26T15:05:37,1,#33C1FF,openlineage-airflow,apache-airflow-providers-dbt-cloud
+openlineage-airflow,openlineage-airflow,OpenLineage integration with Airflow,2024-02-26T15:05:37,1,#33C1FF,openlineage-airflow,airflow-provider-great-expectations
+openlineage-airflow,openlineage-airflow,OpenLineage integration with Airflow,2024-02-26T15:05:37,1,#33C1FF,openlineage-airflow,great-expectations
+astronomer-cosmos,astronomer-cosmos,Orchestrate your dbt projects in Airflow,2025-03-18T20:26:29,0,#FF5733,astronomer-cosmos,openlineage-integration-common
+openlineage-integration-common,openlineage-integration-common,OpenLineage common python library for integrations,2024-02-26T15:05:44,1,#33C1FF,openlineage-integration-common,openlineage-python
+openlineage-integration-common,openlineage-integration-common,OpenLineage common python library for integrations,2024-02-26T15:05:44,1,#33C1FF,openlineage-integration-common,openlineage_sql
+openlineage-integration-common,openlineage-integration-common,OpenLineage common python library for integrations,2024-02-26T15:05:44,1,#33C1FF,openlineage-integration-common,google-api-core
+openlineage-integration-common,openlineage-integration-common,OpenLineage common python library for integrations,2024-02-26T15:05:44,1,#33C1FF,openlineage-integration-common,google-cloud-core
+openlineage-integration-common,openlineage-integration-common,OpenLineage common python library for integrations,2024-02-26T15:05:44,1,#33C1FF,openlineage-integration-common,google-crc32c
+openlineage-integration-common,openlineage-integration-common,OpenLineage common python library for integrations,2024-02-26T15:05:44,1,#33C1FF,openlineage-integration-common,great_expectations
+astronomer-cosmos,astronomer-cosmos,Orchestrate your dbt projects in Airflow,2025-03-18T20:26:29,0,#FF5733,astronomer-cosmos,dbt-athena-community
+astronomer-cosmos,astronomer-cosmos,Orchestrate your dbt projects in Airflow,2025-03-18T20:26:29,0,#FF5733,astronomer-cosmos,apache-airflow-providers-cncf-kubernetes
+apache-airflow-providers-cncf-kubernetes,apache-airflow-providers-cncf-kubernetes,Provider package apache-airflow-providers-cncf-kubernetes for Apache Airflow,2024-10-27T14:15:07,1,#33C1FF,apache-airflow-providers-cncf-kubernetes,aiofiles
+apache-airflow-providers-cncf-kubernetes,apache-airflow-providers-cncf-kubernetes,Provider package apache-airflow-providers-cncf-kubernetes for Apache Airflow,2024-10-27T14:15:07,1,#33C1FF,apache-airflow-providers-cncf-kubernetes,asgiref
+apache-airflow-providers-cncf-kubernetes,apache-airflow-providers-cncf-kubernetes,Provider package apache-airflow-providers-cncf-kubernetes for Apache Airflow,2024-10-27T14:15:07,1,#33C1FF,apache-airflow-providers-cncf-kubernetes,kubernetes
+apache-airflow-providers-cncf-kubernetes,apache-airflow-providers-cncf-kubernetes,Provider package apache-airflow-providers-cncf-kubernetes for Apache Airflow,2024-10-27T14:15:07,1,#33C1FF,apache-airflow-providers-cncf-kubernetes,kubernetes_asyncio
+astronomer-cosmos,astronomer-cosmos,Orchestrate your dbt projects in Airflow,2025-03-18T20:26:29,0,#FF5733,astronomer-cosmos,sphinx-autobuild
+sphinx-autobuild,sphinx-autobuild,"Rebuild Sphinx documentation on changes, with hot reloading in the browser.",2024-09-03T08:00:41,1,#33C1FF,sphinx-autobuild,starlette
+sphinx-autobuild,sphinx-autobuild,"Rebuild Sphinx documentation on changes, with hot reloading in the browser.",2024-09-03T08:00:41,1,#33C1FF,sphinx-autobuild,uvicorn
+sphinx-autobuild,sphinx-autobuild,"Rebuild Sphinx documentation on changes, with hot reloading in the browser.",2024-09-03T08:00:41,1,#33C1FF,sphinx-autobuild,watchfiles
+sphinx-autobuild,sphinx-autobuild,"Rebuild Sphinx documentation on changes, with hot reloading in the browser.",2024-09-03T08:00:41,1,#33C1FF,sphinx-autobuild,websockets
+sphinx-autobuild,sphinx-autobuild,"Rebuild Sphinx documentation on changes, with hot reloading in the browser.",2024-09-03T08:00:41,1,#33C1FF,sphinx-autobuild,httpx
+airportsdata,airportsdata,Extensive database of location and timezone data for nearly every airport and landing strip in the world.,2025-05-23T09:56:48,0,#FF5733,airportsdata,

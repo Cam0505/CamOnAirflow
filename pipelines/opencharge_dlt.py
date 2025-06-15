@@ -62,16 +62,16 @@ def opencharge_source(logger: logging.Logger, db_count: int = -1):
                 limit_param="maxresults",
                 offset_param="offset",
                 total_path=None,
-                offset=0,
-                limit=500,
-                maximum_offset=5500,
+                offset=10000,
+                limit=1000,
+                maximum_offset=8000,
                 stop_after_empty_page=True
             ),
             headers={"Accept": "application/json"}
         )
 
         batch = []
-        batch_size = 1500
+        batch_size = 1000
         latest_date = state.get("max_date_seen")
         page_count = 0
 
@@ -180,8 +180,7 @@ if __name__ == "__main__":
     try:
         row_counts = pipeline.dataset().row_counts().df()
         if row_counts is not None:
-            row_counts_dict = dict(
-            zip(row_counts["table_name"], row_counts["row_count"]))
+            row_counts_dict = dict(zip(row_counts["table_name"], row_counts["row_count"]))
         logger.info(
             f"📊 Row counts for existing tables: {row_counts_dict}")
     except PipelineNeverRan:

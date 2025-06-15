@@ -6,7 +6,7 @@ from google.oauth2.service_account import Credentials
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.operators.bash import BashOperator
-from datetime import datetime, time
+from datetime import datetime
 from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 import os
@@ -134,7 +134,7 @@ def run_dlt_pipeline():
             'gsheet_finance', {}).get('last_run_status', '')
 
         if status == 'skipped_no_new_data':
-            logger.info(f"\n⏭️ resource skipped — no data loaded.")
+            logger.info("\n⏭️ resource skipped — no data loaded.")
             return False
         elif status == 'success':
             logger.info(f"\n✅ Resource loaded: {load_info}")
@@ -150,7 +150,7 @@ def run_dlt_pipeline():
 with DAG(
     dag_id='gfinance_dbt',
     start_date=datetime(2025, 5, 1),
-    schedule= None, #'*/45 * * * *',
+    schedule= None,
     catchup=False,
 ) as dag:
 

@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "version_hash": "nih+DS++669wVRUe/Du0QN1xR1JFDlQPw+a35xDVsV4=",
+  "version_hash": "aKJa8V7DVXQ2TKVhou48zhwzor4gyurRVJ90s1kSdgQ=",
   "engine_version": 11,
   "name": "opencharge_source",
   "tables": {
@@ -88,11 +88,6 @@
           "data_type": "text",
           "nullable": true
         },
-        "country": {
-          "name": "country",
-          "data_type": "text",
-          "nullable": true
-        },
         "countrycode": {
           "name": "countrycode",
           "data_type": "text",
@@ -105,11 +100,6 @@
         },
         "town": {
           "name": "town",
-          "data_type": "text",
-          "nullable": true
-        },
-        "address": {
-          "name": "address",
           "data_type": "text",
           "nullable": true
         },
@@ -130,11 +120,6 @@
         },
         "usage_type": {
           "name": "usage_type",
-          "data_type": "text",
-          "nullable": true
-        },
-        "status": {
-          "name": "status",
           "data_type": "text",
           "nullable": true
         },

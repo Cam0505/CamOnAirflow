@@ -3,6 +3,7 @@ from pathlib import Path
 import os
 import sys
 
+
 def get_project_paths():
     """Resolves and returns all standardized project paths as a dict."""
     search_paths = [
@@ -41,6 +42,7 @@ def get_project_paths():
         "DLT_PIPELINE_DIR": project_root / "pipelines" / ".dlt"
     }
     return paths
+
 
 def set_dlt_env_vars(paths):
     """Set DLT environment variables based on resolved paths."""

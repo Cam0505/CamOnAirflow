@@ -3,7 +3,6 @@ from datetime import datetime
 import dlt
 from dotenv import load_dotenv
 import logging
-from pathlib import Path
 from project_path import get_project_paths, set_dlt_env_vars
 import sys
 import os
@@ -92,7 +91,7 @@ def summarize_results(results: list) -> dict:
                      "Thread-4 (worker)": 0, "Thread-5 (worker)": 0, "Thread-6 (worker)": 0}
     for r in models:
         thread = r.get("thread_id")
-        if thread in ("Thread-1 (worker)", "Thread-2 (worker)", "Thread-3 (worker)", 
+        if thread in ("Thread-1 (worker)", "Thread-2 (worker)", "Thread-3 (worker)",
                       "Thread-4 (worker)", "Thread-5 (worker)", "Thread-6 (worker)"):
             thread_counts[thread] += 1
     total_model_threads = sum(thread_counts.values())
@@ -156,8 +155,8 @@ def main():
             table_name="summary_audit_log",
             write_disposition="append"
         )
-        
-        logger.info(f"Successfully loaded summary audit log")
+
+        logger.info("Successfully loaded summary audit log")
         logger.debug(f"Load info: {load_info}")
         return 0
 

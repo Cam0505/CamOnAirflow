@@ -1,13 +1,17 @@
 import json
 from datetime import date
 
+
 def parse_date(d):
     return date.fromisoformat(d)
+
 
 with open("/workspaces/CamOnAirFlow/pipelines/.dlt/air_quality_pipeline/state.json") as f:
     state = json.load(f)
 
+
 flagged = state["sources"]["openaq_source"]["open_aq"]["Flagged_Requests"]
+
 
 def check_overlaps(ranges):
     # Convert to tuples of (start, end) as date objects and sort by start
@@ -19,6 +23,7 @@ def check_overlaps(ranges):
         if curr_start <= prev_end:
             overlaps.append((tuples[i-1], tuples[i]))
     return overlaps
+
 
 for sensor_id, ranges in flagged.items():
     if not ranges:

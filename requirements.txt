@@ -10,8 +10,11 @@ black==25.1.0
 gitdb==4.0.12
 psycopg-binary==3.2.9
 duckdb==1.2.2
-dlt==1.10.0
-dlt[parquet]==1.10.0
+dlt[parquet]==1.11.0
 python-dotenv==1.1.0
 astronomer-cosmos[dbt-duckdb]==1.10.1
 airportsdata==20250523
+pytest==8.4.0
+sqlfluff==3.4.0
+sqlfluff-templater-dbt==3.4.0
+flake8==7.2.0

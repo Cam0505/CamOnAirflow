@@ -4,9 +4,6 @@ from datetime import datetime, timedelta, timezone, date
 from typing import Iterator, Dict, List, Tuple
 from dlt.sources.helpers import requests
 from project_path import get_project_paths, set_dlt_env_vars
-from dlt.pipeline.exceptions import PipelineNeverRan
-from dlt.destinations.exceptions import DatabaseUndefinedRelation
-# import datetime
 import dlt
 import os
 import time
@@ -447,18 +444,6 @@ if __name__ == "__main__":
         dev_mode=False
     )
 
-    # Try to load existing dataset to avoid duplicate requests
-    # try:
-    #     dataset = pipeline.dataset()["openaq_daily"].df()
-        
-    # except PipelineNeverRan:
-    #     logger.warning("⚠️ No previous runs found for this pipeline. Assuming first run.")
-    #     dataset = None
-    # except DatabaseUndefinedRelation:
-    #     logger.warning("⚠️ Table Doesn't Exist. Assuming truncation.")
-    #     dataset = None
-
-
     # Run the pipeline and handle errors
     try:
         logger.info("Running OpenAQ pipeline...")
@@ -473,7 +458,3 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error(f"Pipeline run failed: {e}")
         raise
-
-# Wasteful operations:
-# - The flagged_dates set is re-created from state for each sensor on every run, but this is necessary for correct state tracking.
-#   Consider optimizing by caching results or batching sensors if performance becomes an issue.

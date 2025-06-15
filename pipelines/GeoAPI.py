@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 # API credentials and URL for GeoNames
 USERNAME = os.getenv("GEONAMES_USERNAME")
 if not USERNAME:
-            raise ValueError("Missing GEONAMES_USERNAME in environment.")
+    raise ValueError("Missing GEONAMES_USERNAME in environment.")
 
 BASE_URL = "http://api.geonames.org/citiesJSON"
 DETAILS_URL = "http://api.geonames.org/getJSON"
@@ -74,7 +74,6 @@ def geo_source(logger, row_counts_dict: dict):
             "processed_records": {},
             "country_status": {}
         })
-        
 
         def fetch_cities(country_code):
             max_rows = 100
@@ -90,7 +89,6 @@ def geo_source(logger, row_counts_dict: dict):
                 "lang": "en",
                 "username": USERNAME
             }
-
 
             if country_code in bboxes:
                 params.update(bboxes[country_code])
@@ -158,8 +156,6 @@ def geo_source(logger, row_counts_dict: dict):
             logger.error(f"Processing failed: {e}")
             raise
     return cities
-
-
 
 
 def run_pipeline(logger) -> bool:

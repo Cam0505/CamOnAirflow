@@ -49,7 +49,7 @@ def model(dbt: Any, session: Any):
         return pd.DataFrame()  # Return empty DataFrame if no API key
     
     # Maximum pairs to process in one run
-    max_requests_per_run = 25
+    max_requests_per_run = 50
     
     # Get base data differently depending on incremental or full run
     if dbt.is_incremental:
@@ -81,8 +81,6 @@ def model(dbt: Any, session: Any):
         # For full refresh, take pairs directly from source table
         process_df = dbt.ref("base_open_charge_nearby_stations").df().head(max_requests_per_run)
     
-    print(f"dbt.is_incremental: {dbt.is_incremental}")
-    
     def get_driving_distance(lon1, lat1, lon2, lat2, max_retries=3):
         """Get driving distance using OpenRouteService API with retries"""
         # Prepare request
@@ -110,7 +108,7 @@ def model(dbt: Any, session: Any):
                     return distance
                 elif response.status_code == 429 or response.status_code == 503:
                     # Rate limit or service unavailable - exponential backoff
-                    wait_time = (3 ** attempt) + random.uniform(4, 5)
+                    wait_time = (3 ** attempt) + random.uniform(6, 6)
                     print(f"Rate limited. Waiting {wait_time:.2f}s before retry {attempt+1}/{max_retries}")
                     time.sleep(wait_time)
                 else:
@@ -118,7 +116,7 @@ def model(dbt: Any, session: Any):
                     return None
             except Exception as e:
                 print(f"Error getting driving distance: {e}")
-                wait_time = (4 ** attempt) + random.uniform(4, 5)
+                wait_time = (3 ** attempt) + random.uniform(6, 6)
                 time.sleep(wait_time)
         
         # If all retries failed
@@ -127,22 +125,16 @@ def model(dbt: Any, session: Any):
 
     # Process pairs and collect results
     results = []
-    
-    for idx, (_, row) in enumerate(process_df.iterrows(), 1):
-        print(f"Processing pair {idx}/{len(process_df)}: {row['name_1']} to {row['name_2']}")
-        
-        # Get driving distance for this pair
-        driving_dist = get_driving_distance(row['lon_1'], row['lat_1'], row['lon_2'], row['lat_2'])
-        
-        # Create result row with all fields
-        result = row.to_dict()
-        result['driving_distance_km'] = driving_dist if driving_dist is not None else pd.NA 
+    for idx, row in enumerate(process_df.itertuples(index=False), 1):
+        print(f"Processing pair {idx}/{len(process_df)}: {row.name_1} to {row.name_2}")
+
+        driving_dist = get_driving_distance(row.lon_1, row.lat_1, row.lon_2, row.lat_2)
+
+        result = row._asdict()
+        result['driving_distance_km'] = driving_dist if driving_dist is not None else pd.NA
         result['processed_at'] = pd.Timestamp.now()
         results.append(result)
-        
-        # Rate limit protection
-        time.sleep(4.0)
 
-    
-    # Return as DataFrame
+        time.sleep(6)
+
     return pd.DataFrame(results)

@@ -14,45 +14,45 @@ sources:
                 - city
                 - sensor_id
         freshness:
-          warn_after: {count: 3, period: day}
-          error_after: {count: 6, period: day}
+          warn_after: {count: 5, period: day}
+          error_after: {count: 9, period: day}
         loaded_at_field: CAST(datetime AS TIMESTAMP)
         columns:
           - name: summary__min
-            description: "{% docs summary__min %}The minimum value observed for the parameter in the daily summary.{% enddocs %}"
+            description: "{{ doc('summary__min') }}"
           - name: summary__q02
-            description: "{% docs summary__q02 %}The 2nd percentile value observed for the parameter in the daily summary.{% enddocs %}"
+            description: "{{ doc('summary__q02') }}"
           - name: summary__q25
-            description: "{% docs summary__q25 %}The 25th percentile value observed for the parameter in the daily summary.{% enddocs %}"
+            description: "{{ doc('summary__q25') }}"
           - name: summary__median
-            description: "{% docs summary__median %}The median value observed for the parameter in the daily summary.{% enddocs %}"
+            description: "{{ doc('summary__median') }}"
           - name: summary__q75
-            description: "{% docs summary__q75 %}The 75th percentile value observed for the parameter in the daily summary.{% enddocs %}"
+            description: "{{ doc('summary__q75') }}"
           - name: summary__q98
-            description: "{% docs summary__q98 %}The 98th percentile value observed for the parameter in the daily summary.{% enddocs %}"
+            description: "{{ doc('summary__q98') }}"
           - name: summary__max
-            description: "{% docs summary__max %}The maximum value observed for the parameter in the daily summary.{% enddocs %}"
+            description: "{{ doc('summary__max') }}"
           - name: summary__avg
-            description: "{% docs summary__avg %}The average value observed for the parameter in the daily summary.{% enddocs %}"
+            description: "{{ doc('summary__avg') }}"
           - name: summary__sd
-            description: "{% docs summary__sd %}The standard deviation of values for the parameter in the daily summary.{% enddocs %}"
+            description: "{{ doc('summary__sd') }}"
           - name: coverage__expected_count
-            description: "{% docs coverage__expected_count %}The expected number of measurements for the day, based on the sensor's reporting frequency.{% enddocs %}"
+            description: "{{ doc('coverage__expected_count') }}"
           - name: coverage__expected_interval
-            description: "{% docs coverage__expected_interval %}The expected interval (in seconds) between measurements for the sensor.{% enddocs %}"
+            description: "{{ doc('coverage__expected_interval') }}"
           - name: coverage__observed_count
-            description: "{% docs coverage__observed_count %}The actual number of measurements observed for the day.{% enddocs %}"
+            description: "{{ doc('coverage__observed_count') }}"
           - name: coverage__observed_interval
-            description: "{% docs coverage__observed_interval %}The observed average interval (in seconds) between measurements for the sensor on this day.{% enddocs %}"
+            description: "{{ doc('coverage__observed_interval') }}"
           - name: coverage__percent_complete
-            description: "{% docs coverage__percent_complete %}The percentage of expected measurements that were actually observed for the day.{% enddocs %}"
+            description: "{{ doc('coverage__percent_complete') }}"
           - name: coverage__percent_coverage
-            description: "{% docs coverage__percent_coverage %}The percentage of the day for which measurements were available.{% enddocs %}"
+            description: "{{ doc('coverage__percent_coverage') }}"
           - name: coverage__datetime_from__utc
-            description: "{% docs coverage__datetime_from__utc %}The UTC datetime of the first measurement for the day.{% enddocs %}"
+            description: "{{ doc('coverage__datetime_from__utc') }}"
           - name: coverage__datetime_from__local
-            description: "{% docs coverage__datetime_from__local %}The local datetime of the first measurement for the day.{% enddocs %}"
+            description: "{{ doc('coverage__datetime_from__local') }}"
           - name: coverage__datetime_to__utc
-            description: "{% docs coverage__datetime_to__utc %}The UTC datetime of the last measurement for the day.{% enddocs %}"
+            description: "{{ doc('coverage__datetime_to__utc') }}"
           - name: coverage__datetime_to__local
-            description: "{% docs coverage__datetime_to__local %}The local datetime of the last measurement for the day.{% enddocs %}"
+            description: "{{ doc('coverage__datetime_to__local') }}"

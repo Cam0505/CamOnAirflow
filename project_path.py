@@ -29,8 +29,8 @@ def get_project_paths():
     for path in search_paths:
         try:
             # print(f"Checking {path}")
-            contents = list(path.iterdir()) if path.exists() else []
-            dir_names = [d.name for d in contents if d.is_dir()]
+            # contents = list(path.iterdir()) if path.exists() else []
+            # dir_names = [d.name for d in contents if d.is_dir()]
             # print(f"  Contents: {dir_names}")
             
             # Check if this path contains dbt and pipelines directories

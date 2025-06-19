@@ -1,12 +1,8 @@
 import pandas as pd
 import numpy as np
+from typing import Any
 
-def config():
-    return {
-        "materialized": "table"  # Full table, recalculated each time
-    }
-
-def model(dbt, session):
+def model(dbt: Any, session: Any):
     # Get source data
     df = dbt.source("opencharge", "opencharge_stations").df()
     

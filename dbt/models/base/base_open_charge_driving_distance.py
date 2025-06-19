@@ -2,31 +2,54 @@ import pandas as pd
 import time
 import requests
 import os
-import json
 import random
-from datetime import datetime
+from pathlib import Path
+from dotenv import load_dotenv, find_dotenv
+from typing import Any
 
-from project_path import get_project_paths
-from dotenv import load_dotenv
-
-def model(dbt, session):
+def model(dbt: Any, session: Any):
     dbt.config(
         materialized= "incremental",
         unique_key= ["id_1", "id_2"],
         incremental_strategy="delete+insert"
     )
-    # Load environment variables 
-    paths = get_project_paths()
-    load_dotenv(dotenv_path=paths["ENV_FILE"])
     
-    # Get API key
+    env_loaded = False
+    potential_paths = []
+    
+    # 1. Try automatic dotenv detection (searches parent directories)
+    dotenv_path = find_dotenv(usecwd=True)
+    if dotenv_path:
+        load_dotenv(dotenv_path)
+        print(f"Loaded .env from: {dotenv_path}")
+        env_loaded = True
+    
+    # 2. Try explicit project root locations if automatic detection failed
+    if not env_loaded:
+        potential_paths = [
+            Path("/workspaces/CamOnAirFlow/.env"),  # Dev container path
+            Path("/workspaces/camonairflow/.env"),  # Lowercase alternative
+            Path(os.getcwd()).parent.parent / ".env",  # Relative to model dir
+            Path(os.environ.get("GITHUB_WORKSPACE", "")) / ".env",  # GitHub Actions
+        ]
+        
+        for path in potential_paths:
+            if path.exists():
+                load_dotenv(dotenv_path=path)
+                print(f"Loaded .env from: {path}")
+                env_loaded = True
+                break
+    
+    # Get API key (now from environment after .env loading)
     api_key = os.environ.get('OPENROUTESERVICE_API_KEY', '')
     if not api_key:
         print("WARNING: OPENROUTESERVICE_API_KEY not found in environment!")
+        for path in potential_paths:
+            print(f"  - {path} {'(exists)' if path.exists() else '(not found)'}")
         return pd.DataFrame()  # Return empty DataFrame if no API key
     
     # Maximum pairs to process in one run
-    max_requests_per_run = 10
+    max_requests_per_run = 25
     
     # Get base data differently depending on incremental or full run
     if dbt.is_incremental:
@@ -57,9 +80,8 @@ def model(dbt, session):
         print("Full refresh - loading pairs to process")
         # For full refresh, take pairs directly from source table
         process_df = dbt.ref("base_open_charge_nearby_stations").df().head(max_requests_per_run)
-        print(f"Processing first {len(process_df)} of {len(dbt.ref('base_open_charge_nearby_stations').df())} total pairs")
     
-    print(f"dbt.is_incremental: {hasattr(dbt, 'is_incremental') and dbt.is_incremental}")
+    print(f"dbt.is_incremental: {dbt.is_incremental}")
     
     def get_driving_distance(lon1, lat1, lon2, lat2, max_retries=3):
         """Get driving distance using OpenRouteService API with retries"""
@@ -88,7 +110,7 @@ def model(dbt, session):
                     return distance
                 elif response.status_code == 429 or response.status_code == 503:
                     # Rate limit or service unavailable - exponential backoff
-                    wait_time = (3 ** attempt) + random.uniform(3, 4)
+                    wait_time = (3 ** attempt) + random.uniform(4, 5)
                     print(f"Rate limited. Waiting {wait_time:.2f}s before retry {attempt+1}/{max_retries}")
                     time.sleep(wait_time)
                 else:
@@ -96,7 +118,7 @@ def model(dbt, session):
                     return None
             except Exception as e:
                 print(f"Error getting driving distance: {e}")
-                wait_time = (4 ** attempt) + random.uniform(3, 4)
+                wait_time = (4 ** attempt) + random.uniform(4, 5)
                 time.sleep(wait_time)
         
         # If all retries failed
@@ -120,12 +142,7 @@ def model(dbt, session):
         
         # Rate limit protection
         time.sleep(4.0)
-    
-    print(f"Processed {len(results)} station pairs")
-    
-    if len(results) > 0:
-        print("\nResults that will be written:")
-        print(pd.DataFrame(results).head(3).to_string())
+
     
     # Return as DataFrame
     return pd.DataFrame(results)

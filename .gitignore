@@ -10,6 +10,8 @@ pipelines/.dlt/*/load
 pipelines/.dlt/*/normalize
 pipelines/.dlt/*/trace.pickle
 
+credentials.json
+
 
 dbt/profiles.yml
 dbt/dbt_packages/

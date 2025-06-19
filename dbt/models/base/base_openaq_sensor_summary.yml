@@ -36,13 +36,13 @@ models:
         description: Unit of measurement for the parameter.
       - name: num_records
         description: Number of records for this group.
-        tests:
+        data_tests:
           - not_null
           - dbt_utils.expression_is_true:
               expression: "{{ column_name }} >= 0"
       - name: days_reported
         description: Number of unique days with data in this group.
-        tests:
+        data_tests:
           - not_null
           - dbt_utils.expression_is_true:
               expression: "{{ column_name }} >= 0"
@@ -56,7 +56,7 @@ models:
         description: Standard deviation of the value for the parameter.
       - name: num_nulls
         description: Number of null values for the parameter.
-        tests:
+        data_tests:
           - not_null
           - dbt_utils.expression_is_true:
               expression: "{{ column_name }} >= 0"

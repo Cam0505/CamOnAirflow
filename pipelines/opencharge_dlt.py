@@ -116,7 +116,6 @@ def opencharge_source(logger: logging.Logger, db_count: int = -1):
                     address = item.get("AddressInfo", {}) or {}
                     operator = item.get("OperatorInfo", {}) or {}
                     usage_type = item.get("UsageType", {}) or {}
-                    status = item.get("StatusType", {}) or {}
 
                     row = {
                         "id": item.get("ID"),

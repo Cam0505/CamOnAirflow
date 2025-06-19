@@ -19,6 +19,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    env:
+      OPENROUTESERVICE_API_KEY: ${{ secrets.OPENROUTESERVICE_API_KEY }}
+
     steps:
       - name: Checkout main branch
         uses: actions/checkout@v3
@@ -29,6 +32,15 @@ jobs:
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
+
+      - name: Check API Key
+        run: |
+          if [ -z "$OPENROUTESERVICE_API_KEY" ]; then
+            echo "ERROR: API key is not set!"
+            exit 1
+          else
+            echo "API key is available to the workflow ✓"
+          fi
 
       - name: Try to restore previous manifest from dbt-manifest-state branch
         run: |

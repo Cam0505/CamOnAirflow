@@ -5,17 +5,38 @@ import sys
 
 
 def get_project_paths():
-    """Resolves and returns all standardized project paths as a dict."""
+    """Resolves and returns all standardized project paths as a dict, working from any directory."""
+    # Start with specific paths to check
     search_paths = [
-        Path("/workspaces/camonairflow"),  # Devcontainer
-        Path(__file__).parent.parent,      # Local dev
-        Path.cwd()                         # Fallback
+        Path("/workspaces/camonairflow"),  # Lower case devcontainer path
+        Path("/workspaces/CamOnAirFlow"),  # Upper case devcontainer path
+        Path(__file__).parent,              # Directory of this file
+        Path.cwd()                          # Current working directory
     ]
-
+    
+    # Add parent directories of current directory (up to 3 levels)
+    cwd = Path.cwd()
+    for i in range(1, 4):  # Check up to 3 parent directories
+        if i <= len(cwd.parents):
+            search_paths.append(cwd.parents[i-1])
+    
+    # Remove None entries
+    search_paths = [p for p in search_paths if p is not None]
+    
+    # Debug info
+    # print(f"Search paths: {[str(p) for p in search_paths]}")
+    
     for path in search_paths:
         try:
+            # print(f"Checking {path}")
+            contents = list(path.iterdir()) if path.exists() else []
+            dir_names = [d.name for d in contents if d.is_dir()]
+            # print(f"  Contents: {dir_names}")
+            
+            # Check if this path contains dbt and pipelines directories
             if (path / "dbt").exists() and (path / "pipelines").exists():
                 project_root = path.resolve()
+                print(f"✅ Found project root: {project_root}")
                 break
         except (PermissionError, OSError) as e:
             print(f"Warning: Couldn't access {path} - {str(e)}", file=sys.stderr)
@@ -23,7 +44,7 @@ def get_project_paths():
         cwd = Path.cwd()
         raise FileNotFoundError(
             "Project root not found! Checked:\n"
-            f"- Possible roots: {[str(p) for p in search_paths]}\n"
+            f"- Search paths: {[str(p) for p in search_paths]}\n"
             f"- Current directory: {str(cwd)}\n"
             f"- Contents: {[f.name for f in cwd.iterdir() if f.is_dir()]}\n"
             "Required structure: must contain 'dbt/' and 'pipelines/' subdirectories"

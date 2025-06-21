@@ -8,7 +8,7 @@ from dlt.sources.helpers import requests
 from dlt.pipeline.exceptions import PipelineNeverRan
 from dlt.destinations.exceptions import DatabaseUndefinedRelation
 import os
-import time
+import time as tyme
 from project_path import get_project_paths, set_dlt_env_vars
 
 # Load environment variables and set DLT config
@@ -54,7 +54,7 @@ def get_ski_fields_with_timestamp():
     ]
 
 SKI_FIELDS = get_ski_fields_with_timestamp()
-START_DATE = date(2020, 1, 1)
+START_DATE = date(2019, 1, 1)
 BATCH_SIZE = 150  # Number of rows to yield at once
 
 def get_all_missing_dates(logger, locations, start_date, end_date, dataset):
@@ -127,7 +127,7 @@ def fetch_snowfall_data(location, start_date, end_date):
         logger.error(f"Unexpected error for {location['name']}: {e}")
         return None
 
-@dlt.resource(write_disposition="replace", name="ski_field_lookup", primary_key=["name"])
+@dlt.resource(write_disposition="merge", name="ski_field_lookup", primary_key=["name"])
 def ski_field_lookup_resource(new_locations):
     """Yield ski field lookup table only for new locations."""
     for field in SKI_FIELDS:
@@ -243,7 +243,7 @@ def snowfall_source(logger: logging.Logger, dataset):
 
                 chunk_start = chunk_end + timedelta(days=1)
                 chunk_end = min(chunk_start + chunk_size, missing_dates[-1])
-                time.sleep(1)
+                tyme.sleep(1)
 
             # After processing, update processed_info with absolute min/max and row count from db_info
             abs_min = db_info.get(location_name, {}).get("min_date", None)

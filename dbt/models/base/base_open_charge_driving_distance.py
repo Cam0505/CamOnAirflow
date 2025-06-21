@@ -2,10 +2,48 @@ import pandas as pd
 import time
 import requests
 import os
-import random
 from pathlib import Path
 from dotenv import load_dotenv, find_dotenv
 from typing import Any
+
+
+
+def get_driving_distances_matrix(pairs, api_key):
+    """
+    pairs: list of (lon1, lat1, lon2, lat2)
+    Returns: list of distances in km (order matches pairs)
+    """
+
+    # Build unique locations and map to indices
+    locations = []
+    loc_to_idx = {}
+    for lon, lat in set([(p[0], p[1]) for p in pairs] + [(p[2], p[3]) for p in pairs]):
+        loc_to_idx[(lon, lat)] = len(locations)
+        locations.append([float(lon), float(lat)])
+
+    sources = [loc_to_idx[(p[0], p[1])] for p in pairs]
+    destinations = [loc_to_idx[(p[2], p[3])] for p in pairs]
+
+    url = "https://api.openrouteservice.org/v2/matrix/driving-car"
+    headers = {
+        'Accept': 'application/json',
+        'Authorization': api_key
+    }
+    data = {
+        "locations": locations,
+        "sources": sources,
+        "destinations": destinations,
+        "metrics": ["distance"]
+    }
+    response = requests.post(url, json=data, headers=headers)
+    if response.status_code == 200:
+        result = response.json()
+        # result['distances'] is a matrix: sources x destinations
+        # For 1:1 mapping, take diagonal
+        return [row[i] / 1000 if row[i] is not None else pd.NA for i, row in enumerate(result['distances'])]
+    else:
+        print(f"Matrix API error: {response.status_code} - {response.text}")
+        return [pd.NA] * len(pairs)
 
 def model(dbt: Any, session: Any):
     dbt.config(
@@ -81,60 +119,19 @@ def model(dbt: Any, session: Any):
         # For full refresh, take pairs directly from source table
         process_df = dbt.ref("base_open_charge_nearby_stations").df().head(max_requests_per_run)
     
-    def get_driving_distance(lon1, lat1, lon2, lat2, max_retries=3):
-        """Get driving distance using OpenRouteService API with retries"""
-        # Prepare request
-        url = "https://api.openrouteservice.org/v2/directions/driving-car"
-        headers = {
-            'Accept': 'application/json',
-            'Authorization': api_key
-        }
-        data = {
-            "coordinates": [[float(lon1), float(lat1)], [float(lon2), float(lat2)]]
-        }
-        
-        # Try with exponential backoff
-        for attempt in range(max_retries):
-            try:
-                print(f"API request for coordinates: [{float(lon1):.5f}, {float(lat1):.5f}] to [{float(lon2):.5f}, {float(lat2):.5f}]")
-                response = requests.post(url, json=data, headers=headers)
-                print(f"API response status: {response.status_code}")
-                
-                if response.status_code == 200:
-                    result = response.json()
-                    # Distance comes back in meters, convert to km
-                    distance = result['routes'][0]['summary']['distance'] / 1000
-                    print(f"Got distance: {distance} km")
-                    return distance
-                elif response.status_code == 429 or response.status_code == 503:
-                    # Rate limit or service unavailable - exponential backoff
-                    wait_time = (3 ** attempt) + random.uniform(6, 6)
-                    print(f"Rate limited. Waiting {wait_time:.2f}s before retry {attempt+1}/{max_retries}")
-                    time.sleep(wait_time)
-                else:
-                    print(f"API error: {response.status_code} - {response.text}")
-                    return None
-            except Exception as e:
-                print(f"Error getting driving distance: {e}")
-                wait_time = (3 ** attempt) + random.uniform(6, 6)
-                time.sleep(wait_time)
-        
-        # If all retries failed
-        print("All retry attempts failed")
-        return None
 
     # Process pairs and collect results
+    pairs = [
+        (row.lon_1, row.lat_1, row.lon_2, row.lat_2)
+        for row in process_df.itertuples(index=False)
+    ]
+    distances = get_driving_distances_matrix(pairs, api_key)
+
     results = []
-    for idx, row in enumerate(process_df.itertuples(index=False), 1):
-        print(f"Processing pair {idx}/{len(process_df)}: {row.name_1} to {row.name_2}")
-
-        driving_dist = get_driving_distance(row.lon_1, row.lat_1, row.lon_2, row.lat_2)
-
+    for idx, (row, driving_dist) in enumerate(zip(process_df.itertuples(index=False), distances), 1):
         result = row._asdict()
-        result['driving_distance_km'] = driving_dist if driving_dist is not None else pd.NA
+        result['driving_distance_km'] = driving_dist
         result['processed_at'] = pd.Timestamp.now()
         results.append(result)
-
-        time.sleep(6)
 
     return pd.DataFrame(results)

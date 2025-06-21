@@ -69,8 +69,7 @@ def gsheet_finance_source(logger=None):
 
             # Process data and track timestamps
             df = pd.DataFrame(data)
-            df['DateTime'] = pd.to_datetime(
-                df['DateTime']).dt.tz_localize('UTC')
+            df['DateTime'] = pd.to_datetime(df['DateTime']).dt.tz_localize('UTC')
             latest_gsheet_ts = df['DateTime'].max()
             if logger:
                 logger.info(f"Latest data timestamp: {latest_gsheet_ts}")

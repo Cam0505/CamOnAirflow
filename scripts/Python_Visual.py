@@ -2,7 +2,8 @@ import duckdb
 from dotenv import load_dotenv
 from project_path import get_project_paths, set_dlt_env_vars
 import os
-from plotnine import ggplot, aes, geom_line, geom_point, geom_text, geom_hline, labs, scale_fill_manual, scale_color_manual, facet_wrap, theme_light, theme, element_text
+from plotnine import ggplot, aes, geom_line, geom_point, geom_text, geom_hline, labs, scale_fill_manual, scale_color_manual, facet_wrap, theme_light, theme, element_text, geom_bar, element_rect
+import pandas as pd
 
 # Load environment variables and set DLT config
 paths = get_project_paths()
@@ -32,6 +33,13 @@ df = con.execute("""
     left join camonairflow.skifields.ski_field_lookup as ski_lookup 
     on snowfall.ski_field = ski_lookup.name
 """).df()
+
+# Calculate total winter snowfall per ski_field/year for proportion
+df['season_total'] = df.groupby(['ski_field', 'year_col'])['total_monthly_snowfall'].transform('sum')
+df['month_prop'] = df['total_monthly_snowfall'] / df['season_total']
+df['month_name'] = df['month_col'].map({6: 'Jun', 7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct'})
+df['month_name'] = pd.Categorical(df['month_name'], categories=['Jun', 'Jul', 'Aug', 'Sep', 'Oct'], ordered=True)
+df['facet_label'] = df['country'] + ' - ' + df['ski_field']
 
 # Yearly aggregation from the monthly analysis
 yearly = (
@@ -83,7 +91,9 @@ p1 = (
         axis_title_x=element_text(size=16, weight='bold'),
         plot_title=element_text(weight='bold', size=20),
         plot_subtitle=element_text(size=14),
-        panel_spacing=0.05  # Reduce space between panels
+        panel_spacing=0.05,  # Reduce space between panels
+        strip_text_x=element_text(color="black", weight="bold", size=12),
+        strip_background=element_rect(fill="#e0e0e0", color="#888888")
     )
 )
 
@@ -109,10 +119,39 @@ p2 = (
         axis_title_x=element_text(size=16, weight='bold'),
         plot_title=element_text(weight='bold', size=20),
         plot_subtitle=element_text(size=14),
-        panel_spacing=0.05  # Reduce space between panels
+        panel_spacing=0.05,  # Reduce space between panels
+        strip_text_x=element_text(color="black", weight="bold", size=12),
+        strip_background=element_rect(fill="#e0e0e0", color="#888888")
+    )
+)
+
+# Remove 2025 from the dataframe before plotting p3
+df_plot = df[df['year_col'] != 2025]
+
+# Plot 3: Monthly proportion of total winter snowfall (without 2025)
+p3 = (
+    ggplot(df_plot, aes('year_col', 'month_prop', fill='month_name'))
+    + geom_bar(stat='identity', position='stack')
+    + facet_wrap('~facet_label', ncol=4)
+    + labs(
+        title='Monthly Proportion of Total Winter Snowfall',
+        subtitle='Each bar shows the % of season snowfall by month',
+        x='Year', y='Proportion of Season Snowfall'
+    )
+    + theme_light(base_size=16)
+    + theme(
+        legend_position='right',
+        axis_text_x=element_text(rotation=45, hjust=1, size=10),
+        axis_title_x=element_text(size=14, weight='bold'),
+        plot_title=element_text(weight='bold', size=18),
+        plot_subtitle=element_text(size=12),
+        panel_spacing=0.05,
+        strip_text_x=element_text(color="black", weight="bold", size=12),
+        strip_background=element_rect(fill="#e0e0e0", color="#888888")
     )
 )
 
 # Save with a wide and shorter aspect ratio, under 6100px in both dimensions
 p1.save("/workspaces/CamOnAirFlow/winter_snowfall_vs_prev_year.png", width=32, height=28, dpi=150, limitsize=False)
 p2.save("/workspaces/CamOnAirFlow/winter_snowfall_vs_avg.png", width=32, height=28, dpi=150, limitsize=False)
+p3.save("/workspaces/CamOnAirFlow/monthly_proportion_snowfall.png", width=32, height=28, dpi=150, limitsize=False)

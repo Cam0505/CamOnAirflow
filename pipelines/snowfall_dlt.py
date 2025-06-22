@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import logging
 from dotenv import load_dotenv
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 import pandas as pd
 import dlt
 from dlt.sources.helpers import requests
@@ -31,7 +31,7 @@ os.makedirs(RESULTS_DIR, exist_ok=True)
 
 # Ski field locations with dynamic last_updated
 def get_ski_fields_with_timestamp():
-    now = datetime.utcnow().isoformat()
+    now = datetime.now(timezone.utc).isoformat()
     return [
         {**field, "last_updated": now}
         for field in [
@@ -54,7 +54,7 @@ def get_ski_fields_with_timestamp():
     ]
 
 SKI_FIELDS = get_ski_fields_with_timestamp()
-START_DATE = date(2008, 1, 1)
+START_DATE = date(2002, 1, 1)
 BATCH_SIZE = 150  # Number of rows to yield at once
 
 def get_all_missing_dates(logger, locations, start_date, end_date, dataset):

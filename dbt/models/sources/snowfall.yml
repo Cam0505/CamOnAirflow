@@ -1,0 +1,41 @@
+version: 2
+
+sources:
+  - name: snowfall
+    database: camonairflow
+    schema: skifields
+
+    tables:
+      - name: ski_field_snowfall
+        data_tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns:
+                - date
+                - location
+        freshness:
+          warn_after: {count: 6, period: day}
+          error_after: {count: 14, period: day}
+        loaded_at_field: CAST(date AS TIMESTAMP)
+        columns:
+          - name: date
+            description: ""
+          - name: location
+            description: "Ski Field"
+          - name: snowfall
+            description: ""
+          - name: temperature_mean
+            description: ""
+      - name: ski_field_lookup
+        columns:
+          - name: name
+            description: "Ski Field"
+          - name: country
+            description: "{{ doc('country') }}"
+          - name: lat
+            description: "{{ doc('latitude') }}"
+          - name: lon
+            description: "{{ doc('longitude') }}"
+          - name: timezone
+            description: ''
+          - name: last_updated
+            description: ''

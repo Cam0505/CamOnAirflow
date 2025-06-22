@@ -36,6 +36,9 @@ models:
     common:
       +schema: common
       +materialized: table
+    analysis:
+      +materialized: view
+      +schema: analysis
 
 snapshots:
   camonairflow:

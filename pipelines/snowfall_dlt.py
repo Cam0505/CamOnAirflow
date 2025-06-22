@@ -54,7 +54,7 @@ def get_ski_fields_with_timestamp():
     ]
 
 SKI_FIELDS = get_ski_fields_with_timestamp()
-START_DATE = date(2019, 1, 1)
+START_DATE = date(2008, 1, 1)
 BATCH_SIZE = 150  # Number of rows to yield at once
 
 def get_all_missing_dates(logger, locations, start_date, end_date, dataset):

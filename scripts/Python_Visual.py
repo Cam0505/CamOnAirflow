@@ -22,12 +22,15 @@ con = duckdb.connect(database_string)
 # Query your analysis view
 df = con.execute("""
     SELECT
-        ski_field,
-        year_col,
-        month_col,
-        avg_daily_snowfall,
-        total_monthly_snowfall
-    FROM camonairflow.public_analysis.snowfall_winter_agg
+        snowfall.ski_field,
+        snowfall.year_col,
+        snowfall.month_col,
+        snowfall.avg_daily_snowfall,
+        snowfall.total_monthly_snowfall,
+        ski_lookup.country
+    FROM camonairflow.public_analysis.snowfall_winter_agg as snowfall
+    left join camonairflow.skifields.ski_field_lookup as ski_lookup 
+    on snowfall.ski_field = ski_lookup.name
 """).df()
 
 # Yearly aggregation from the monthly analysis
@@ -38,6 +41,9 @@ yearly = (
         total_winter_snowfall=('total_monthly_snowfall', 'sum')
     )
 )
+
+# Add country info to yearly
+yearly = yearly.merge(df[['ski_field', 'country']].drop_duplicates(), on='ski_field', how='left')
 
 # Calculate year-on-year change and long-term average
 yearly['prev_total'] = yearly.groupby('ski_field')['total_winter_snowfall'].shift(1)
@@ -55,6 +61,9 @@ color_list = [
     "#bcbd22", "#17becf", "#aec7e8", "#ffbb78", "#98df8a", "#ff9896", "#c5b0d5", "#c49c94"
 ]
 
+# Add this before plotting:
+yearly['facet_label'] = yearly['country'] + ' - ' + yearly['ski_field']
+
 # Plot 1: Yearly trend with change vs previous year
 p1 = (
     ggplot(yearly, aes('year_col', 'total_winter_snowfall', color='ski_field'))
@@ -66,7 +75,7 @@ p1 = (
            x='Year', y='Total Winter Snowfall (cm)')
     + scale_fill_manual(values={True: '#2ca02c', False: '#d62728'})
     + scale_color_manual(values=color_list)
-    + facet_wrap('~ski_field', scales='free_x', ncol=2)
+    + facet_wrap('~facet_label', scales='free_x', ncol=4)
     + theme_light(base_size=16)
     + theme(
         legend_position='right',
@@ -92,7 +101,7 @@ p2 = (
     )
     + scale_fill_manual(values={True: '#1f77b4', False: '#ff7f0e'})
     + scale_color_manual(values=color_list)
-    + facet_wrap('~ski_field', scales='free_x', ncol=2)
+    + facet_wrap('~facet_label', scales='free_x', ncol=4)
     + theme_light(base_size=16)
     + theme(
         legend_position='right',

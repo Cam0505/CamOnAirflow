@@ -25,10 +25,6 @@ load_dotenv(dotenv_path=ENV_FILE)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
-# Output directory for any exported data
-RESULTS_DIR = "snowfall_data"
-os.makedirs(RESULTS_DIR, exist_ok=True)
-
 # Ski field locations with dynamic last_updated
 def get_ski_fields_with_timestamp():
     now = datetime.now(timezone.utc).isoformat()
@@ -55,18 +51,17 @@ def get_ski_fields_with_timestamp():
 
 SKI_FIELDS = get_ski_fields_with_timestamp()
 START_DATE = date(2002, 1, 1)
-BATCH_SIZE = 150  # Number of rows to yield at once
+BATCH_SIZE = 200  # Number of rows to yield at once
+FORCE_SNOW_DEPTH_RELOAD = False  # <-- Set to False after one-off load
 
 def get_all_missing_dates(logger, locations, start_date, end_date, dataset):
     """
     Returns:
       missing_dates: dict of location_name -> set of missing dates (as date objects)
-      db_info: dict of location_name -> dict with min_date, max_date, row_count
       table_truncated: bool, True if the table is empty (truncated)
     """
     try:
         missing_dates = {}
-        db_info = {}
         all_dates = set(pd.date_range(start_date, end_date).date)
         table_truncated = dataset is None or dataset.empty
 
@@ -74,27 +69,20 @@ def get_all_missing_dates(logger, locations, start_date, end_date, dataset):
             name = loc["name"]
             if table_truncated or name not in dataset["location"].unique():
                 missing_dates[name] = all_dates
-                db_info[name] = {"min_date": None, "max_date": None, "row_count": 0}
             else:
                 loc_df = dataset[dataset["location"] == name]
                 existing_dates = set(pd.to_datetime(loc_df["date"]).dt.date)
                 missing_dates[name] = all_dates - existing_dates
-                db_info[name] = {
-                    "min_date": loc_df["date"].min(),
-                    "max_date": loc_df["date"].max(),
-                    "row_count": len(loc_df)
-                }
-        return missing_dates, db_info, table_truncated
+        return missing_dates, table_truncated
     except Exception as e:
         logger.error(f"Failed to retrieve missing dates from dataset: {e}")
         missing_dates = {loc["name"]: set(pd.date_range(start_date, end_date).date) for loc in locations}
-        db_info = {loc["name"]: {"min_date": None, "max_date": None, "row_count": 0} for loc in locations}
-        return missing_dates, db_info, False
+        return missing_dates, False
 
 def fetch_snowfall_data(location, start_date, end_date):
-    """Fetch historical snowfall data for a specific location."""
+    """Fetch historical snowfall and snow depth data for a specific location."""
     logger.debug(f"Fetching data for {location['name']} from {start_date} to {end_date}")
-    
+
     url = "https://archive-api.open-meteo.com/v1/archive"
     params = {
         "latitude": location["lat"],
@@ -102,24 +90,24 @@ def fetch_snowfall_data(location, start_date, end_date):
         "start_date": start_date,
         "end_date": end_date,
         "daily": ",".join(["snowfall_sum", "temperature_2m_mean"]),
+        "hourly": "snow_depth",
         "timezone": location["timezone"]
     }
-    
+
     try:
-        
         response = requests.get(url, params=params, timeout=30)
         logger.debug(f"API request URL: {response.url}")
         logger.debug(f"Response status code: {response.status_code}")
         response.raise_for_status()
         data = response.json()
-        
-        logger.info(f"Received data for {location['name']}: {len(data.get('daily', {}).get('time', []))} records")
+
+        logger.info(f"Received data for {location['name']}: {len(data.get('daily', {}).get('time', []))} daily records")
         if "error" in data:
             logger.error(f"API error: {data.get('reason')}")
             return None
-        
+
         return data
-    
+
     except requests.RequestException as e:
         logger.error(f"Request failed for {location['name']}: {e}")
         return None
@@ -138,48 +126,64 @@ def ski_field_lookup_resource(new_locations):
 def snowfall_source(logger: logging.Logger, dataset):
     """
     DLT source for snow data from ski fields in NZ and Australia.
-    Fetches daily snowfall data for all locations since 1990.
+    Fetches daily snowfall and snow depth data for all locations, June-Nov only.
     Uses row_max_min to avoid reprocessing existing data.
     """
     @dlt.resource(write_disposition="merge", name="ski_field_snowfall", 
                   primary_key=["location", "date"])
     def ski_field_data():
-        # Initialize or retrieve persistent state
         state = dlt.current.source_state().setdefault("snowfall", {
             "Daily_Requests": {},
-            "Failed_Locations": {},
             "Processed_Ranges": {},
             "Known_Locations": [],
         })
-        
+
         today = date.today()
         today_str = str(today)
-        end_date = today - timedelta(days=2)  # Allow time for data processing
-        
-        # Only keep today's request count in state to avoid unbounded growth
+        end_date = today - timedelta(days=2)
         state["Daily_Requests"] = {today_str: state["Daily_Requests"].get(today_str, 0)}
 
         Known_Locations = set(state.setdefault("Known_Locations", []))
         state["Known_Locations"] = list(Known_Locations)
         new_locations = set()
 
-        # Get missing dates, db_info, and table truncation status
-        missing_dates_by_location, db_info, table_truncated = get_all_missing_dates(
+        # Only consider June to November for all years
+        def is_winter_month(d):
+            return 6 <= d.month <= 11
+
+        # Get all missing dates, but only for June-November
+        def get_winter_dates(start, end):
+            return [d for d in pd.date_range(start, end).date if is_winter_month(d)]
+
+        missing_dates_by_location, table_truncated = get_all_missing_dates(
             logger, SKI_FIELDS, START_DATE, end_date, dataset
         )
+        # Filter missing_dates_by_location to only June-Nov
+        for loc in missing_dates_by_location:
+            missing_dates_by_location[loc] = {d for d in missing_dates_by_location[loc] if is_winter_month(d)}
 
-        # If table truncated, reset processed/failed ranges
         if table_truncated:
             state["Processed_Ranges"] = {}
-            state["Failed_Locations"] = {}
 
         logger.info("Starting snowfall data collection for ski fields")
         processed_info = {}
+
+        # <-- Set to False after one-off load
+        # if FORCE_SNOW_DEPTH_RELOAD:
+        #     for loc in missing_dates_by_location:
+        #         if dataset is not None:
+        #             loc_df = dataset[dataset["location"] == loc]
+        #             all_june_nov_dates = set(
+        #                 pd.to_datetime(loc_df["date"])
+        #                 .dt.date[loc_df["date"].apply(lambda d: 6 <= d.month <= 11)]
+        #             )
+        #             missing_dates_by_location[loc] = all_june_nov_dates
+
         for location in SKI_FIELDS:
             location_name = location["name"]
             country = location["country"]
             location_key = f"{country}_{location_name.replace(' ', '_')}"
-            
+
             if location_name not in state["Known_Locations"]:
                 new_locations.add(location_name)
             logger.info(f"Processing {location_name}, {country}")
@@ -189,22 +193,16 @@ def snowfall_source(logger: logging.Logger, dataset):
                 logger.info(f"No missing dates for {location_name}, skipping.")
                 continue
 
-            chunk_size = timedelta(days=365)
-            chunk_start = missing_dates[0]
-            chunk_end = min(chunk_start + chunk_size, missing_dates[-1])
-
-            total_rows = 0
-            failed_dates = []
-            while chunk_start <= missing_dates[-1]:
-                chunk_dates = [d for d in missing_dates if chunk_start <= d <= chunk_end]
-                if not chunk_dates:
-                    chunk_start = chunk_end + timedelta(days=1)
-                    chunk_end = min(chunk_start + chunk_size, missing_dates[-1])
-                    continue
-
+            # Group missing dates by winter season (year)
+            seasons = {}
+            for d in missing_dates:
+                # If June-Nov, assign to that year as the "season"
+                seasons.setdefault(d.year, []).append(d)
+            for season_year, season_dates in seasons.items():
+                chunk_dates = sorted(season_dates)
                 start_str = chunk_dates[0].strftime("%Y-%m-%d")
                 end_str = chunk_dates[-1].strftime("%Y-%m-%d")
-                logger.info(f"Requesting data for {location_name} from {start_str} to {end_str}")
+                logger.info(f"Requesting data for {location_name} {season_year} winter: {start_str} to {end_str}")
 
                 try:
                     data = fetch_snowfall_data(location, start_str, end_str)
@@ -212,67 +210,68 @@ def snowfall_source(logger: logging.Logger, dataset):
 
                     if not data or "daily" not in data or not data["daily"].get("time"):
                         logger.warning(f"No data returned for {location_name} ({start_str} to {end_str})")
-                        failed_dates.extend(chunk_dates)
-                        chunk_start = chunk_end + timedelta(days=1)
-                        chunk_end = min(chunk_start + chunk_size, missing_dates[-1])
                         continue
 
+                    # --- Process daily snowfall/temperature ---
                     daily_data = data["daily"]
+                    daily_df = pd.DataFrame({
+                        "date": pd.to_datetime(daily_data["time"]).date,
+                        "snowfall": daily_data["snowfall_sum"],
+                        "temperature_mean": daily_data["temperature_2m_mean"]
+                    })
+
+                    # --- Process hourly snow depth ---
+                    if "hourly" in data and data["hourly"].get("time"):
+                        hourly_df = pd.DataFrame({
+                            "datetime": pd.to_datetime(data["hourly"]["time"]),
+                            "snow_depth": data["hourly"]["snow_depth"]
+                        })
+                        hourly_df["date"] = hourly_df["datetime"].dt.date
+                        # Only keep June-Nov
+                        hourly_df = hourly_df[hourly_df["datetime"].dt.month.between(6, 11)]
+                        # Average over all hours for each day
+                        avg_depth = hourly_df.groupby("date")["snow_depth"].mean().reset_index()
+                        avg_depth.rename(columns={"snow_depth": "avg_snow_depth"}, inplace=True)
+                    else:
+                        avg_depth = pd.DataFrame(columns=["date", "avg_snow_depth"])
+
+                    # --- Merge daily and snow depth ---
+                    merged = pd.merge(daily_df, avg_depth, on="date", how="left")
+                    merged["location"] = location_name
+                    merged["country"] = country
+
+                    # Yield in batches
                     batch = []
-                    for i in range(len(daily_data["time"])):
-                        date_val = daily_data["time"][i]
-                        if not isinstance(date_val, date):
-                            date_val = date.fromisoformat(date_val)
-                        row = {
-                            "date": date_val,
-                            "location": location_name,
-                            "snowfall": daily_data["snowfall_sum"][i],
-                            "temperature_mean": daily_data["temperature_2m_mean"][i]
-                        }
-                        batch.append(row)
-                        total_rows += 1
+                    for _, row in merged.iterrows():
+                        batch.append({
+                            "date": row["date"],
+                            "location": row["location"],
+                            "country": row["country"],
+                            "snowfall": row["snowfall"],
+                            "temperature_mean": row["temperature_mean"],
+                            "avg_snow_depth": row["avg_snow_depth"]
+                        })
                         if len(batch) >= BATCH_SIZE:
                             yield batch
                             batch = []
                     if batch:
                         yield batch
 
-                except Exception as e:
-                    logger.error(f"Error processing chunk {start_str} to {end_str} for {location_name}: {e}")
-                    failed_dates.extend(chunk_dates)
+                    # Store processed range for this winter season
+                    processed_info.setdefault(location_key, []).append({
+                        "season_year": season_year,
+                        "start": str(chunk_dates[0]),
+                        "end": str(chunk_dates[-1]),
+                        "timestamp": datetime.now().isoformat()
+                    })
 
-                chunk_start = chunk_end + timedelta(days=1)
-                chunk_end = min(chunk_start + chunk_size, missing_dates[-1])
+                except Exception as e:
+                    logger.error(f"Error processing {start_str} to {end_str} for {location_name}: {e}")
                 tyme.sleep(1)
 
-            # After processing, update processed_info with absolute min/max and row count from db_info
-            abs_min = db_info.get(location_name, {}).get("min_date", None)
-            abs_max = db_info.get(location_name, {}).get("max_date", None)
-            abs_count = db_info.get(location_name, {}).get("row_count", 0)
-            if total_rows > 0 or abs_count > 0:
-                processed_info[location_key] = [{
-                    "start": str(abs_min) if abs_min else str(min(missing_dates)),
-                    "end": str(abs_max) if abs_max else str(max(missing_dates)),
-                    "timestamp": datetime.now().isoformat(),
-                    "row_count": abs_count
-                }]
+        # After all processing, update the state once:
+        state["Processed_Ranges"] = processed_info
 
-            # Overwrite failed ranges for this run
-            if failed_dates:
-                state["Failed_Locations"][location_key] = {
-                    "failed_ranges": [
-                        {
-                            "start": str(d),
-                            "end": str(d),
-                            "timestamp": datetime.now().isoformat(),
-                            "reason": "No data returned"
-                        }
-                        for d in failed_dates
-                    ]
-                }
-
-        # Update processed ranges in state
-        state["Processed_Ranges"].update(processed_info)
         if new_locations:
             state["Known_Locations"] = list(Known_Locations.union(new_locations))
 
@@ -281,7 +280,6 @@ def snowfall_source(logger: logging.Logger, dataset):
     return ski_field_data
 
 if __name__ == "__main__":
-    logger.info("=== Starting Snowfall Data Pipeline ===")
     
     # Set up DLT pipeline
     pipeline = dlt.pipeline(
@@ -312,7 +310,6 @@ if __name__ == "__main__":
 
         state = source.state.get('snowfall', {})
         logger.info(f"Daily Requests: {state.get('Daily_Requests', {})}")
-        logger.info(f"Failed Locations: {len(state.get('Failed_Locations', {}))}")
         logger.info(f"Processed Ranges: {sum(len(v) for v in state.get('Processed_Ranges', {}).values())}")
         logger.info(f"Pipeline run completed. Load Info: {load_info}")
 

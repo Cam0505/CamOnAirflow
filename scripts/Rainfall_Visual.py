@@ -31,7 +31,6 @@ df = con.execute("""
         avg_daily_rainfall,
         total_monthly_rainfall
     FROM camonairflow.public_analysis.rainfall_pre_winter_agg
-                 where Ice_climbing in ( 'Remarkables')
 """).df()
 #  'Black Peak'
 
@@ -74,7 +73,7 @@ def make_plots(df, value_col, avg_col, label_prefix, file_prefix):
         )
         + scale_fill_manual(values={True: '#1f77b4', False: '#ff7f0e'})
         + scale_color_manual(values=color_list)
-        + facet_wrap('~facet_label', scales='free_x', nrow=1)
+        + facet_wrap('~facet_label', scales='free_x', ncol=3)
         + theme_light(base_size=16)
         + theme(
             legend_position='right',
@@ -93,7 +92,7 @@ def make_plots(df, value_col, avg_col, label_prefix, file_prefix):
     p_prop = (
         ggplot(df_plot, aes('year_col', 'month_prop', fill='month_name'))
         + geom_bar(stat='identity', position='stack')
-        + facet_wrap('~facet_label', nrow=1)
+        + facet_wrap('~facet_label', ncol=3)
         + labs(
             title=f'Monthly Proportion of Pre-Winter {label_prefix}',
             subtitle=f'Each bar shows the % of pre-winter {label_prefix.lower()} by month',

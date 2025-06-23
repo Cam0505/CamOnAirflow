@@ -50,7 +50,7 @@ def get_ski_fields_with_timestamp():
     ]
 
 SKI_FIELDS = get_ski_fields_with_timestamp()
-START_DATE = date(2002, 1, 1)
+START_DATE = date(1998, 1, 1)
 BATCH_SIZE = 200  # Number of rows to yield at once
 FORCE_SNOW_DEPTH_RELOAD = False  # <-- Set to False after one-off load
 

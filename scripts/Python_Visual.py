@@ -28,17 +28,15 @@ df = con.execute("""
         snowfall.month_col,
         snowfall.avg_daily_snowfall,
         snowfall.total_monthly_snowfall,
-        ski_lookup.country
+        snowfall.country
     FROM camonairflow.public_analysis.snowfall_winter_agg as snowfall
-    left join camonairflow.skifields.ski_field_lookup as ski_lookup 
-    on snowfall.ski_field = ski_lookup.name
 """).df()
 
 # Calculate total winter snowfall per ski_field/year for proportion
 df['season_total'] = df.groupby(['ski_field', 'year_col'])['total_monthly_snowfall'].transform('sum')
 df['month_prop'] = df['total_monthly_snowfall'] / df['season_total']
-df['month_name'] = df['month_col'].map({6: 'Jun', 7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct'})
-df['month_name'] = pd.Categorical(df['month_name'], categories=['Jun', 'Jul', 'Aug', 'Sep', 'Oct'], ordered=True)
+df['month_name'] = df['month_col'].map({6: 'Jun', 7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov'})
+df['month_name'] = pd.Categorical(df['month_name'], categories=['Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov'], ordered=True)
 df['facet_label'] = df['country'] + ' - ' + df['ski_field']
 
 # Yearly aggregation from the monthly analysis

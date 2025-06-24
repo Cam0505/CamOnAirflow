@@ -150,6 +150,5 @@ p3 = (
 )
 
 # Save with a wide and shorter aspect ratio, under 6100px in both dimensions
-p1.save("/workspaces/CamOnAirFlow/winter_snowfall_vs_prev_year.png", width=32, height=28, dpi=150, limitsize=False)
 p2.save("/workspaces/CamOnAirFlow/winter_snowfall_vs_avg.png", width=32, height=28, dpi=150, limitsize=False)
 p3.save("/workspaces/CamOnAirFlow/monthly_proportion_snowfall.png", width=32, height=28, dpi=150, limitsize=False)

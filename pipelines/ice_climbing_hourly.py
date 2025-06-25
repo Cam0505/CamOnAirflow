@@ -1,6 +1,7 @@
 import logging
 from dotenv import load_dotenv
-from datetime import datetime, date, timedelta, timezone
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo 
 import pandas as pd
 import dlt
 from dlt.sources.helpers import requests
@@ -9,7 +10,6 @@ from dlt.destinations.exceptions import DatabaseUndefinedRelation
 import os
 import time as tyme
 from project_path import get_project_paths, set_dlt_env_vars
-import duckdb
 
 # Load environment variables and set DLT config
 paths = get_project_paths()
@@ -25,41 +25,45 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 logger = logging.getLogger(__name__)
 
 # Configurable time window at the top
-END_DT_LAG_DAYS = 2  # Open-Meteo archive is usually 1-2 days behind
-DATA_WINDOW_DAYS = 120  # 4 months
+END_DT_LAG_DAYS = 3  # Open-Meteo archive is usually 1-2 days behind
+DATA_WINDOW_DAYS = 140 
 
 end_dt = datetime.now(timezone.utc) - timedelta(days=END_DT_LAG_DAYS)
 start_dt = end_dt - timedelta(days=DATA_WINDOW_DAYS)
 
 def get_ice_climbing_with_thresholds():
-    now = datetime.now(timezone.utc)
+    # Forming Temp: The temperature (°C) below which an hour counts as "below freezing" for ice formation.
+    # Forming Hours: Minimum number of hours per day below forming_temp required for a day to be considered a "forming day".
+    # Forming Days: Number of recent days to look back for calculating the fraction of "forming days".
+    # Formed Days: Number of days to use for the rolling mean of the forming score to determine if ice has formed.
+    # Degrade Temp: Temperature (°C) above which an hour counts as "above freezing" for ice degrading.
+    # Degrade Hours: Minimum number of hours per day above degrade_temp required for a day to be considered "degrading".
     return [
         {
             "name": "Remarkables", "country": "NZ", "lat": -45.0716, "lon": 168.8030, "timezone": "Pacific/Auckland",
-            "valid_from": now, "valid_to": None,
-            "forming_temp": 0.5, "forming_hours": 8, "forming_days": 3, "formed_days": 14, "degrade_temp": 1.5, "degrade_hours": 4,
+            "forming_temp": -1.0, "forming_hours": 11, "forming_days": 4, "formed_days": 21, "degrade_temp": 1.8, "degrade_hours": 4,
         },
         {
             "name": "Black Peak", "country": "NZ", "lat": -44.5841, "lon": 168.8309, "timezone": "Pacific/Auckland",
-            "valid_from": now, "valid_to": None,
-            "forming_temp": 0.0, "forming_hours": 10, "forming_days": 4, "formed_days": 16, "degrade_temp": 2.0, "degrade_hours": 5,
+            "forming_temp": 0.0, "forming_hours": 11, "forming_days": 4, "formed_days": 21, "degrade_temp": 2.0, "degrade_hours": 5,
         },
         {
             "name": "Dasler Pinnacles", "country": "NZ", "lat": -43.9568, "lon": 169.8682, "timezone": "Pacific/Auckland",
-            "valid_from": now, "valid_to": None,
-            "forming_temp": 0.3, "forming_hours": 7, "forming_days": 2, "formed_days": 12, "degrade_temp": 1.2, "degrade_hours": 3,
+            "forming_temp": 0.0, "forming_hours": 11, "forming_days": 4, "formed_days": 21, "degrade_temp": 1.8, "degrade_hours": 4,
         },
         {
             "name": "Milford Sound", "country": "NZ", "lat": -44.7726, "lon": 168.0389, "timezone": "Pacific/Auckland",
-            "valid_from": now, "valid_to": None,
-            "forming_temp": 0.5, "forming_hours": 8, "forming_days": 3, "formed_days": 14, "degrade_temp": 1.5, "degrade_hours": 4,
+            "forming_temp": -1.0, "forming_hours": 12, "forming_days": 4, "formed_days": 21, "degrade_temp": 1.5, "degrade_hours": 3,
+        },
+        {
+            "name": "Bush Stream", "country": "NZ", "lat": -43.8487, "lon": 170.0439, "timezone": "Pacific/Auckland",
+            "forming_temp": -1.5, "forming_hours": 11, "forming_days": 5, "formed_days": 21, "degrade_temp": 2.0, "degrade_hours": 4,
         }
     ]
 
 
 ICE_CLIMBING = get_ice_climbing_with_thresholds()
 BATCH_SIZE = 500
-
 
 
 def get_missing_dates(logger, locations, start_dt, end_dt, dataset):
@@ -71,7 +75,8 @@ def get_missing_dates(logger, locations, start_dt, end_dt, dataset):
         for loc in locations:
             name = loc["name"]
             if table_truncated or name not in dataset["location"].unique():
-                missing[name] = set(all_dates)
+                # Convert to date objects for consistency
+                missing[name] = set(all_dates.date)
             else:
                 loc_df = dataset[dataset["location"] == name]
                 existing = set(pd.to_datetime(loc_df["date"]).dt.date)
@@ -79,7 +84,8 @@ def get_missing_dates(logger, locations, start_dt, end_dt, dataset):
         return missing, table_truncated
     except Exception as e:
         logger.error(f"Failed to retrieve missing dates: {e}")
-        missing = {loc["name"]: set(pd.date_range(start_dt.date(), end_dt.date(), freq='D')) for loc in locations}
+        # Also use date objects here for consistency
+        missing = {loc["name"]: set(pd.date_range(start_dt.date(), end_dt.date(), freq='D').date) for loc in locations}
         return missing, False
 
 
@@ -117,13 +123,13 @@ def count_freeze_thaw(series):
 
 
 def freeze_thaw_factor(cycles):
-            # Bonus for 1–2 cycles, penalty for >2
-            if cycles <= 2:
-                return 1.05  # slight bonus
-            elif cycles <= 4:
-                return 1.0   # neutral
-            else:
-                return max(0.8, 1 - 0.2 * ((cycles - 4) / 4))  # penalty
+    # Bonus for 1–2 cycles, penalty for >2
+    if cycles <= 2:
+        return 1.05  # slight bonus
+    elif cycles <= 4:
+        return 1.0   # neutral
+    else:
+        return max(0.8, 1 - 0.2 * ((cycles - 4) / 4))  # penalty
 
 
 def enrich_ice_conditions(df, thresholds):
@@ -150,7 +156,9 @@ def enrich_ice_conditions(df, thresholds):
             hours_above_degrade = ("temperature_2m", lambda x: (x > degrade_temp).sum()),
             total_precip = ("precipitation", "sum"),
             freeze_thaw_cycles = ("temperature_2m", count_freeze_thaw),
+            sunshine_hours = ("sunshine_duration", lambda x: x.sum() / 3600) 
         )
+        
 
         # Forming day: at least forming_hours below freezing
         daily_stats["is_forming_day"] = (daily_stats["hours_below_freeze"] >= forming_hours).astype(int)
@@ -165,12 +173,17 @@ def enrich_ice_conditions(df, thresholds):
 
         # Weighted score for forming (for quality/has_formed)
         forming_score = (
-            0.4 * (daily_stats["hours_below_freeze"] / 24).clip(0, 1) +
-            0.15 * (1 - daily_stats["mean_cloud"] / 100).clip(0, 1) +
-            0.15 * (daily_stats["total_snow"] / 10).clip(0, 1) +
-            0.1 * (1 - daily_stats["mean_wind"] / 15).clip(0, 1) +
-            0.1 * (daily_stats["mean_rh"] / 100).clip(0, 1) +
-            0.1 * (1 - daily_stats["mean_shortwave"] / 200).clip(0, 1)
+            # Check for minimum freezing hours and that freezing hours > degrading hours
+            ((daily_stats["hours_below_freeze"] >= 8) & 
+             (daily_stats["hours_below_freeze"] > daily_stats["hours_above_degrade"] * 1.5)).astype(float) * (
+                0.40 * (daily_stats["hours_below_freeze"] / 24).clip(0, 1) +
+                0.15 * (1 - daily_stats["mean_cloud"] / 100).clip(0, 1) +
+                0.1 * (daily_stats["total_snow"] / 10).clip(0, 1) +
+                0.05 * (1 - daily_stats["mean_wind"] / 15).clip(0, 1) +
+                0.1 * (daily_stats["mean_rh"] / 100).clip(0, 1) +
+                0.1 * (1 - daily_stats["mean_shortwave"] / 200).clip(0, 1) +
+                0.1 * (daily_stats["sunshine_hours"] / 12).clip(0, 1)
+            )
         ).clip(0, 1)
 
         # Rolling mean for last N days for "has formed" and "ice_quality"
@@ -195,7 +208,7 @@ def enrich_ice_conditions(df, thresholds):
 
         daily_stats["ice_quality"] = (
             daily_stats["ice_has_formed"] *
-            (1 - 0.7 * daily_stats["is_ice_degrading"]) *
+            (1 - 0.8 * daily_stats["is_ice_degrading"]) * 
             daily_stats["freeze_thaw_cycles"].apply(freeze_thaw_factor)
         ).clip(0, 1)
 
@@ -220,7 +233,6 @@ def aggregate_to_daily(df):
         "surface_pressure": "mean",
         "relative_humidity_2m": "mean",
         "shortwave_radiation": "mean",
-        "sunshine_duration": "sum",
         "is_day": "sum",
         # Enrichment columns
         "is_ice_forming": "mean",
@@ -237,7 +249,12 @@ def aggregate_to_daily(df):
         "hours_above_degrade": "first",
         "total_precip": "first",
         "freeze_thaw_cycles": "first",
+        "sunshine_hours": "first"
     }
+    
+    # Only include columns that actually exist in the dataframe
+    agg_dict = {k: v for k, v in agg_dict.items() if k in df.columns}
+    
     group_cols = ["location", "country", "date"]
     daily_df = df.groupby(group_cols).agg(agg_dict).reset_index()
     return daily_df
@@ -264,15 +281,43 @@ def ice_climbing_hourly_source(logger: logging.Logger, dataset):
                 logger.info(f"No missing dates for {location_name}, skipping.")
                 continue
 
-            # If truncated, or missing dates, fetch the full range (DLT will deduplicate)
-            fetch_start = start_dt
+            # logger.info(f"Missing Dates: {missing_dates}")
+            # If we have missing dates, calculate optimal fetch start date
+            # to ensure we have enough history for all moving averages
+            if missing_dates:
+                # Find earliest missing date and go back enough days for calculations
+                earliest_missing = min(missing_dates)
+                # We need max(formed_days, 7) days of history for moving averages
+                lookback_days = max(location["formed_days"], 7)
+                optimal_start = earliest_missing - timedelta(days=lookback_days)
+                # Don't go before global start_dt
+                try:
+                    # Add error handling for timezone issues
+                    tz = ZoneInfo(location["timezone"])
+                    fetch_start = max(
+                        datetime.combine(optimal_start, datetime.min.time(), tzinfo=tz),
+                        start_dt
+                    )
+                except Exception as e:
+                    logger.warning(f"Error with timezone {location['timezone']}, using UTC: {e}")
+                    fetch_start = max(
+                        datetime.combine(optimal_start, datetime.min.time(), tzinfo=timezone.utc),
+                        start_dt
+                    )
+            else:
+                # If table is truncated, use full range
+                fetch_start = start_dt
+                
             fetch_end = end_dt
+
 
             try:
                 data = fetch_hourly_data(location, fetch_start, fetch_end)
                 if not data or "hourly" not in data or not data["hourly"].get("time"):
                     logger.warning(f"No data returned for {location_name}, skipping.")
                     continue
+
+                
                 h = data["hourly"]
                 df = pd.DataFrame({"datetime": pd.to_datetime(h["time"])})
                 for col in [
@@ -280,6 +325,7 @@ def ice_climbing_hourly_source(logger: logging.Logger, dataset):
                     "dew_point_2m", "surface_pressure", "relative_humidity_2m",
                     "shortwave_radiation", "sunshine_duration", "is_day"
                 ]:
+                    # Get the value and ensure the column exists even if None
                     df[col] = h.get(col)
                 df["location"] = location_name
                 df["country"] = country
@@ -287,7 +333,9 @@ def ice_climbing_hourly_source(logger: logging.Logger, dataset):
 
                 # Only keep rows for missing dates (unless truncated, then keep all)
                 if not table_truncated:
+                    logger.info(f"Before filtering: {len(df)} rows for {location_name}")
                     df = df[df["date"].isin(missing_dates)]
+                    logger.info(f"After filtering: {len(df)} rows for {location_name}")
                     if df.empty:
                         logger.info(f"No new data to process for {location_name}, skipping.")
                         continue
@@ -319,58 +367,30 @@ def ice_climbing_hourly_source(logger: logging.Logger, dataset):
 
 FAR_FUTURE = datetime(9999, 12, 31, tzinfo=timezone.utc)
 
-@dlt.resource(write_disposition="merge", name="ice_climbing_thresholds", primary_key=["name", "valid_from"])
+@dlt.resource(write_disposition="merge", name="ice_climbing_thresholds", primary_key=["name"])
 def ice_climbing_thresholds_resource(logger, thresholds_dataset):
-    now = datetime.now(timezone.utc)
     threshold_fields = ["forming_temp", "forming_hours", "forming_days", "formed_days", "degrade_temp", "degrade_hours"]
     changes = 0
 
     for loc in ICE_CLIMBING:
-        if (
-            thresholds_dataset is not None
-            and not thresholds_dataset.empty
-            and "valid_to" in thresholds_dataset.columns
-        ):
+        # Find the latest thresholds for this location, if any
+        if thresholds_dataset is not None and not thresholds_dataset.empty:
             latest = (
-                thresholds_dataset[
-                    (thresholds_dataset["name"] == loc["name"]) &
-                    (thresholds_dataset["valid_to"] == FAR_FUTURE)
-                ]
-                .sort_values("valid_from", ascending=False)
+                thresholds_dataset[thresholds_dataset["name"] == loc["name"]]
+                .sort_values("name", ascending=False)
                 .head(1)
             )
             latest = latest.iloc[0] if not latest.empty else None
         else:
             latest = None
 
-        if latest is not None:
-            changed = any(float(latest[field]) != float(loc[field]) for field in threshold_fields)
-        else:
-            changed = True  # No previous record
-
-        if changed:
+        # Only yield if changed or not present
+        if latest is None or any(float(latest[field]) != float(loc[field]) for field in threshold_fields):
             changes += 1
             logger.info(f"Thresholds changed for {loc['name']}. Writing new version.")
-            # If there is a previous record, yield a record to close it out
-            if latest is not None:
-                yield {
-                    "name": latest["name"],
-                    "country": latest["country"],
-                    "valid_from": latest["valid_from"],
-                    "valid_to": now,
-                    "forming_temp": latest["forming_temp"],
-                    "forming_hours": latest["forming_hours"],
-                    "forming_days": latest["forming_days"],
-                    "formed_days": latest["formed_days"],
-                    "degrade_temp": latest["degrade_temp"],
-                    "degrade_hours": latest["degrade_hours"],
-                }
-            # Yield the new record with far-future valid_to
             yield {
                 "name": loc["name"],
                 "country": loc["country"],
-                "valid_from": now,
-                "valid_to": FAR_FUTURE,
                 "forming_temp": loc["forming_temp"],
                 "forming_hours": loc["forming_hours"],
                 "forming_days": loc["forming_days"],
@@ -406,6 +426,7 @@ if __name__ == "__main__":
 
     
     try:
+
         logger.info("Running ice climbing hourly pipeline...")
         source = ice_climbing_hourly_source(logger, ice_climbing_dataset)
         load_info = pipeline.run(source)
@@ -416,9 +437,9 @@ if __name__ == "__main__":
         else:
             logger.info("No processed date ranges found in state.")
 
-
         logger.info("Running thresholds resource...")
         thresholds_resource = pipeline.run(ice_climbing_thresholds_resource(logger, thresholds_dataset))
+            
     except Exception as e:
         # Run the thresholds resource
         logger.info("Checking for threshold changes...")

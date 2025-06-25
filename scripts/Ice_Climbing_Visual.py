@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from project_path import get_project_paths, set_dlt_env_vars
 import os
 from plotnine import ggplot, aes, geom_line, labs, scale_color_manual, theme_light, theme, element_text, guides, guide_legend, facet_wrap, scale_x_datetime
-from plotnine.themes.elements import element_rect, element_text
+from plotnine.themes.elements import element_rect
 import pandas as pd
 
 # Load environment variables and set DLT config
@@ -46,7 +46,7 @@ for loc in locations:
         ggplot(dfl_melt, aes('date', 'value', color='enrichment'))
         + geom_line(size=1.2)
         + scale_color_manual(values=color_map)
-        + scale_x_datetime(date_breaks="14 days", date_labels="%Y-%m-%d")
+        + scale_x_datetime(date_breaks="10 days", date_labels="%Y-%m-%d")
         + labs(
             title=f"Ice Formation Fields for {loc}",
             y="Score (0-1)", x="Date"
@@ -62,7 +62,7 @@ for loc in locations:
 # --- Combined multi-panel plot for other variables ---
 facet_vars = [
     ('temperature_2m', "Temperature (°C)", "#1f77b4"),
-    ('sunshine_duration', "Sunshine Duration (min)", "#ffbb78"),
+    ('sunshine_hours', "Sunshine Hours (hrs)", "#ffbb78"),
     ('hours_below_freeze', "Hours Below Freeze", "#1f77b4"),
     ('total_snow', "Total Snow (mm)", "#2ca02c"),
     ('mean_shortwave', "Mean Shortwave Radiation", "#bcbd22"),  # swapped in
@@ -87,7 +87,7 @@ for loc in locations:
         + geom_line(aes(color='pretty'), size=1.2)
         + facet_wrap('~pretty', scales='free_y', ncol=2)
         + scale_color_manual(values={v[1]: v[2] for v in facet_vars}, name="Variable")
-        + scale_x_datetime(date_breaks="14 days", date_labels="%Y-%m-%d")
+        + scale_x_datetime(date_breaks="10 days", date_labels="%Y-%m-%d")
         + labs(
             title=f"Weather & Ice Stats for {loc}",
             x="Date",

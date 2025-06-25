@@ -1,6 +1,6 @@
 {
   "version": 4,
-  "version_hash": "ZIuk/JbJXCNExNMS3m27KXU/1yIf9qn5jiQLKD1CN/I=",
+  "version_hash": "oEUtoYt0OeWrdP/sRuPLvwZbZ++knnqam50dSwJ24T8=",
   "engine_version": 11,
   "name": "ice_climbing_hourly_source",
   "tables": {
@@ -139,11 +139,6 @@
           "data_type": "double",
           "nullable": true
         },
-        "sunshine_duration": {
-          "name": "sunshine_duration",
-          "data_type": "double",
-          "nullable": true
-        },
         "is_day": {
           "name": "is_day",
           "data_type": "bigint",
@@ -212,6 +207,11 @@
         "freeze_thaw_cycles": {
           "name": "freeze_thaw_cycles",
           "data_type": "bigint",
+          "nullable": true
+        },
+        "sunshine_hours": {
+          "name": "sunshine_hours",
+          "data_type": "double",
           "nullable": true
         },
         "_dlt_load_id": {
@@ -298,17 +298,6 @@
         "country": {
           "name": "country",
           "data_type": "text",
-          "nullable": true
-        },
-        "valid_from": {
-          "name": "valid_from",
-          "nullable": false,
-          "primary_key": true,
-          "data_type": "timestamp"
-        },
-        "valid_to": {
-          "name": "valid_to",
-          "data_type": "timestamp",
           "nullable": true
         },
         "forming_temp": {
@@ -407,8 +396,8 @@
     }
   },
   "previous_hashes": [
-    "xk/KugXrUeRyrtswNTHsFwY9vs/7u9GH3wX8SoovSK4=",
-    "S8cc74zGZLHwH0B8+sZZeeOa7f8bG0Ck1qOYEWM5H1Q=",
+    "ypHWKKY0mCP9ZZsoFHkVrm67uahlL+bfqT0miu/QyRE=",
+    "hxL/7PoMfTbVZc0MvMaRmoOTspS1iIHlR+UDgJuBHuw=",
     "ZV9VZEjtxCQspcWgpHZx2ywleWm3xPX7NlXbNaQ3PRM=",
     "mH5DEhrvGzlpBU+VIhDISER1Ja2coeTQRJchu2ZPSIA="
   ]

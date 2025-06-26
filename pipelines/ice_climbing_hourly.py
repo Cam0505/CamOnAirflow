@@ -10,6 +10,7 @@ from dlt.destinations.exceptions import DatabaseUndefinedRelation
 import os
 import time as tyme
 from project_path import get_project_paths, set_dlt_env_vars
+import concurrent.futures
 
 # Load environment variables and set DLT config
 paths = get_project_paths()
@@ -26,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 # Configurable time window at the top
 END_DT_LAG_DAYS = 3  # Open-Meteo archive is usually 1-2 days behind
-DATA_WINDOW_DAYS = 140 
+DATA_WINDOW_DAYS = 1300 
 
 end_dt = datetime.now(timezone.utc) - timedelta(days=END_DT_LAG_DAYS)
 start_dt = end_dt - timedelta(days=DATA_WINDOW_DAYS)
@@ -41,19 +42,19 @@ def get_ice_climbing_with_thresholds():
     return [
         {
             "name": "Remarkables", "country": "NZ", "lat": -45.0716, "lon": 168.8030, "timezone": "Pacific/Auckland",
-            "forming_temp": -1.0, "forming_hours": 11, "forming_days": 4, "formed_days": 21, "degrade_temp": 1.8, "degrade_hours": 4,
+            "forming_temp": -1.5, "forming_hours": 11, "forming_days": 5, "formed_days": 21, "degrade_temp": 1.8, "degrade_hours": 4,
         },
         {
             "name": "Black Peak", "country": "NZ", "lat": -44.5841, "lon": 168.8309, "timezone": "Pacific/Auckland",
-            "forming_temp": 0.0, "forming_hours": 11, "forming_days": 4, "formed_days": 21, "degrade_temp": 2.0, "degrade_hours": 5,
+            "forming_temp": -1.0, "forming_hours": 11, "forming_days": 5, "formed_days": 21, "degrade_temp": 2.0, "degrade_hours": 5,
         },
         {
             "name": "Dasler Pinnacles", "country": "NZ", "lat": -43.9568, "lon": 169.8682, "timezone": "Pacific/Auckland",
-            "forming_temp": 0.0, "forming_hours": 11, "forming_days": 4, "formed_days": 21, "degrade_temp": 1.8, "degrade_hours": 4,
+            "forming_temp": -1.0, "forming_hours": 11, "forming_days": 5, "formed_days": 21, "degrade_temp": 1.8, "degrade_hours": 4,
         },
         {
             "name": "Milford Sound", "country": "NZ", "lat": -44.7726, "lon": 168.0389, "timezone": "Pacific/Auckland",
-            "forming_temp": -1.0, "forming_hours": 12, "forming_days": 4, "formed_days": 21, "degrade_temp": 1.5, "degrade_hours": 3,
+            "forming_temp": -1.5, "forming_hours": 12, "forming_days": 5, "formed_days": 21, "degrade_temp": 1.5, "degrade_hours": 4,
         },
         {
             "name": "Bush Stream", "country": "NZ", "lat": -43.8487, "lon": 170.0439, "timezone": "Pacific/Auckland",
@@ -66,288 +67,243 @@ ICE_CLIMBING = get_ice_climbing_with_thresholds()
 BATCH_SIZE = 500
 
 
-def get_missing_dates(logger, locations, start_dt, end_dt, dataset):
-    """Returns missing dates for each location."""
+def get_missing_datetimes_sql(logger, locations, start_dt, end_dt, pipeline):
+    """Return missing datetimes for all locations using a single SQL query."""
+    missing = {loc["name"]: set() for loc in locations}
+    table_truncated = False
     try:
-        missing = {}
-        all_dates = pd.date_range(start_dt.date(), end_dt.date(), freq="D")
-        table_truncated = dataset is None or dataset.empty
-        for loc in locations:
-            name = loc["name"]
-            if table_truncated or name not in dataset["location"].unique():
-                # Convert to date objects for consistency
-                missing[name] = set(all_dates.date)
-            else:
-                loc_df = dataset[dataset["location"] == name]
-                existing = set(pd.to_datetime(loc_df["date"]).dt.date)
-                missing[name] = set(all_dates.date) - existing
+        # Prepare a VALUES clause for all locations and their timezones
+        location_values = ",\n".join(
+            f"('{loc['name']}', '{loc['timezone']}')" for loc in locations
+        )
+        # Use the timezone of each location to generate hours in local time
+        # (DuckDB supports AT TIME ZONE for timestamp conversion)
+        start_str = start_dt.strftime("%Y-%m-%d %H:00:00")
+        end_str = end_dt.strftime("%Y-%m-%d %H:00:00")
+        sql = f"""
+        WITH locations(name, timezone) AS (
+            VALUES
+            {location_values}
+        ),
+        all_hours AS (
+            SELECT
+                name,
+                timezone,
+                -- Generate all hours in UTC, then convert to local time for each location
+                (CAST('{start_str}' AS TIMESTAMP) + (generate_series * INTERVAL '1 hour')) AT TIME ZONE timezone AS datetime
+            FROM locations, generate_series(
+                0,
+                CAST((epoch(CAST('{end_str}' AS TIMESTAMP)) - epoch(CAST('{start_str}' AS TIMESTAMP))) / 3600 AS INTEGER)
+            )
+        ),
+        existing AS (
+            SELECT location, datetime FROM ice_climbing.weather_hourly_raw
+        )
+        SELECT a.name, a.datetime
+        FROM all_hours a
+        LEFT JOIN existing e
+            ON a.name = e.location AND a.datetime = e.datetime
+        WHERE e.datetime IS NULL
+        ORDER BY a.name, a.datetime
+        """
+        with pipeline.sql_client() as client:
+            result = client.execute_sql(sql)
+            for row in result:
+                loc_name, dt = row
+                missing[loc_name].add(dt)
+            for loc_name in missing:
+                logger.info(f"Found {len(missing[loc_name])} missing timestamps for {loc_name}")
         return missing, table_truncated
     except Exception as e:
-        logger.error(f"Failed to retrieve missing dates: {e}")
-        # Also use date objects here for consistency
-        missing = {loc["name"]: set(pd.date_range(start_dt.date(), end_dt.date(), freq='D').date) for loc in locations}
-        return missing, False
+        logger.error(f"Failed to retrieve missing datetimes: {e}")
+        return {}, True
 
 
-def fetch_hourly_data(location, start_dt, end_dt):
+def fetch_hourly_data(location, start_dt, end_dt, max_retries=3, retry_delay=2):
+    """Fetch data from Open-Meteo with retry logic for rate limiting."""
     logger.info(f"Fetching hourly data for {location['name']} from {start_dt} to {end_dt}")
     url = "https://archive-api.open-meteo.com/v1/archive"
-    params = {
-        "latitude": location["lat"],
-        "longitude": location["lon"],
-        "start_date": start_dt.date().isoformat(),
-        "end_date": end_dt.date().isoformat(),
-        "hourly": ",".join([
-            "temperature_2m", "precipitation", "snowfall", "cloudcover", "windspeed_10m",
-            "dew_point_2m", "surface_pressure", "relative_humidity_2m",
-            "shortwave_radiation", "sunshine_duration", "is_day"
-        ]),
-        "timezone": location["timezone"]
-    }
-    try:
-        response = requests.get(url, params=params, timeout=60)
-        logger.debug(f"API request URL: {response.url}")
-        response.raise_for_status()
-        data = response.json()
-        if "error" in data:
-            logger.error(f"API error: {data.get('reason')}")
-            return None
-        return data
-    except Exception as e:
-        logger.error(f"Request failed for {location['name']}: {e}")
-        return None
-
-def count_freeze_thaw(series):
-    # Count number of times temperature crosses 0°C
-    return int(((series.shift(1) < 0) & (series >= 0)).sum() + ((series.shift(1) > 0) & (series <= 0)).sum())
-
-
-def freeze_thaw_factor(cycles):
-    # Bonus for 1–2 cycles, penalty for >2
-    if cycles <= 2:
-        return 1.05  # slight bonus
-    elif cycles <= 4:
-        return 1.0   # neutral
-    else:
-        return max(0.8, 1 - 0.2 * ((cycles - 4) / 4))  # penalty
-
-
-def enrich_ice_conditions(df, thresholds):
-    """Add all daily stats and 4 enrichment columns (0-1 scores) to the hourly DataFrame."""
-    try:
-        df = df.sort_values("datetime")
-        forming_temp = thresholds["forming_temp"]
-        forming_hours = thresholds["forming_hours"]
-        forming_days = thresholds["forming_days"]
-        formed_days = thresholds["formed_days"]
-        degrade_temp = thresholds["degrade_temp"]
-        degrade_hours = thresholds["degrade_hours"]
-
-        df["date"] = df["datetime"].dt.date
-
-        # Precompute daily stats
-        daily_stats = df.groupby("date").agg(
-            hours_below_freeze = ("temperature_2m", lambda x: (x < forming_temp).sum()),
-            mean_cloud = ("cloudcover", "mean"),
-            total_snow = ("snowfall", "sum"),
-            mean_wind = ("windspeed_10m", "mean"),
-            mean_rh = ("relative_humidity_2m", "mean"),
-            mean_shortwave = ("shortwave_radiation", "mean"),
-            hours_above_degrade = ("temperature_2m", lambda x: (x > degrade_temp).sum()),
-            total_precip = ("precipitation", "sum"),
-            freeze_thaw_cycles = ("temperature_2m", count_freeze_thaw),
-            sunshine_hours = ("sunshine_duration", lambda x: x.sum() / 3600) 
-        )
-        
-
-        # Forming day: at least forming_hours below freezing
-        daily_stats["is_forming_day"] = (daily_stats["hours_below_freeze"] >= forming_hours).astype(int)
-
-        # Fraction of forming days in the last forming_days window
-        daily_stats["is_ice_forming"] = (
-            daily_stats["is_forming_day"]
-            .rolling(window=forming_days, min_periods=1)
-            .mean()
-            .clip(0, 1)
-        )
-
-        # Weighted score for forming (for quality/has_formed)
-        forming_score = (
-            # Check for minimum freezing hours and that freezing hours > degrading hours
-            ((daily_stats["hours_below_freeze"] >= 8) & 
-             (daily_stats["hours_below_freeze"] > daily_stats["hours_above_degrade"] * 1.5)).astype(float) * (
-                0.40 * (daily_stats["hours_below_freeze"] / 24).clip(0, 1) +
-                0.15 * (1 - daily_stats["mean_cloud"] / 100).clip(0, 1) +
-                0.1 * (daily_stats["total_snow"] / 10).clip(0, 1) +
-                0.05 * (1 - daily_stats["mean_wind"] / 15).clip(0, 1) +
-                0.1 * (daily_stats["mean_rh"] / 100).clip(0, 1) +
-                0.1 * (1 - daily_stats["mean_shortwave"] / 200).clip(0, 1) +
-                0.1 * (daily_stats["sunshine_hours"] / 12).clip(0, 1)
-            )
-        ).clip(0, 1)
-
-        # Rolling mean for last N days for "has formed" and "ice_quality"
-        daily_stats["ice_has_formed"] = (
-            forming_score.rolling(window=formed_days, min_periods=1).mean().clip(0, 1)
-        )
-
-        # Degrading: combine several conditions, score is fraction of last 7 days with any degrade condition
-        degrade_conditions = (
-            (daily_stats["hours_above_degrade"] >= degrade_hours) |
-            ((daily_stats["mean_shortwave"] > 150) & (daily_stats["mean_cloud"] < 30)) |
-            ((daily_stats["total_precip"] > 0) & (daily_stats["hours_above_degrade"] > 0)) |
-            ((daily_stats["mean_rh"] > 90) & (daily_stats["hours_above_degrade"] > 0)) |
-            ((daily_stats["mean_wind"] > 10) & (daily_stats["hours_above_degrade"] > 0))
-        )
-        daily_stats["is_ice_degrading"] = (
-            degrade_conditions.rolling(window=7, min_periods=1).mean().clip(0, 1)
-        )
-
-        # Ice quality: penalize for degrading and for excessive freeze/thaw cycles
-        # Adjust penalty/bonus for freeze-thaw cycles
-
-        daily_stats["ice_quality"] = (
-            daily_stats["ice_has_formed"] *
-            (1 - 0.8 * daily_stats["is_ice_degrading"]) * 
-            daily_stats["freeze_thaw_cycles"].apply(freeze_thaw_factor)
-        ).clip(0, 1)
-
-        # Merge all daily stats and enrichment columns back to hourly
-        df = df.merge(
-            daily_stats, left_on="date", right_index=True, how="left"
-        )
-        return df
-    except Exception as e:
-        logger.error(f"Error in enrich_ice_conditions: {e}")
-        raise
-
-def aggregate_to_daily(df):
-    # Choose which columns to aggregate and how
-    agg_dict = {
-        "temperature_2m": "mean",
-        "precipitation": "sum",
-        "snowfall": "sum",
-        "cloudcover": "mean",
-        "windspeed_10m": "mean",
-        "dew_point_2m": "mean",
-        "surface_pressure": "mean",
-        "relative_humidity_2m": "mean",
-        "shortwave_radiation": "mean",
-        "is_day": "sum",
-        # Enrichment columns
-        "is_ice_forming": "mean",
-        "ice_has_formed": "mean",
-        "ice_quality": "mean",
-        "is_ice_degrading": "mean",
-        # All daily_stats columns: use "first" (they are constant per day)
-        "hours_below_freeze": "first",
-        "mean_cloud": "first",
-        "total_snow": "first",
-        "mean_wind": "first",
-        "mean_rh": "first",
-        "mean_shortwave": "first",
-        "hours_above_degrade": "first",
-        "total_precip": "first",
-        "freeze_thaw_cycles": "first",
-        "sunshine_hours": "first"
-    }
     
-    # Only include columns that actually exist in the dataframe
-    agg_dict = {k: v for k, v in agg_dict.items() if k in df.columns}
-    
-    group_cols = ["location", "country", "date"]
-    daily_df = df.groupby(group_cols).agg(agg_dict).reset_index()
-    return daily_df
+    for attempt in range(1, max_retries + 1):
+        try:
+            params = {
+                "latitude": location["lat"],
+                "longitude": location["lon"],
+                "start_date": start_dt.date().isoformat(),
+                "end_date": end_dt.date().isoformat(),
+                "hourly": ",".join([
+                    "temperature_2m", "precipitation", "snowfall", "cloudcover", "windspeed_10m",
+                    "dew_point_2m", "surface_pressure", "relative_humidity_2m",
+                    "shortwave_radiation", "sunshine_duration", "is_day", "wind_gusts_10m"
+                ]),
+                "timezone": location["timezone"]
+            }
+            
+            response = requests.get(url, params=params, timeout=60)
+            logger.debug(f"API request URL: {response.url}")
+            
+            # Check for rate limiting (429 status)
+            if response.status_code == 429:
+                wait_time = retry_delay * attempt
+                logger.warning(f"Rate limited, waiting {wait_time}s before retry {attempt}/{max_retries}")
+                tyme.sleep(wait_time)
+                continue
+                
+            response.raise_for_status()
+            data = response.json()
+            
+            if "error" in data:
+                logger.error(f"API error: {data.get('reason')}")
+                return None
+                
+            return data
+            
+        except Exception as e:
+            if attempt < max_retries:
+                wait_time = retry_delay * attempt
+                logger.warning(f"Request failed for {location['name']}: {e}. Retrying in {wait_time}s ({attempt}/{max_retries})")
+                tyme.sleep(wait_time)
+            else:
+                logger.error(f"Request failed for {location['name']} after {max_retries} attempts: {e}")
+                return None
 
 
 @dlt.source
-def ice_climbing_hourly_source(logger: logging.Logger, dataset):
-    @dlt.resource(write_disposition="merge", name="ice_climbing_hourly", primary_key=["location", "date"])
-    def hourly_data():
-        state = dlt.current.source_state().setdefault("hourly_ice", {
+def ice_climbing_hourly_source(logger: logging.Logger):
+    @dlt.resource(write_disposition="merge", name="weather_hourly_raw", primary_key=["location", "datetime"])
+    def hourly_data_raw():
+        """Fetch and store raw hourly weather data from Open-Meteo without enrichment."""
+        state = dlt.current.source_state().setdefault("hourly_weather", {
             "Processed_Ranges": {}
         })
         processed = 0
 
-        # Use missing dates to avoid reprocessing
-        missing_by_loc, table_truncated = get_missing_dates(logger, ICE_CLIMBING, start_dt, end_dt, dataset)
+        # Use SQL-based missing datetimes to offload computation to database
+        missing_by_loc, table_truncated = get_missing_datetimes_sql(
+            logger, ICE_CLIMBING, start_dt, end_dt, dlt.current.pipeline()
+        )
 
+        # Collect locations that need data fetching
+        locations_to_fetch = []
         for location in ICE_CLIMBING:
             location_name = location["name"]
-            country = location["country"]
-
-            missing_dates = missing_by_loc.get(location_name, set())
-            if not table_truncated and not missing_dates:
-                logger.info(f"No missing dates for {location_name}, skipping.")
+            missing_datetimes = missing_by_loc.get(location_name, set())
+            
+            # CHANGE THIS SECTION: Check table_truncated FIRST
+            if table_truncated:
+                # If table is truncated, ALWAYS use full range
+                fetch_start = start_dt
+                fetch_end = end_dt
+                logger.info(f"Table truncated, using full date range for {location_name}")
+            elif not missing_datetimes:
+                logger.info(f"No missing data points for {location_name}, skipping.")
                 continue
-
-            # logger.info(f"Missing Dates: {missing_dates}")
-            # If we have missing dates, calculate optimal fetch start date
-            # to ensure we have enough history for all moving averages
-            if missing_dates:
-                # Find earliest missing date and go back enough days for calculations
-                earliest_missing = min(missing_dates)
-                # We need max(formed_days, 7) days of history for moving averages
-                lookback_days = max(location["formed_days"], 7)
-                optimal_start = earliest_missing - timedelta(days=lookback_days)
-                # Don't go before global start_dt
+            else:
+                # If we have missing data (and table NOT truncated)
+                # Find min/max dates for this location
+                missing_list = list(missing_datetimes)
+                fetch_start = min(missing_list)
+                fetch_end = max(missing_list)
+                
+                # Ensure timezone is set properly
                 try:
-                    # Add error handling for timezone issues
                     tz = ZoneInfo(location["timezone"])
-                    fetch_start = max(
-                        datetime.combine(optimal_start, datetime.min.time(), tzinfo=tz),
-                        start_dt
-                    )
+                    fetch_start = fetch_start.replace(tzinfo=tz)
+                    fetch_end = fetch_end.replace(tzinfo=tz)
                 except Exception as e:
                     logger.warning(f"Error with timezone {location['timezone']}, using UTC: {e}")
-                    fetch_start = max(
-                        datetime.combine(optimal_start, datetime.min.time(), tzinfo=timezone.utc),
-                        start_dt
-                    )
-            else:
-                # If table is truncated, use full range
+                    fetch_start = fetch_start.replace(tzinfo=timezone.utc)
+                    fetch_end = fetch_end.replace(tzinfo=timezone.utc)
+        
+            # Validate fetch range
+            if fetch_start > fetch_end:
+                logger.warning(f"Invalid date range: fetch_start {fetch_start} > fetch_end {fetch_end}. Using default range.")
                 fetch_start = start_dt
+                fetch_end = end_dt
                 
-            fetch_end = end_dt
-
-
-            try:
-                data = fetch_hourly_data(location, fetch_start, fetch_end)
+            # Store the fetch range with the location
+            location_copy = location.copy()
+            location_copy["fetch_start"] = fetch_start
+            location_copy["fetch_end"] = fetch_end
+            location_copy["missing_datetimes"] = missing_datetimes
+            locations_to_fetch.append(location_copy)
+        
+        # Fetch data for multiple locations in parallel
+        if locations_to_fetch:
+            logger.info(f"Fetching data for {len(locations_to_fetch)} locations in parallel")
+            location_results = {}
+            
+            # Process locations in batches to avoid overwhelming the API
+            # Remove the batch loop entirely
+            with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+                # Submit all fetch tasks with custom date ranges
+                future_to_location = {
+                    executor.submit(
+                        fetch_hourly_data, 
+                        loc, 
+                        loc["fetch_start"], 
+                        loc["fetch_end"]
+                    ): loc for loc in locations_to_fetch
+                }
+                
+                # Process results as they complete
+                for future in concurrent.futures.as_completed(future_to_location):
+                    location = future_to_location[future]
+                    location_name = location["name"]
+                    try:
+                        data = future.result()
+                        location_results[location_name] = {
+                            "data": data,
+                            "location": location
+                        }
+                        logger.info(f"Successfully fetched data for {location_name}")
+                    except Exception as e:
+                        logger.error(f"Failed to fetch data for {location_name}: {e}")
+                        location_results[location_name] = {
+                            "data": None, 
+                            "location": location
+                        }
+            
+            # Process the results
+            for location_name, result in location_results.items():
+                data = result["data"]
+                location = result["location"]
+                missing_datetimes = location["missing_datetimes"]
+                
                 if not data or "hourly" not in data or not data["hourly"].get("time"):
                     logger.warning(f"No data returned for {location_name}, skipping.")
                     continue
-
                 
+                # Process the data
                 h = data["hourly"]
                 df = pd.DataFrame({"datetime": pd.to_datetime(h["time"])})
+                
+                # Add all columns from the API response
                 for col in [
                     "temperature_2m", "precipitation", "snowfall", "cloudcover", "windspeed_10m",
-                    "dew_point_2m", "surface_pressure", "relative_humidity_2m",
-                    "shortwave_radiation", "sunshine_duration", "is_day"
+                    "dew_point_2m", "surface_pressure", "relative_humidity_2m", 
+                    "shortwave_radiation", "sunshine_duration", "is_day", "wind_gusts_10m"
                 ]:
-                    # Get the value and ensure the column exists even if None
-                    df[col] = h.get(col)
+                    if col in h:
+                        df[col] = h.get(col)
+                
+                # Add metadata
                 df["location"] = location_name
-                df["country"] = country
-                df["date"] = df["datetime"].dt.date
+                df["country"] = location["country"]
+                df["timezone"] = location["timezone"]
+                df["date"] = df["datetime"].dt.date  # Store date for easier filtering in DBT
 
-                # Only keep rows for missing dates (unless truncated, then keep all)
-                if not table_truncated:
-                    logger.info(f"Before filtering: {len(df)} rows for {location_name}")
-                    df = df[df["date"].isin(missing_dates)]
-                    logger.info(f"After filtering: {len(df)} rows for {location_name}")
-                    if df.empty:
-                        logger.info(f"No new data to process for {location_name}, skipping.")
-                        continue
+                if df.empty:
+                    logger.info(f"No new data to process for {location_name}, skipping.")
+                    continue
 
-                # Enrich
-                df = enrich_ice_conditions(df, location)
-                daily_df = aggregate_to_daily(df)
-                records = daily_df.to_dict("records")
+                # Convert to records and yield in batches
+                records = df.to_dict("records")
                 for i in range(0, len(records), BATCH_SIZE):
                     yield records[i:i+BATCH_SIZE]
+                    
                 processed += 1
-                logger.info(f"Processed and yielded data for {location_name}.")
+                logger.info(f"Processed and yielded raw data for {location_name}.")
 
                 # Update processed range in state
                 if not df.empty:
@@ -357,15 +313,13 @@ def ice_climbing_hourly_source(logger: logging.Logger, dataset):
                         "min": str(min_date),
                         "max": str(max_date)
                     }
-                tyme.sleep(0.75)
-            except Exception as e:
-                logger.error(f"Failed to process {location_name}: {e}")
-        logger.info(f"Hourly data resource finished. {processed} location(s) processed.")
-    return hourly_data
+        else:
+            logger.info("No locations need data fetching.")
+                
+        logger.info(f"Raw hourly data resource finished. {processed} location(s) processed.")
+    return hourly_data_raw
 
 
-
-FAR_FUTURE = datetime(9999, 12, 31, tzinfo=timezone.utc)
 
 @dlt.resource(write_disposition="merge", name="ice_climbing_thresholds", primary_key=["name"])
 def ice_climbing_thresholds_resource(logger, thresholds_dataset):
@@ -385,63 +339,103 @@ def ice_climbing_thresholds_resource(logger, thresholds_dataset):
             latest = None
 
         # Only yield if changed or not present
-        if latest is None or any(float(latest[field]) != float(loc[field]) for field in threshold_fields):
-            changes += 1
-            logger.info(f"Thresholds changed for {loc['name']}. Writing new version.")
-            yield {
-                "name": loc["name"],
-                "country": loc["country"],
-                "forming_temp": loc["forming_temp"],
-                "forming_hours": loc["forming_hours"],
-                "forming_days": loc["forming_days"],
-                "formed_days": loc["formed_days"],
-                "degrade_temp": loc["degrade_temp"],
-                "degrade_hours": loc["degrade_hours"],
-            }
-        else:
-            logger.info(f"No threshold change for {loc['name']}.")
+        try:
+            changed = False
+            if latest is None:
+                changed = True
+                logger.info(f"First threshold record for {loc['name']}")
+            else:
+                # Compare values safely
+                for field in threshold_fields:
+                    try:
+                        if pd.isna(latest[field]) or float(latest[field]) != float(loc[field]):
+                            logger.info(f"Threshold change for {loc['name']}: {field} changed from {latest[field]} to {loc[field]}")
+                            changed = True
+                            break
+                    except (TypeError, ValueError) as e:
+                        logger.warning(f"Error comparing {field} values for {loc['name']}: {e}")
+                        changed = True
+                        break
+
+            if changed:
+                changes += 1
+                logger.info(f"Thresholds changed for {loc['name']}. Writing new version.")
+                yield {
+                    "name": loc["name"],
+                    "country": loc["country"],
+                    "lat": float(loc["lat"]),
+                    "lon": float(loc["lon"]),
+                    "forming_temp": float(loc["forming_temp"]),
+                    "forming_hours": float(loc["forming_hours"]),
+                    "forming_days": float(loc["forming_days"]),
+                    "formed_days": float(loc["formed_days"]),
+                    "degrade_temp": float(loc["degrade_temp"]),
+                    "degrade_hours": float(loc["degrade_hours"]),
+                }
+            else:
+                logger.info(f"No threshold change for {loc['name']}.")
+        except Exception as e:
+            logger.error(f"Error processing thresholds for {loc['name']}: {e}")
+    
     logger.info(f"Threshold resource finished. {changes} location(s) updated.")
+
 
 
 
 # In your main pipeline run:
 if __name__ == "__main__":
     pipeline = dlt.pipeline(
-        pipeline_name="ice_climbing_hourly_pipeline",
+        pipeline_name="ice_climbing_raw_pipeline",
         destination=os.getenv("DLT_DESTINATION", "motherduck"),
         dataset_name="ice_climbing",
         pipelines_dir=str(DLT_PIPELINE_DIR),
         dev_mode=False
     )
-    ice_climbing_dataset = None
+    
+    # Try to load existing data
+    # weather_dataset = None
     thresholds_dataset = None
     try:
-        ice_climbing_dataset = pipeline.dataset()["ice_climbing_hourly"].df()
+        # weather_dataset = pipeline.dataset()["weather_hourly_raw"].df()
         thresholds_dataset = pipeline.dataset()["ice_climbing_thresholds"].df()
     except (PipelineNeverRan, DatabaseUndefinedRelation, ValueError, KeyError):
         logger.warning("No previous runs or table found. Assuming first run or empty DB.")
-        ice_climbing_dataset = None
-        thresholds_dataset = None
-
-
     
     try:
-
-        logger.info("Running ice climbing hourly pipeline...")
-        source = ice_climbing_hourly_source(logger, ice_climbing_dataset)
+        # Run hourly data pipeline
+        logger.info("Running ice climbing raw data pipeline.")
+        source = ice_climbing_hourly_source(logger)
         load_info = pipeline.run(source)
         logger.info(f"Pipeline run completed. Load Info: {load_info}")
-        state = source.state.get('hourly_ice', {}).get('Processed_Ranges', {})
+        
+        # Log processed ranges
+        state = source.state.get('hourly_weather', {}).get('Processed_Ranges', {})
         if state:
             logger.info(f"Processed date ranges: {state}")
         else:
             logger.info("No processed date ranges found in state.")
 
+        # Run thresholds resource
         logger.info("Running thresholds resource...")
         thresholds_resource = pipeline.run(ice_climbing_thresholds_resource(logger, thresholds_dataset))
+        
+        # Add indexes after successful pipeline run
+        logger.info("Creating indexes for better query performance...")
+        with pipeline.sql_client() as client:
+            # Create index on (location, date) for faster filtering
+            client.execute_sql("""
+            CREATE INDEX IF NOT EXISTS idx_weather_location_date 
+            ON ice_climbing.weather_hourly_raw(location, date);
+            """)
+            
+            # Create index on date alone for date-based queries
+            client.execute_sql("""
+            CREATE INDEX IF NOT EXISTS idx_weather_date 
+            ON ice_climbing.weather_hourly_raw(date);
+            """)
+            
+            logger.info("Indexes created successfully")
             
     except Exception as e:
-        # Run the thresholds resource
-        logger.info("Checking for threshold changes...")
         logger.error(f"Pipeline run failed: {e}")
         raise

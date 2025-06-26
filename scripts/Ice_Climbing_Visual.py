@@ -5,6 +5,7 @@ import os
 from plotnine import ggplot, aes, geom_line, labs, scale_color_manual, theme_light, theme, element_text, guides, guide_legend, facet_wrap, scale_x_datetime
 from plotnine.themes.elements import element_rect
 import pandas as pd
+from PIL import Image
 
 # Load environment variables and set DLT config
 paths = get_project_paths()
@@ -18,57 +19,113 @@ load_dotenv(dotenv_path=ENV_FILE)
 database_string = os.getenv("MD")
 if not database_string:
     raise ValueError("Missing MD in environment.")
-# Connect to your DuckDB/MotherDuck database (adjust path as needed)
+# Connect to your DuckDB/MotherDuck database
 con = duckdb.connect(database_string) 
 
 
 df = con.execute("""
     SELECT *
-    FROM camonairflow.ice_climbing.ice_climbing_hourly
+    FROM camonairflow.public_staging.ice_enrichment_model 
 """).df()
 
 df['date'] = pd.to_datetime(df['date'])
 
 locations = df['location'].unique()
-color_map = {
+
+# Define color maps for the plots
+color_map1 = {
     'is_ice_forming': '#1f77b4',
-    'ice_has_formed': '#ff7f0e',
-    'ice_quality': '#2ca02c',
     'is_ice_degrading': '#d62728'
+}
+
+color_map2 = {
+    'ice_has_formed': '#ff7f0e',
+    'ice_quality': '#2ca02c'
 }
 
 for loc in locations:
     dfl = df[df['location'] == loc].sort_values('date')
-    # Melt enrichment fields for easier plotting
-    dfl_melt = dfl.melt(id_vars=['date'], value_vars=['is_ice_forming', 'ice_has_formed', 'ice_quality', 'is_ice_degrading'],
-                        var_name='enrichment', value_name='value')
-    p = (
-        ggplot(dfl_melt, aes('date', 'value', color='enrichment'))
+    
+    # PLOT 1: Formation and Degradation
+    forming_degrading = dfl.melt(
+        id_vars=['date'], 
+        value_vars=['is_ice_forming', 'is_ice_degrading'],
+        var_name='enrichment', value_name='value'
+    )
+    
+    p1 = (
+        ggplot(forming_degrading, aes('date', 'value', color='enrichment'))
         + geom_line(size=1.2)
-        + scale_color_manual(values=color_map)
-        + scale_x_datetime(date_breaks="10 days", date_labels="%Y-%m-%d")
+        + scale_color_manual(values=color_map1)
+        + scale_x_datetime(date_breaks="40 days", date_labels="%Y-%m-%d")
         + labs(
-            title=f"Ice Formation Fields for {loc}",
-            y="Score (0-1)", x="Date"
+            title=f"Ice Formation & Degradation for {loc}",
+            y="Score (0-1)", x=""  # Empty x-label for top plot
         )
-        + theme_light(base_size=16)
+        + theme_light(base_size=14)
         + theme(
-            plot_title=element_text(color="white", backgroundcolor="#222222", size=20, weight='bold', ha='center'),
-            axis_text_x=element_text(rotation=45, hjust=1)
+            plot_title=element_text(color="white", backgroundcolor="#222222", size=18, weight='bold', ha='center'),
+            axis_text_x=element_text(rotation=45, hjust=1),
+            legend_position="right"
         )
     )
-    p.save(f"/workspaces/CamOnAirFlow/ice_enrichment_{loc.replace(' ', '_')}.png", width=16, height=7, dpi=150)
+    
+    temp_file1 = f"/workspaces/CamOnAirFlow/temp_form_degrade_{loc.replace(' ', '_')}.png"
+    p1.save(temp_file1, width=16, height=5, dpi=150)
+    
+    # PLOT 2: Quality and Has Formed
+    quality_formed = dfl.melt(
+        id_vars=['date'], 
+        value_vars=['ice_quality', 'ice_has_formed'],
+        var_name='enrichment', value_name='value'
+    )
+    
+    p2 = (
+        ggplot(quality_formed, aes('date', 'value', color='enrichment'))
+        + geom_line(size=1.2)
+        + scale_color_manual(values=color_map2)
+        + scale_x_datetime(date_breaks="40 days", date_labels="%Y-%m-%d")
+        + labs(
+            title=f"Ice Quality & Formation Status for {loc}",
+            y="Score (0-1)", x="Date"
+        )
+        + theme_light(base_size=14)
+        + theme(
+            plot_title=element_text(color="white", backgroundcolor="#222222", size=18, weight='bold', ha='center'),
+            axis_text_x=element_text(rotation=45, hjust=1),
+            legend_position="right"
+        )
+    )
+    
+    temp_file2 = f"/workspaces/CamOnAirFlow/temp_quality_formed_{loc.replace(' ', '_')}.png"
+    p2.save(temp_file2, width=16, height=5, dpi=150)
+    
+    # Combine the two images
+    img1 = Image.open(temp_file1)
+    img2 = Image.open(temp_file2)
+    
+    combined_height = img1.height + img2.height
+    combined_img = Image.new('RGB', (img1.width, combined_height))
+    combined_img.paste(img1, (0, 0))
+    combined_img.paste(img2, (0, img1.height))
+    
+    # Save the combined image
+    combined_img.save(f"/workspaces/CamOnAirFlow/ice_enrichment_split_{loc.replace(' ', '_')}.png")
+    
+    # Clean up temporary files
+    os.remove(temp_file1)
+    os.remove(temp_file2)
 
 # --- Combined multi-panel plot for other variables ---
 facet_vars = [
-    ('temperature_2m', "Temperature (°C)", "#1f77b4"),
+    ('mean_temperature', "Mean Temperature (°C)", "#1f77b4"),
     ('sunshine_hours', "Sunshine Hours (hrs)", "#ffbb78"),
     ('hours_below_freeze', "Hours Below Freeze", "#1f77b4"),
     ('total_snow', "Total Snow (mm)", "#2ca02c"),
-    ('mean_shortwave', "Mean Shortwave Radiation", "#bcbd22"),  # swapped in
-    ('freeze_thaw_cycles', "Freeze Thaw Cycles", "#e377c2"),    # swapped in
+    ('mean_shortwave', "Mean Shortwave Radiation", "#bcbd22"),
+    ('freeze_thaw_cycles', "Freeze Thaw Cycles", "#e377c2"),
     ('total_precip', "Total Precipitation (mm)", "#9467bd"),
-    ('mean_rh', "Mean Relative Humidity (%)", "#17becf"),  # NEW VARIABLE
+    ('mean_rh', "Mean Relative Humidity (%)", "#17becf"),
 ]
 
 for loc in locations:
@@ -87,7 +144,7 @@ for loc in locations:
         + geom_line(aes(color='pretty'), size=1.2)
         + facet_wrap('~pretty', scales='free_y', ncol=2)
         + scale_color_manual(values={v[1]: v[2] for v in facet_vars}, name="Variable")
-        + scale_x_datetime(date_breaks="10 days", date_labels="%Y-%m-%d")
+        + scale_x_datetime(date_breaks="65 days", date_labels="%Y-%m-%d")
         + labs(
             title=f"Weather & Ice Stats for {loc}",
             x="Date",

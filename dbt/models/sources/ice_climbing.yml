@@ -1,0 +1,17 @@
+version: 2
+
+sources:
+  - name: ice_climbing
+    database: camonairflow
+    schema: ice_climbing
+
+    tables:
+      - name: weather_hourly_raw
+        description: Raw hourly weather data from Open-Meteo API
+        data_tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns:
+                - datetime
+                - location
+      - name: ice_climbing_thresholds
+        description: Configuration parameters for ice formation calculations

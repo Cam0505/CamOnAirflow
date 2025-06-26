@@ -1,6 +1,6 @@
 {
-  "version": 4,
-  "version_hash": "oEUtoYt0OeWrdP/sRuPLvwZbZ++knnqam50dSwJ24T8=",
+  "version": 6,
+  "version_hash": "S97fAaK4e4F4jfLodxzc37HTYtaMd0jJ5UE1KQ8W9QA=",
   "engine_version": 11,
   "name": "ice_climbing_hourly_source",
   "tables": {
@@ -75,165 +75,6 @@
       "resource": "_dlt_loads",
       "description": "Created by DLT. Tracks completed loads"
     },
-    "ice_climbing_hourly": {
-      "columns": {
-        "location": {
-          "name": "location",
-          "nullable": false,
-          "primary_key": true,
-          "data_type": "text"
-        },
-        "country": {
-          "name": "country",
-          "data_type": "text",
-          "nullable": true
-        },
-        "date": {
-          "name": "date",
-          "nullable": false,
-          "primary_key": true,
-          "data_type": "date"
-        },
-        "temperature_2m": {
-          "name": "temperature_2m",
-          "data_type": "double",
-          "nullable": true
-        },
-        "precipitation": {
-          "name": "precipitation",
-          "data_type": "double",
-          "nullable": true
-        },
-        "snowfall": {
-          "name": "snowfall",
-          "data_type": "double",
-          "nullable": true
-        },
-        "cloudcover": {
-          "name": "cloudcover",
-          "data_type": "double",
-          "nullable": true
-        },
-        "windspeed_10m": {
-          "name": "windspeed_10m",
-          "data_type": "double",
-          "nullable": true
-        },
-        "dew_point_2m": {
-          "name": "dew_point_2m",
-          "data_type": "double",
-          "nullable": true
-        },
-        "surface_pressure": {
-          "name": "surface_pressure",
-          "data_type": "double",
-          "nullable": true
-        },
-        "relative_humidity_2m": {
-          "name": "relative_humidity_2m",
-          "data_type": "double",
-          "nullable": true
-        },
-        "shortwave_radiation": {
-          "name": "shortwave_radiation",
-          "data_type": "double",
-          "nullable": true
-        },
-        "is_day": {
-          "name": "is_day",
-          "data_type": "bigint",
-          "nullable": true
-        },
-        "is_ice_forming": {
-          "name": "is_ice_forming",
-          "data_type": "double",
-          "nullable": true
-        },
-        "ice_has_formed": {
-          "name": "ice_has_formed",
-          "data_type": "double",
-          "nullable": true
-        },
-        "ice_quality": {
-          "name": "ice_quality",
-          "data_type": "double",
-          "nullable": true
-        },
-        "is_ice_degrading": {
-          "name": "is_ice_degrading",
-          "data_type": "double",
-          "nullable": true
-        },
-        "hours_below_freeze": {
-          "name": "hours_below_freeze",
-          "data_type": "bigint",
-          "nullable": true
-        },
-        "mean_cloud": {
-          "name": "mean_cloud",
-          "data_type": "double",
-          "nullable": true
-        },
-        "total_snow": {
-          "name": "total_snow",
-          "data_type": "double",
-          "nullable": true
-        },
-        "mean_wind": {
-          "name": "mean_wind",
-          "data_type": "double",
-          "nullable": true
-        },
-        "mean_rh": {
-          "name": "mean_rh",
-          "data_type": "double",
-          "nullable": true
-        },
-        "mean_shortwave": {
-          "name": "mean_shortwave",
-          "data_type": "double",
-          "nullable": true
-        },
-        "hours_above_degrade": {
-          "name": "hours_above_degrade",
-          "data_type": "bigint",
-          "nullable": true
-        },
-        "total_precip": {
-          "name": "total_precip",
-          "data_type": "double",
-          "nullable": true
-        },
-        "freeze_thaw_cycles": {
-          "name": "freeze_thaw_cycles",
-          "data_type": "bigint",
-          "nullable": true
-        },
-        "sunshine_hours": {
-          "name": "sunshine_hours",
-          "data_type": "double",
-          "nullable": true
-        },
-        "_dlt_load_id": {
-          "name": "_dlt_load_id",
-          "data_type": "text",
-          "nullable": false
-        },
-        "_dlt_id": {
-          "name": "_dlt_id",
-          "data_type": "text",
-          "nullable": false,
-          "unique": true,
-          "row_key": true
-        }
-      },
-      "write_disposition": "merge",
-      "name": "ice_climbing_hourly",
-      "resource": "ice_climbing_hourly",
-      "x-normalizer": {
-        "seen-data": true
-      }
-    },
     "_dlt_pipeline_state": {
       "columns": {
         "version": {
@@ -300,6 +141,16 @@
           "data_type": "text",
           "nullable": true
         },
+        "lat": {
+          "name": "lat",
+          "data_type": "double",
+          "nullable": true
+        },
+        "lon": {
+          "name": "lon",
+          "data_type": "double",
+          "nullable": true
+        },
         "forming_temp": {
           "name": "forming_temp",
           "data_type": "double",
@@ -307,17 +158,17 @@
         },
         "forming_hours": {
           "name": "forming_hours",
-          "data_type": "bigint",
+          "data_type": "double",
           "nullable": true
         },
         "forming_days": {
           "name": "forming_days",
-          "data_type": "bigint",
+          "data_type": "double",
           "nullable": true
         },
         "formed_days": {
           "name": "formed_days",
-          "data_type": "bigint",
+          "data_type": "double",
           "nullable": true
         },
         "degrade_temp": {
@@ -327,7 +178,7 @@
         },
         "degrade_hours": {
           "name": "degrade_hours",
-          "data_type": "bigint",
+          "data_type": "double",
           "nullable": true
         },
         "_dlt_load_id": {
@@ -346,6 +197,115 @@
       "write_disposition": "merge",
       "name": "ice_climbing_thresholds",
       "resource": "ice_climbing_thresholds",
+      "x-normalizer": {
+        "seen-data": true
+      }
+    },
+    "weather_hourly_raw": {
+      "columns": {
+        "datetime": {
+          "name": "datetime",
+          "nullable": false,
+          "primary_key": true,
+          "data_type": "timestamp"
+        },
+        "temperature_2m": {
+          "name": "temperature_2m",
+          "data_type": "double",
+          "nullable": true
+        },
+        "precipitation": {
+          "name": "precipitation",
+          "data_type": "double",
+          "nullable": true
+        },
+        "snowfall": {
+          "name": "snowfall",
+          "data_type": "double",
+          "nullable": true
+        },
+        "cloudcover": {
+          "name": "cloudcover",
+          "data_type": "bigint",
+          "nullable": true
+        },
+        "windspeed_10m": {
+          "name": "windspeed_10m",
+          "data_type": "double",
+          "nullable": true
+        },
+        "dew_point_2m": {
+          "name": "dew_point_2m",
+          "data_type": "double",
+          "nullable": true
+        },
+        "surface_pressure": {
+          "name": "surface_pressure",
+          "data_type": "double",
+          "nullable": true
+        },
+        "relative_humidity_2m": {
+          "name": "relative_humidity_2m",
+          "data_type": "bigint",
+          "nullable": true
+        },
+        "shortwave_radiation": {
+          "name": "shortwave_radiation",
+          "data_type": "double",
+          "nullable": true
+        },
+        "sunshine_duration": {
+          "name": "sunshine_duration",
+          "data_type": "double",
+          "nullable": true
+        },
+        "is_day": {
+          "name": "is_day",
+          "data_type": "bigint",
+          "nullable": true
+        },
+        "wind_gusts_10m": {
+          "name": "wind_gusts_10m",
+          "data_type": "double",
+          "nullable": true
+        },
+        "location": {
+          "name": "location",
+          "nullable": false,
+          "primary_key": true,
+          "data_type": "text"
+        },
+        "country": {
+          "name": "country",
+          "data_type": "text",
+          "nullable": true
+        },
+        "timezone": {
+          "name": "timezone",
+          "data_type": "text",
+          "nullable": true
+        },
+        "date": {
+          "name": "date",
+          "data_type": "date",
+          "nullable": true
+        },
+        "_dlt_load_id": {
+          "name": "_dlt_load_id",
+          "data_type": "text",
+          "nullable": false
+        },
+        "_dlt_id": {
+          "name": "_dlt_id",
+          "data_type": "text",
+          "nullable": false,
+          "unique": true,
+          "row_key": true
+        }
+      },
+      "write_disposition": "merge",
+      "name": "weather_hourly_raw",
+      "resource": "weather_hourly_raw",
       "x-normalizer": {
         "seen-data": true
       }
@@ -384,10 +344,10 @@
       "config": {
         "propagation": {
           "tables": {
-            "ice_climbing_hourly": {
+            "ice_climbing_thresholds": {
               "_dlt_id": "_dlt_root_id"
             },
-            "ice_climbing_thresholds": {
+            "weather_hourly_raw": {
               "_dlt_id": "_dlt_root_id"
             }
           }
@@ -396,9 +356,11 @@
     }
   },
   "previous_hashes": [
-    "ypHWKKY0mCP9ZZsoFHkVrm67uahlL+bfqT0miu/QyRE=",
-    "hxL/7PoMfTbVZc0MvMaRmoOTspS1iIHlR+UDgJuBHuw=",
-    "ZV9VZEjtxCQspcWgpHZx2ywleWm3xPX7NlXbNaQ3PRM=",
-    "mH5DEhrvGzlpBU+VIhDISER1Ja2coeTQRJchu2ZPSIA="
+    "kjEo4pHnl+/54DqH/upbZyEMZxCq8S6MIxUrskCrZtQ=",
+    "2/m+fFlU5wLL9xlarzb86sjTXIKoLZaDBduBJFA/QQk=",
+    "/l/JNM3Esc4otrXrooMdGr/VsKHCZB197su8CUuS6v0=",
+    "g4dN1GzBT1OK6WRC0jS02b1rMwqad6hzIsmpG4VrIQM=",
+    "LUaTbDxh5bQILB88c0Af2JDoBSR/8/XlgB5PDERdcZg=",
+    "7EfLoQgTkZG5xPcm3PdUvtCwpPFWjjW7e8pHAaLBJfc="
   ]
 }

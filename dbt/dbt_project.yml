@@ -40,6 +40,7 @@ models:
       +materialized: view
       +schema: analysis
 
+
 snapshots:
   camonairflow:
     path: snapshots

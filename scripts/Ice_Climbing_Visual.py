@@ -2,7 +2,7 @@ import duckdb
 from dotenv import load_dotenv
 from project_path import get_project_paths, set_dlt_env_vars
 import os
-from plotnine import ggplot, aes, geom_line, labs, scale_color_manual, theme_light, theme, element_text, guides, guide_legend, facet_wrap, scale_x_datetime
+from plotnine import ggplot, aes, geom_line, labs, scale_color_manual, element_line, theme_light, theme, element_text, facet_grid, facet_wrap, scale_x_datetime
 from plotnine.themes.elements import element_rect
 import pandas as pd
 from PIL import Image
@@ -43,8 +43,26 @@ color_map2 = {
     'ice_quality': '#2ca02c'
 }
 
+# Add this function at the top of your script, after your imports
+def calculate_date_breaks(date_series):
+    """Calculate appropriate date breaks based on data range"""
+    date_range = (date_series.max() - date_series.min()).days
+    
+    # Scale breaks based on range - aim for 8-10 breaks across the range
+    if date_range <= 120:  # Less than 4 months
+        return "15 days", "%Y-%m-%d"
+    elif date_range <= 365:  # Less than a year
+        return "30 days", "%Y-%m-%d"
+    elif date_range <= 730:  # Less than 2 years
+        return "60 days", "%Y-%m-%d"
+    else:  # More than 2 years
+        return "90 days", "%Y-%m"
+
 for loc in locations:
     dfl = df[df['location'] == loc].sort_values('date')
+    
+    # Dynamically calculate date breaks
+    date_breaks, date_format = calculate_date_breaks(dfl['date'])
     
     # PLOT 1: Formation and Degradation
     forming_degrading = dfl.melt(
@@ -57,10 +75,10 @@ for loc in locations:
         ggplot(forming_degrading, aes('date', 'value', color='enrichment'))
         + geom_line(size=1.2)
         + scale_color_manual(values=color_map1)
-        + scale_x_datetime(date_breaks="40 days", date_labels="%Y-%m-%d")
+        + scale_x_datetime(date_breaks=date_breaks, date_labels=date_format)
         + labs(
             title=f"Ice Formation & Degradation for {loc}",
-            y="Score (0-1)", x=""  # Empty x-label for top plot
+            y="Score (0-1)", x="Date"  # Add x-label to show on all plots
         )
         + theme_light(base_size=14)
         + theme(
@@ -84,7 +102,7 @@ for loc in locations:
         ggplot(quality_formed, aes('date', 'value', color='enrichment'))
         + geom_line(size=1.2)
         + scale_color_manual(values=color_map2)
-        + scale_x_datetime(date_breaks="40 days", date_labels="%Y-%m-%d")
+        + scale_x_datetime(date_breaks=date_breaks, date_labels=date_format)
         + labs(
             title=f"Ice Quality & Formation Status for {loc}",
             y="Score (0-1)", x="Date"
@@ -130,37 +148,64 @@ facet_vars = [
 
 for loc in locations:
     dfl = df[df['location'] == loc].sort_values('date')
+    
+    # Dynamically calculate date breaks
+    date_breaks, date_format = calculate_date_breaks(dfl['date'])
+    
     # Melt for faceting
     melt_vars = [v[0] for v in facet_vars]
     dfl_melt = dfl.melt(id_vars=['date'], value_vars=melt_vars, var_name='variable', value_name='value')
+    
     # Map pretty names and colors
     name_map = {v[0]: v[1] for v in facet_vars}
     color_map = {v[0]: v[2] for v in facet_vars}
     dfl_melt['pretty'] = dfl_melt['variable'].map(name_map)
     dfl_melt['color'] = dfl_melt['variable'].map(color_map)
 
+    # Calculate optimal layout
+    num_vars = len(facet_vars)
+    ncol = 2  # Default to 2 columns
+    
+    # Adjust figure size based on number of variables
+    width = 16
+    total_height = 18 # Added extra space for legend
+
     p_facet = (
         ggplot(dfl_melt, aes('date', 'value'))
         + geom_line(aes(color='pretty'), size=1.2)
         + facet_wrap('~pretty', scales='free_y', ncol=2)
         + scale_color_manual(values={v[1]: v[2] for v in facet_vars}, name="Variable")
-        + scale_x_datetime(date_breaks="65 days", date_labels="%Y-%m-%d")
+        + scale_x_datetime(date_breaks=date_breaks, date_labels=date_format)
         + labs(
             title=f"Weather & Ice Stats for {loc}",
-            x="Date",
+            x="Date", 
             y=None
         )
-        + theme_light(base_size=16)
+        + theme_light(base_size=20)
         + theme(
+            # figure_size=(18, 14),
             plot_title=element_text(color="white", backgroundcolor="#222222", size=20, weight='bold', ha='center'),
-            axis_text_x=element_text(color="white", rotation=45, hjust=1),
-            axis_text_y=element_text(color="white"),
-            legend_position='right',
+            axis_text_x=element_text(rotation=45, hjust=1),
+            axis_text_y=element_text(),
+            legend_position='bottom',
             legend_title=element_text(size=14, weight='bold'),
-            strip_text_x=element_text(color="black", size=14, weight='bold'),
-            strip_background=element_rect(fill="#e0e0e0", color="#888888"),
-            plot_background=element_rect(fill="#222222")
+            # Make panel titles much more readable
+            strip_text_x=element_text(size=16, weight='bold', color='black'),
+            strip_background=element_rect(fill="#d0d0d0", color="#555555", size=1.2),
+            # Reduce panel spacing to use space more efficiently
+            # plot_background=element_rect(fill="#222222"),
+            panel_spacing=0.15,
+            # Ensure axis lines and ticks appear
+            axis_ticks_x=element_line(color="gray", size=0.8),
+            axis_line_x=element_line(color="gray", size=0.8),
+            # Maximize plot area relative to figure
+            # panel_margin=0.2,
+            plot_margin=0.1
         )
-        + guides(color=guide_legend(title="Variable"))
     )
-    p_facet.save(f"/workspaces/CamOnAirFlow/weather_ice_stats_{loc.replace(' ', '_')}.png", width=16, height=18, dpi=150, limitsize=False)
+    
+    # For more control over output size, explicitly set width and height in save
+    p_facet.save(
+        f"/workspaces/CamOnAirFlow/weather_ice_stats_{loc.replace(' ', '_')}.png", 
+        width=width, height=25, dpi=150, limitsize=False
+    )

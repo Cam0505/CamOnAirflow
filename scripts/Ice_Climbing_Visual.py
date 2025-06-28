@@ -166,13 +166,10 @@ for loc in locations:
     num_vars = len(facet_vars)
     ncol = 2  # Default to 2 columns
     
-    # Adjust figure size based on number of variables
-    width = 16
-    total_height = 18 # Added extra space for legend
 
     p_facet = (
         ggplot(dfl_melt, aes('date', 'value'))
-        + geom_line(aes(color='pretty'), size=1.2)
+        + geom_line(aes(color='pretty'), size=1.8)
         + facet_wrap('~pretty', scales='free_y', ncol=2)
         + scale_color_manual(values={v[1]: v[2] for v in facet_vars}, name="Variable")
         + scale_x_datetime(date_breaks=date_breaks, date_labels=date_format)
@@ -183,29 +180,30 @@ for loc in locations:
         )
         + theme_light(base_size=20)
         + theme(
-            # figure_size=(18, 14),
-            plot_title=element_text(color="white", backgroundcolor="#222222", size=20, weight='bold', ha='center'),
-            axis_text_x=element_text(rotation=45, hjust=1),
-            axis_text_y=element_text(),
+            figure_size=(18, 20),
+            plot_title=element_text(color="white", backgroundcolor="#222222", size=28, weight='bold', ha='center'),
+            axis_text_x=element_text(rotation=45, hjust=1, size=16),
+            axis_title_x=element_text(size=20, weight='bold'),
+            axis_text_y=element_text(size=16),
             legend_position='bottom',
-            legend_title=element_text(size=14, weight='bold'),
-            # Make panel titles much more readable
-            strip_text_x=element_text(size=16, weight='bold', color='black'),
-            strip_background=element_rect(fill="#d0d0d0", color="#555555", size=1.2),
-            # Reduce panel spacing to use space more efficiently
-            # plot_background=element_rect(fill="#222222"),
-            panel_spacing=0.15,
-            # Ensure axis lines and ticks appear
-            axis_ticks_x=element_line(color="gray", size=0.8),
-            axis_line_x=element_line(color="gray", size=0.8),
-            # Maximize plot area relative to figure
-            # panel_margin=0.2,
-            plot_margin=0.1
+            legend_box='horizontal',
+            legend_title=element_text(size=20, weight='bold'),
+            legend_box_margin=1,
+            legend_text=element_text(size=20),
+            legend_key_size=18,
+            # legend_box_spacing=1,
+            legend_margin=1,
+            strip_text_x=element_text(size=20, weight='bold', color='black'),
+            strip_background=element_rect(fill="#d0d0d0", color="#555555", size=1.5),
+            panel_spacing=0.05,
+            axis_ticks_x=element_line(color="gray", size=1.0),
+            axis_line_x=element_line(color="gray", size=1.0),
+            plot_margin=0.05  # Increased margin all around
         )
     )
     
-    # For more control over output size, explicitly set width and height in save
+    # Also update the save dimensions
     p_facet.save(
         f"/workspaces/CamOnAirFlow/weather_ice_stats_{loc.replace(' ', '_')}.png", 
-        width=width, height=25, dpi=150, limitsize=False
+        width=24, height=28, dpi=160, limitsize=False  # Increased height
     )

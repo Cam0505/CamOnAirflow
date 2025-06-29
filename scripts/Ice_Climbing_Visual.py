@@ -2,7 +2,7 @@ import duckdb
 from dotenv import load_dotenv
 from project_path import get_project_paths, set_dlt_env_vars
 import os
-from plotnine import ggplot, aes, geom_line, labs, scale_color_manual, element_line, theme_light, theme, element_text, facet_grid, facet_wrap, scale_x_datetime
+from plotnine import ggplot, aes, geom_line, labs, scale_color_manual, element_line, theme_light, theme, element_text, facet_wrap, scale_x_datetime
 from plotnine.themes.elements import element_rect
 import pandas as pd
 from PIL import Image

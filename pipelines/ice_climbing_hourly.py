@@ -28,67 +28,98 @@ logger = logging.getLogger(__name__)
 # Configurable time window at the top
 END_DT_LAG_DAYS = 3  # Open-Meteo archive is usually 1-2 days behind
 DATA_WINDOW_DAYS = 1600 
-BATCH_SIZE = 1500
+BATCH_SIZE = 1000
 
+API_HOURLY_MEASURES = [
+    "temperature_2m", "precipitation", "snowfall", "cloudcover", "windspeed_10m",
+    "dew_point_2m", "surface_pressure", "relative_humidity_2m",
+    "shortwave_radiation", "sunshine_duration", "is_day", "wind_gusts_10m", "snow_depth"
+]
+
+start_dt = datetime(2021, 1, 15, 0, 0, 0, tzinfo=timezone.utc)
 end_dt = datetime.now(timezone.utc) - timedelta(days=END_DT_LAG_DAYS)
-start_dt = end_dt - timedelta(days=DATA_WINDOW_DAYS)
 
-def get_ice_climbing_with_thresholds():
-    # Forming Temp: The temperature (°C) below which an hour counts as "below freezing" for ice formation.
-    # Forming Hours: Minimum number of hours per day below forming_temp required for a day to be considered a "forming day".
-    # Forming Days: Number of recent days to look back for calculating the fraction of "forming days".
-    # Formed Days: Number of days to use for the rolling mean of the forming score to determine if ice has formed.
-    # Degrade Temp: Temperature (°C) above which an hour counts as "above freezing" for ice degrading.
-    # Degrade Hours: Minimum number of hours per day above degrade_temp required for a day to be considered "degrading".
-    return [
-        {
-            "name": "Remarkables", "country": "NZ", "lat": -45.0716, "lon": 168.8030, "timezone": "Pacific/Auckland",
-            "forming_temp": -1.5, "forming_hours": 11, "forming_days": 5, "formed_days": 21, "degrade_temp": 1.8, "degrade_hours": 4,
-        },
-        {
-            "name": "Black Peak", "country": "NZ", "lat": -44.5841, "lon": 168.8309, "timezone": "Pacific/Auckland",
-            "forming_temp": -2.0, "forming_hours": 12, "forming_days": 6, "formed_days": 28, "degrade_temp": 1.8, "degrade_hours": 5,
-        },
-        {
-            "name": "Dasler Pinnacles", "country": "NZ", "lat": -43.9568, "lon": 169.8682, "timezone": "Pacific/Auckland",
-            "forming_temp": -1.0, "forming_hours": 11, "forming_days": 5, "formed_days": 21, "degrade_temp": 1.8, "degrade_hours": 4,
-        },
-        {
-            "name": "Milford Sound", "country": "NZ", "lat": -44.7726, "lon": 168.0389, "timezone": "Pacific/Auckland",
-            "forming_temp": -1.5, "forming_hours": 12, "forming_days": 5, "formed_days": 21, "degrade_temp": 1.8, "degrade_hours": 5,
-        },
-        {
-            "name": "Bush Stream", "country": "NZ", "lat": -43.8487, "lon": 170.0439, "timezone": "Pacific/Auckland",
-            "forming_temp": -1.5, "forming_hours": 11, "forming_days": 5, "formed_days": 21, "degrade_temp": 2.0, "degrade_hours": 4,
-        }
-    ]
+# Forming Temp: The temperature (°C) below which an hour counts as "below freezing" for ice formation.
+# Forming Hours: Minimum number of hours per day below forming_temp required for a day to be considered a "forming day".
+# Forming Days: Number of recent days to look back for calculating the fraction of "forming days".
+# Formed Days: Number of days to use for the rolling mean of the forming score to determine if ice has formed.
+# Degrade Temp: Temperature (°C) above which an hour counts as "above freezing" for ice degrading.
+# Degrade Hours: Minimum number of hours per day above degrade_temp required for a day to be considered "degrading".
+ICE_CLIMBING = [
+    {
+        "name": "Remarkables", "country": "NZ", "lat": -45.0716, "lon": 168.8030, "timezone": "Pacific/Auckland",
+        "forming_temp": -1.5, "forming_hours": 11, "forming_days": 5, "formed_days": 21, "degrade_temp": 1.8, "degrade_hours": 4,
+    },
+    {
+        "name": "Dasler Pinnacles", "country": "NZ", "lat": -43.9590, "lon": 169.8635, "timezone": "Pacific/Auckland",
+        "forming_temp": -1.5, "forming_hours": 11, "forming_days": 5, "formed_days": 21, "degrade_temp": 1.8, "degrade_hours": 4,
+    },
+    {
+        "name": "Milford Sound", "country": "NZ", "lat": -44.7700, "lon": 168.0372, "timezone": "Pacific/Auckland",
+        "forming_temp": -1.5, "forming_hours": 12, "forming_days": 5, "formed_days": 21, "degrade_temp": 1.8, "degrade_hours": 5,
+    },
+    {
+        "name": "Bush Stream", "country": "NZ", "lat": -43.8487, "lon": 170.0439, "timezone": "Pacific/Auckland",
+        "forming_temp": -1.5, "forming_hours": 11, "forming_days": 5, "formed_days": 21, "degrade_temp": 2.0, "degrade_hours": 4,
+    }
+]
 
 
-ICE_CLIMBING = get_ice_climbing_with_thresholds()
+def check_table_status(logger, client, schema: str, table: str) -> tuple[bool, bool, bool]:
+    """
+    Returns (table_exists, table_empty, table_missing) for the given schema and table.
+    - table_exists: whether the table exists at all.
+    - table_empty: table exists but is empty (truncated).
+    - table_missing: shorthand for not table_exists
+    """
+    try:
+        count_query = f"SELECT COUNT(*) FROM {schema}.{table}"
+        count_result = client.execute_sql(count_query)
+        row_count = next(iter(count_result))[0]
+        table_empty = (row_count == 0)
+        return True, table_empty, False
+    except DatabaseUndefinedRelation:
+        logger.warning(f"Table {schema}.{table} does not exist. Assuming full fetch.")
+        return False, False, True
+    except Exception as e:
+        logger.error(f"Unexpected error checking {schema}.{table}: {e}")
+        raise
 
 
 
 def get_missing_datetime_ranges_sql(logger, locations, start_dt, end_dt, pipeline):
-    """Return missing datetime ranges for all locations using a single SQL query."""
-    missing_ranges = {loc["name"]: [] for loc in locations}
-    table_truncated = False
-    
+    """Return either full backfill (if missing columns) or missing datetime ranges per location."""
+    issues_by_location = {loc["name"]: [] for loc in locations}
+
     try:
-        # Prepare a VALUES clause for all locations
-        location_values = ",\n".join(
-            f"('{loc['name']}', '{loc['timezone']}')" for loc in locations
-        )
-        
-        # Format the timestamps in UTC
+        location_values = ",\n".join(f"('{loc['name']}', '{loc['timezone']}')" for loc in locations)
+        api_field_values = ",\n".join(f"('{f}')" for f in API_HOURLY_MEASURES)
         start_str = start_dt.strftime("%Y-%m-%d %H:00:00")
         end_str = end_dt.strftime("%Y-%m-%d %H:00:00")
-        
+
         sql = f"""
-        WITH locations(name, timezone) AS (
-            VALUES
-            {location_values}
+        WITH 
+        locations(name, timezone) AS (
+            VALUES {location_values}
         ),
-        -- Get ACTUAL data bounds in UTC from your table
+        api_fields(column_name) AS (
+            VALUES {api_field_values}
+        ),
+        actual_columns AS (
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_schema = 'ice_climbing' AND table_name = 'weather_hourly_raw'
+        ),
+        missing_columns AS (
+            SELECT
+                l.name AS location,
+                COUNT(*) AS missing_count
+            FROM locations l
+            CROSS JOIN api_fields af
+            LEFT JOIN actual_columns ac ON af.column_name = ac.column_name
+            WHERE ac.column_name IS NULL
+            GROUP BY l.name
+        ),
         actual_data_range AS (
             SELECT 
                 location AS name,
@@ -97,109 +128,117 @@ def get_missing_datetime_ranges_sql(logger, locations, start_dt, end_dt, pipelin
             FROM ice_climbing.weather_hourly_raw
             GROUP BY location
         ),
-        -- Define the TEST range we want to analyze (in UTC)
         test_range AS (
             SELECT
                 l.name,
                 l.timezone,
-                CAST('{start_str}' AS TIMESTAMP) AS test_start_utc,
-                CAST('{end_str}' AS TIMESTAMP) AS test_end_utc,
-                COALESCE(a.min_utc, CAST('{start_str}' AS TIMESTAMP)) AS data_start_utc,
-                COALESCE(a.max_utc, CAST('{end_str}' AS TIMESTAMP)) AS data_end_utc
+                CAST('{start_str}' AS TIMESTAMP) AS data_start_utc,
+                CAST('{end_str}' AS TIMESTAMP) AS data_end_utc
             FROM locations l
-            LEFT JOIN actual_data_range a ON l.name = a.name
         ),
-        -- Generate all hours in the TEST range (UTC)
         all_hours_utc AS (
             SELECT
                 t.name,
                 t.timezone,
-                (t.test_start_utc + (generate_series * INTERVAL '1 hour')) AS utc_datetime
+                (t.data_start_utc + (generate_series * INTERVAL '1 hour')) AS utc_datetime
             FROM test_range t, generate_series(
                 0,
-                CAST((epoch(t.test_end_utc) - epoch(t.test_start_utc)) / 3600 AS INTEGER)
+                CAST((extract(epoch FROM t.data_end_utc) - extract(epoch FROM t.data_start_utc)) / 3600 AS INTEGER)
             )
-            WHERE (t.test_start_utc + (generate_series * INTERVAL '1 hour')) <= t.test_end_utc
+            WHERE (t.data_start_utc + (generate_series * INTERVAL '1 hour')) <= t.data_end_utc
         ),
-        -- Find missing hours (comparing against ACTUAL data)
-        missing AS (
+        missing_hours AS (
             SELECT 
                 a.name,
                 a.timezone,
                 a.utc_datetime,
                 CASE
-                    WHEN a.utc_datetime < r.data_start_utc THEN 'before_data'
-                    WHEN a.utc_datetime > r.data_end_utc THEN 'after_data'
+                    WHEN a.utc_datetime < ad.min_utc THEN 'before_data'
+                    WHEN a.utc_datetime > ad.max_utc THEN 'after_data'
                     ELSE 'gap_in_data'
                 END AS gap_type
             FROM all_hours_utc a
             JOIN test_range r ON a.name = r.name
+            LEFT JOIN actual_data_range ad ON a.name = ad.name
             LEFT JOIN ice_climbing.weather_hourly_raw e 
                 ON a.name = e.location AND a.utc_datetime = e.datetime
             WHERE e.datetime IS NULL
         ),
-        -- Group contiguous missing hours by gap type
         gap_groups AS (
             SELECT 
                 name,
                 timezone,
                 gap_type,
                 utc_datetime,
-                epoch(utc_datetime) - 
+                extract(epoch FROM utc_datetime) - 
                     (ROW_NUMBER() OVER (PARTITION BY name, gap_type ORDER BY utc_datetime) * 3600) AS grp
-            FROM missing
+            FROM missing_hours
+        ),
+        missing_gaps AS (
+            SELECT 
+                name AS location,
+                gap_type,
+                MIN(utc_datetime) AS range_start,
+                MAX(utc_datetime) AS range_end,
+                COUNT(*) AS missing_hours
+            FROM gap_groups
+            GROUP BY name, timezone, gap_type, grp
+            HAVING COUNT(*) > 1
+        ),
+        missing_cols AS (
+            SELECT
+                location,
+                TRUE AS has_missing_columns
+            FROM missing_columns
+            WHERE missing_count > 0
         )
-        -- Final results with clear gap categorization
-        SELECT 
-            name,
-            gap_type,
-            MIN(utc_datetime) AS utc_start,
-            MAX(utc_datetime) AS utc_end,
-            COUNT(*) AS missing_hours
-        FROM gap_groups
-        GROUP BY name, timezone, gap_type, grp
-        HAVING COUNT(*) > 1  
-        ORDER BY name, gap_type, utc_start;
+
+        SELECT
+            mg.location,
+            mg.gap_type,
+            mg.range_start,
+            mg.range_end,
+            mg.missing_hours,
+            FALSE AS missing_columns_flag
+        FROM missing_gaps mg
+        LEFT JOIN missing_cols mc ON mg.location = mc.location
+
+        WHERE mc.has_missing_columns IS NULL  -- no missing columns, include missing gaps
+
+        UNION ALL
+
+        SELECT
+            mc.location,
+            'missing_column_backfill' AS gap_type,
+            CAST('{start_str}' AS TIMESTAMP) AS range_start,
+            CAST('{end_str}' AS TIMESTAMP) AS range_end,
+            CAST((extract(epoch FROM CAST('{end_str}' AS TIMESTAMP)) - extract(epoch FROM CAST('{start_str}' AS TIMESTAMP))) / 3600 AS INTEGER) AS missing_hours,
+            TRUE AS missing_columns_flag
+        FROM missing_cols mc
         """
-        
+
         with pipeline.sql_client() as client:
             result = client.execute_sql(sql)
             for row in result:
-                loc_name, gap_type, start_dt, end_dt, missing_count = row
-                missing_ranges[loc_name].append({
-                    "start": start_dt,
-                    "end": end_dt,
-                    "count": missing_count,
-                    "type": gap_type
+                location, gap_type, range_start, range_end, missing_hours, missing_columns_flag = row
+                issues_by_location[location].append({
+                    "type": gap_type,
+                    "start": range_start,
+                    "end": range_end,
+                    "count": missing_hours,
+                    "missing_columns": missing_columns_flag
                 })
-            
-            # Check if table is empty (no actual data ranges found)
-            check_empty_sql = "SELECT COUNT(*) FROM ice_climbing.weather_hourly_raw"
-            try:
-                result = client.execute_sql(check_empty_sql)
-                # Get the first row from the result (which might be a list or cursor)
-                row_count = 0
-                for row in result:
-                    row_count = row[0]  # Get the count from the first column
-                    break
-                table_truncated = (row_count == 0)
-            except Exception as e:
-                logger.warning(f"Error checking if table exists: {e}")
-                table_truncated = True  # Assume table is empty if we can't check
-            
-            # Log results
-            for loc_name in missing_ranges:
-                ranges = missing_ranges[loc_name]
-                total_missing = sum(r["count"] for r in ranges)
-                num_ranges = len(ranges)
-                logger.info(f"Found {total_missing} missing timestamps in {num_ranges} range(s) for {loc_name}")
-                
-        return missing_ranges, table_truncated
-        
+
+            table_exists, table_empty, table_missing = check_table_status(
+                logger, client, "ice_climbing", "weather_hourly_raw"
+            )
+
+        return issues_by_location, table_exists, table_empty, table_missing
+
     except Exception as e:
-        logger.error(f"Failed to retrieve missing datetime ranges: {e}")
-        # Return empty ranges and set table_truncated to true to force full range fetch
-        return {}, True
+        logger.error(f"SQL error in get_missing_datetime_ranges_sql: {e}")
+        return {}, True, True, True
+
     
 
 
@@ -215,11 +254,7 @@ def fetch_hourly_data(location, start_dt, end_dt, max_retries=3, retry_delay=2):
                 "longitude": location["lon"],
                 "start_date": start_dt.date().isoformat(),
                 "end_date": end_dt.date().isoformat(),
-                "hourly": ",".join([
-                    "temperature_2m", "precipitation", "snowfall", "cloudcover", "windspeed_10m",
-                    "dew_point_2m", "surface_pressure", "relative_humidity_2m",
-                    "shortwave_radiation", "sunshine_duration", "is_day", "wind_gusts_10m"
-                ]),
+                "hourly": ",".join(API_HOURLY_MEASURES),
                 "timezone": location["timezone"]
             }
             
@@ -263,48 +298,54 @@ def ice_climbing_hourly_source(logger: logging.Logger):
         processed = 0
 
         # Use SQL-based missing datetimes to offload computation to database
-        missing_ranges_by_loc, table_truncated = get_missing_datetime_ranges_sql(
+        missing_ranges_by_loc, table_exists, table_empty, table_missing = get_missing_datetime_ranges_sql(
             logger, ICE_CLIMBING, start_dt, end_dt, dlt.current.pipeline()
         )
 
-        # Collect locations that need data fetching
         locations_to_fetch = []
-        for location in ICE_CLIMBING:
-            location_name = location["name"]
-            missing_ranges = missing_ranges_by_loc.get(location_name, [])
-            
-            # Check table_truncated FIRST
-            if table_truncated:
-                # If table is truncated, ALWAYS use full range
-                fetch_start = start_dt
-                fetch_end = end_dt
-                logger.info(f"Table truncated, using full date range for {location_name}")
-                
-                # Store a single range for the entire period
+
+        if table_missing:
+            logger.info("Table does not exist - performing full fetch for all locations.")
+            for location in ICE_CLIMBING:
                 location_copy = location.copy()
-                location_copy["fetch_start"] = fetch_start
-                location_copy["fetch_end"] = fetch_end
+                location_copy["fetch_start"] = start_dt
+                location_copy["fetch_end"] = end_dt
                 locations_to_fetch.append(location_copy)
-            elif not missing_ranges:
-                logger.info(f"No missing data points for {location_name}, skipping.")
-                continue
-            else:
-                # Process each range separately to avoid large API requests
+
+        elif table_empty:
+            logger.info("Table exists but is empty (truncated) - performing full fetch for all locations.")
+            for location in ICE_CLIMBING:
+                location_copy = location.copy()
+                location_copy["fetch_start"] = start_dt
+                location_copy["fetch_end"] = end_dt
+                locations_to_fetch.append(location_copy)
+
+        else:
+            # Table exists and has data - fetch only missing ranges
+            for location in ICE_CLIMBING:
+                location_name = location["name"]
+                missing_ranges = missing_ranges_by_loc.get(location_name, [])
+                
+                if not missing_ranges:
+                    logger.info(f"No missing data points for {location_name}, skipping.")
+                    continue
+                
                 for date_range in missing_ranges:
-                    if date_range["type"] == "before_data":
+                    if date_range["count"] < 2:  # skip very small gaps if desired
+                        continue
+                    
+                    gap_type = date_range["type"]
+                    if gap_type == "before_data":
                         logger.info(f"Fetching initial data for {location_name} before recorded data")
-                    elif date_range["type"] == "after_data":
+                    elif gap_type == "after_data":
                         logger.info(f"Fetching new data for {location_name} after recorded data")
-                    elif date_range["type"] == "gap_in_data":
+                    elif gap_type == "gap_in_data":
                         logger.info(f"Filling data gap for {location_name}")
+
                     fetch_start = date_range["start"]
                     fetch_end = date_range["end"]
-                    
-                    # Skip extremely small ranges (optional optimization)
-                    if date_range["count"] < 2:  # Skip single-hour gaps if desired
-                        continue
-                        
-                    # Ensure timezone is set properly
+
+                    # Fix timezone if missing
                     try:
                         tz = ZoneInfo(location["timezone"])
                         fetch_start = fetch_start.replace(tzinfo=tz) if fetch_start.tzinfo is None else fetch_start
@@ -313,53 +354,41 @@ def ice_climbing_hourly_source(logger: logging.Logger):
                         logger.warning(f"Error with timezone {location['timezone']}, using UTC: {e}")
                         fetch_start = fetch_start.replace(tzinfo=timezone.utc) if fetch_start.tzinfo is None else fetch_start
                         fetch_end = fetch_end.replace(tzinfo=timezone.utc) if fetch_end.tzinfo is None else fetch_end
-                    
-                    # Validate fetch range
+
                     if fetch_start > fetch_end:
-                        logger.warning(f"Invalid date range: {fetch_start} > {fetch_end}. Skipping.")
+                        logger.warning(f"Invalid date range {fetch_start} > {fetch_end} for {location_name}, skipping.")
                         continue
-                        
-                    # Store the fetch range with the location
+
                     location_copy = location.copy()
                     location_copy["fetch_start"] = fetch_start
                     location_copy["fetch_end"] = fetch_end
                     locations_to_fetch.append(location_copy)
-        
-        # Fetch data for multiple locations in parallel
+
+
         if locations_to_fetch:
             logger.info(f"Fetching data for {len(locations_to_fetch)} locations in parallel")
             location_results = {}
-            
-            # Process locations in batches to avoid overwhelming the API
-            # Remove the batch loop entirely
+
             with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
-                # Submit all fetch tasks with custom date ranges
                 future_to_location = {
                     executor.submit(
-                        fetch_hourly_data, 
-                        loc, 
-                        loc["fetch_start"], 
+                        fetch_hourly_data,
+                        loc,
+                        loc["fetch_start"],
                         loc["fetch_end"]
                     ): loc for loc in locations_to_fetch
                 }
-                
-                # Process results as they complete
+
                 for future in concurrent.futures.as_completed(future_to_location):
                     location = future_to_location[future]
                     location_name = location["name"]
                     try:
                         data = future.result()
-                        location_results[location_name] = {
-                            "data": data,
-                            "location": location
-                        }
+                        location_results[location_name] = {"data": data, "location": location}
                         logger.info(f"Successfully fetched data for {location_name}")
                     except Exception as e:
                         logger.error(f"Failed to fetch data for {location_name}: {e}")
-                        location_results[location_name] = {
-                            "data": None, 
-                            "location": location
-                        }
+                        location_results[location_name] = {"data": None, "location": location}
             
             # Process the results
             for location_name, result in location_results.items():
@@ -375,11 +404,7 @@ def ice_climbing_hourly_source(logger: logging.Logger):
                 df = pd.DataFrame({"datetime": pd.to_datetime(h["time"])})
                 
                 # Add all columns from the API response
-                for col in [
-                    "temperature_2m", "precipitation", "snowfall", "cloudcover", "windspeed_10m",
-                    "dew_point_2m", "surface_pressure", "relative_humidity_2m", 
-                    "shortwave_radiation", "sunshine_duration", "is_day", "wind_gusts_10m"
-                ]:
+                for col in API_HOURLY_MEASURES:
                     if col in h:
                         df[col] = h.get(col)
                 
@@ -389,37 +414,30 @@ def ice_climbing_hourly_source(logger: logging.Logger):
                 df["timezone"] = location["timezone"]
                 df["date"] = df["datetime"].dt.date  # Store date for easier filtering in DBT
 
+
+                logger.info(f"Fetched {len(df)} records for {location_name} with fields: {list(df.columns)}")
+
                 if df.empty:
                     logger.info(f"No new data to process for {location_name}, skipping.")
                     continue
 
-                CHUNK_THRESHOLD = 50000  
+                CHUNK_THRESHOLD = 50000
+                chunk_size = 10000 if len(df) > CHUNK_THRESHOLD else len(df)
 
-                if len(df) > CHUNK_THRESHOLD:
-                    # Memory-efficient chunked processing
-                    chunk_size = 10000
-                    for i in range(0, len(df), chunk_size):
-                        chunk = df.iloc[i:i+chunk_size]
-                        records = chunk.to_dict("records")
-                        for j in range(0, len(records), BATCH_SIZE):
-                            yield records[j:j+BATCH_SIZE]
-                else:
-                    # Faster small-batch processing
-                    records = df.to_dict("records")
-                    for i in range(0, len(records), BATCH_SIZE):
-                        yield records[i:i+BATCH_SIZE]
+                for i in range(0, len(df), chunk_size):
+                    chunk = df.iloc[i:i+chunk_size].to_dict("records")
+                    for j in range(0, len(chunk), BATCH_SIZE):
+                        yield chunk[j:j+BATCH_SIZE]
                     
                 processed += 1
                 logger.info(f"Processed and yielded raw data for {location_name}.")
+            state["Processed_Ranges"] = {
+                loc["name"]: {
+                    "start": loc["fetch_start"].isoformat(),
+                    "end": loc["fetch_end"].isoformat()
+                } for loc in locations_to_fetch
+            }
 
-                # Update processed range in state
-                if not df.empty:
-                    min_date = df["datetime"].min()
-                    max_date = df["datetime"].max()
-                    state["Processed_Ranges"][location_name] = {
-                        "min": str(min_date),
-                        "max": str(max_date)
-                    }
         else:
             logger.info("No locations need data fetching.")
                 

@@ -1,6 +1,6 @@
 {
-  "version": 4,
-  "version_hash": "S97fAaK4e4F4jfLodxzc37HTYtaMd0jJ5UE1KQ8W9QA=",
+  "version": 5,
+  "version_hash": "SUvLJB5lcmKvleQBVkcL98WRoi7qp05iB2YlTO8nook=",
   "engine_version": 11,
   "name": "ice_climbing_hourly_source",
   "tables": {
@@ -175,6 +175,11 @@
           "nullable": false,
           "unique": true,
           "row_key": true
+        },
+        "snow_depth": {
+          "name": "snow_depth",
+          "data_type": "double",
+          "nullable": true
         }
       },
       "write_disposition": "merge",
@@ -356,6 +361,7 @@
     }
   },
   "previous_hashes": [
+    "S97fAaK4e4F4jfLodxzc37HTYtaMd0jJ5UE1KQ8W9QA=",
     "CCqT65U+YhKYNoNZGo88Srhh8vFWviZi9Q/vJdNXGmk=",
     "whgUheGeQr2cb2Gs1eblymw9hzfWgIBiQ/sg4jZsfDY=",
     "bnSIiwMCubYN4YVWe5kVWgwVNLQJ/5E2WoXOGFj37FU=",

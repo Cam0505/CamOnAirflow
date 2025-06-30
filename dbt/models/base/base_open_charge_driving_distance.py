@@ -73,7 +73,6 @@ def model(dbt: Any, session: Any):
         for path in potential_paths:
             if path.exists():
                 load_dotenv(dotenv_path=path)
-                print(f"Loaded .env from: {path}")
                 env_loaded = True
                 break
     
@@ -112,7 +111,7 @@ def model(dbt: Any, session: Any):
         # If nothing to process, return existing data
         if len(process_df) == 0:
             print("No new pairs to process")
-            return dbt.this.df()
+            return session.table(str(dbt.this)).df()
     else:
         print("Full refresh - loading pairs to process")
         # For full refresh, take pairs directly from source table

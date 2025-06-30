@@ -50,8 +50,8 @@ def get_ski_fields_with_timestamp():
     ]
 
 SKI_FIELDS = get_ski_fields_with_timestamp()
-START_DATE = date(1998, 1, 1)
-BATCH_SIZE = 200  # Number of rows to yield at once
+START_DATE = date(1994, 1, 1)
+BATCH_SIZE = 500  # Number of rows to yield at once
 FORCE_SNOW_DEPTH_RELOAD = False  # <-- Set to False after one-off load
 
 def get_all_missing_dates(logger, locations, start_date, end_date, dataset):
@@ -151,10 +151,6 @@ def snowfall_source(logger: logging.Logger, dataset):
         def is_winter_month(d):
             return 6 <= d.month <= 11
 
-        # Get all missing dates, but only for June-November
-        def get_winter_dates(start, end):
-            return [d for d in pd.date_range(start, end).date if is_winter_month(d)]
-
         missing_dates_by_location, table_truncated = get_all_missing_dates(
             logger, SKI_FIELDS, START_DATE, end_date, dataset
         )
@@ -194,9 +190,11 @@ def snowfall_source(logger: logging.Logger, dataset):
                 continue
 
             # Group missing dates by winter season (year)
+            # This is required as i only want filter data, if i 
+            # do min max of missing dates per location it will fetch 
+            # non winter months as well
             seasons = {}
             for d in missing_dates:
-                # If June-Nov, assign to that year as the "season"
                 seasons.setdefault(d.year, []).append(d)
             for season_year, season_dates in seasons.items():
                 chunk_dates = sorted(season_dates)
@@ -240,22 +238,9 @@ def snowfall_source(logger: logging.Logger, dataset):
                     merged["location"] = location_name
                     merged["country"] = country
 
-                    # Yield in batches
-                    batch = []
-                    for _, row in merged.iterrows():
-                        batch.append({
-                            "date": row["date"],
-                            "location": row["location"],
-                            "country": row["country"],
-                            "snowfall": row["snowfall"],
-                            "temperature_mean": row["temperature_mean"],
-                            "avg_snow_depth": row["avg_snow_depth"]
-                        })
-                        if len(batch) >= BATCH_SIZE:
-                            yield batch
-                            batch = []
-                    if batch:
-                        yield batch
+                    # Yield in batches using the range approach
+                    for i in range(0, len(merged), BATCH_SIZE):
+                        yield merged.iloc[i:i+BATCH_SIZE].to_dict(orient="records")
 
                     # Store processed range for this winter season
                     processed_info.setdefault(location_key, []).append({

@@ -32,6 +32,13 @@ df = con.execute("""
     FROM camonairflow.public_analysis.snowfall_winter_agg as snowfall
 """).df()
 
+df_cat = con.execute("""
+select 
+  Season, ski_field, snowfall_category, 
+  countx
+  from camonairflow.public_analysis.snowfall_winter_counts
+""").df()
+
 # Calculate total winter snowfall per ski_field/year for proportion
 df['season_total'] = df.groupby(['ski_field', 'year_col'])['total_monthly_snowfall'].transform('sum')
 df['month_prop'] = df['total_monthly_snowfall'] / df['season_total']
@@ -149,6 +156,39 @@ p3 = (
     )
 )
 
+# Set ordered categories for better control in the plot
+category_order = ['<=1', '>1and<=5', '>5and<=15', '>15and<=25', '>25and<=50', '>50and<=100', '>100', 'NULL Entry or Error']
+df_cat['snowfall_category'] = pd.Categorical(df_cat['snowfall_category'], categories=category_order, ordered=True)
+
+# Create a facet label for consistency with other plots
+df_cat['facet_label'] = df_cat['ski_field']
+
+p4 = (
+    ggplot(df_cat, aes(x='Season', y='countx', fill='snowfall_category'))
+    + geom_bar(stat='identity', position='stack')
+    + facet_wrap('~facet_label', ncol=4, scales='free_x')
+    + labs(
+        title='Snowfall Category Distribution by Season',
+        subtitle='Each bar shows count of snowfall days per category',
+        x='Season (Year)', y='Count of Days'
+    )
+    + theme_light(base_size=16)
+    + theme(
+        legend_position='right',
+        axis_text_x=element_text(rotation=45, hjust=1, size=10),
+        axis_title_x=element_text(size=14, weight='bold'),
+        plot_title=element_text(weight='bold', size=18),
+        plot_subtitle=element_text(size=12),
+        panel_spacing=0.05,
+        strip_text_x=element_text(color="black", weight="bold", size=12),
+        strip_background=element_rect(fill="#e0e0e0", color="#888888")
+    )
+)
+
+
+
+
 # Save with a wide and shorter aspect ratio, under 6100px in both dimensions
 p2.save("/workspaces/CamOnAirFlow/charts/winter_snowfall_vs_avg.png", width=32, height=28, dpi=150, limitsize=False)
 p3.save("/workspaces/CamOnAirFlow/charts/monthly_proportion_snowfall.png", width=32, height=28, dpi=150, limitsize=False)
+p4.save("/workspaces/CamOnAirFlow/charts/snowfall_category_distribution.png", width=32, height=28, dpi=150, limitsize=False)

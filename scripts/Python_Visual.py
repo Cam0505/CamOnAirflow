@@ -111,7 +111,7 @@ p2 = (
     + geom_point(aes(fill='above_avg'), size=4, color='black', alpha=0.8, show_legend=False)
     + labs(
         title='Winter Snowfall vs Long-Term & Overall Average',
-        subtitle='Dashed line = ski field avg; dotted orange = overall avg; blue=above avg, orange=below avg',
+        subtitle='Dashed line = ski field avg; dotted orange =overall avg; blue=above avg, orange=below avg',
         x='Year', y='Total Winter Snowfall (cm)'
     )
     + scale_fill_manual(values={True: '#1f77b4', False: '#ff7f0e'})
@@ -163,15 +163,42 @@ df_cat['snowfall_category'] = pd.Categorical(df_cat['snowfall_category'], catego
 # Create a facet label for consistency with other plots
 df_cat['facet_label'] = df_cat['ski_field']
 
+category_colors = {
+    '<=1': '#1b9e77',
+    '>1and<=5': '#d95f02',
+    '>5and<=15': '#7570b3',
+    '>15and<=25': '#e7298a',
+    '>25and<=50': '#66a61e',
+    '>50and<=100': '#e6ab02',
+    '>100': '#a6761d',
+    'NULL Entry or Error': '#666666'
+}
+
+df_cat = df_cat[df_cat['Season'] != 2025]
+
+df_cat_labels = (
+    df_cat.sort_values('Season')
+    .groupby(['facet_label', 'snowfall_category'])
+    .tail(1)
+)
+
 p4 = (
-    ggplot(df_cat, aes(x='Season', y='countx', fill='snowfall_category'))
-    + geom_bar(stat='identity', position='stack')
-    + facet_wrap('~facet_label', ncol=4, scales='free_x')
+    ggplot(df_cat, aes(x='Season', y='countx', color='snowfall_category', group='snowfall_category'))
+    + geom_line(size=1.8)
+    + geom_point(size=3)
+    # + geom_smooth(method='glm', se=False, linetype='dashed', size=1.2, alpha=0.7)
+    + geom_text(
+        data=df_cat_labels,
+        mapping=aes(x='Season', y='countx', label='snowfall_category', color='snowfall_category'),
+        ha='left', nudge_x=-0.5, nudge_y=1, size=16, show_legend=False
+    )
     + labs(
-        title='Snowfall Category Distribution by Season',
-        subtitle='Each bar shows count of snowfall days per category',
+        title='Snowfall Category Counts by Season',
+        subtitle='Each line shows count of snowfall days per category (dashed = trend)',
         x='Season (Year)', y='Count of Days'
     )
+    + scale_color_manual(values=category_colors)
+    + facet_wrap('~facet_label', scales='free_x', ncol=4)
     + theme_light(base_size=16)
     + theme(
         legend_position='right',

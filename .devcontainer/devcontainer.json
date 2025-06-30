@@ -10,7 +10,7 @@
     }
   },
   "runArgs": [
-    "--cpus=4",
+    "--cpus=5",
     "--memory=5g",
     "--init",
     "--user=astro"

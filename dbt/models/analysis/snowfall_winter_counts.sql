@@ -29,6 +29,5 @@ select
   year(date) as Season, location as ski_field, snowfall_category,
   count(*) as countx
   from categories
-  where location = 'Cardrona'
   group by year(date), location, snowfall_category, snowfall_order
 order by year(date) asc, location asc, snowfall_order asc

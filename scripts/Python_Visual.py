@@ -2,7 +2,7 @@ import duckdb
 from dotenv import load_dotenv
 from project_path import get_project_paths, set_dlt_env_vars
 import os
-from plotnine import ggplot, aes, geom_line, geom_point, geom_text, geom_hline, labs, scale_fill_manual, scale_color_manual, facet_wrap, theme_light, theme, element_text, geom_bar, element_rect
+from plotnine import ggplot, aes, geom_line, geom_point, geom_text, scale_x_continuous, geom_hline, labs, scale_fill_manual, scale_color_manual, facet_wrap, theme_light, theme, element_text, geom_bar, element_rect
 import pandas as pd
 
 # Load environment variables and set DLT config
@@ -34,10 +34,30 @@ df = con.execute("""
 
 df_cat = con.execute("""
 select 
-  Season, ski_field, snowfall_category, 
+  Season, ski_field, country, snowfall_category, 
   countx
   from camonairflow.public_analysis.snowfall_winter_counts
 """).df()
+
+
+def calculate_year_breaks(year_series):
+    """Calculate appropriate year breaks based on data range"""
+    min_year = int(year_series.min())
+    max_year = int(year_series.max())
+    year_range = max_year - min_year + 1
+
+    # Aim for 8-10 breaks
+    if year_range <= 10:
+        step = 1
+    elif year_range <= 20:
+        step = 2
+    elif year_range <= 40:
+        step = 5
+    else:
+        step = 10
+
+    breaks = list(range(min_year, max_year + 1, step))
+    return breaks
 
 # Calculate total winter snowfall per ski_field/year for proportion
 df['season_total'] = df.groupby(['ski_field', 'year_col'])['total_monthly_snowfall'].transform('sum')
@@ -133,16 +153,20 @@ p2 = (
 # Remove 2025 from the dataframe before plotting p3
 df_plot = df[df['year_col'] != 2025]
 
+# Dynamically calculate date breaks
+year_breaks = calculate_year_breaks(df_plot['year_col'])
+
 # Plot 3: Monthly proportion of total winter snowfall (without 2025)
 p3 = (
     ggplot(df_plot, aes('year_col', 'month_prop', fill='month_name'))
     + geom_bar(stat='identity', position='stack')
-    + facet_wrap('~facet_label', ncol=4)
+    + facet_wrap('~facet_label', scales='free_x', ncol=4)
     + labs(
         title='Monthly Proportion of Total Winter Snowfall',
         subtitle='Each bar shows the % of season snowfall by month',
         x='Year', y='Proportion of Season Snowfall'
     )
+    + scale_x_continuous(breaks=year_breaks)
     + theme_light(base_size=16)
     + theme(
         legend_position='right',
@@ -157,41 +181,34 @@ p3 = (
 )
 
 # Set ordered categories for better control in the plot
-category_order = ['<=1', '>1and<=5', '>5and<=15', '>15and<=25', '>25and<=50', '>50and<=100', '>100', 'NULL Entry or Error']
+category_order = ['1cm or less', 'Between 1 & 5cm', 'Between 5 & 15cm', 'Between 15 & 25cm', 
+                  'Between 25 & 50cm', 'Between 50 & 100cm', 'More than 100cm', 'NULL or Error']
 df_cat['snowfall_category'] = pd.Categorical(df_cat['snowfall_category'], categories=category_order, ordered=True)
 
-# Create a facet label for consistency with other plots
-df_cat['facet_label'] = df_cat['ski_field']
+# Dynamically calculate date breaks
+year_breaks = calculate_year_breaks(df_cat['Season'])
+
+df_cat['facet_label'] = df_cat['country'] + ' - ' + df_cat['ski_field']
 
 category_colors = {
-    '<=1': '#1b9e77',
-    '>1and<=5': '#d95f02',
-    '>5and<=15': '#7570b3',
-    '>15and<=25': '#e7298a',
-    '>25and<=50': '#66a61e',
-    '>50and<=100': '#e6ab02',
-    '>100': '#a6761d',
-    'NULL Entry or Error': '#666666'
+    '1cm or less': '#1b9e77',
+    'Between 1 & 5cm': '#d95f02',
+    'Between 5 & 15cm': '#7570b3',
+    'Between 15 & 25cm': '#e7298a',
+    'Between 25 & 50cm': '#66a61e',
+    'Between 50 & 100cm': '#e6ab02',
+    'More than 100cm': '#a6761d',
+    'NULL or Error': '#666666'
 }
 
 df_cat = df_cat[df_cat['Season'] != 2025]
 
-df_cat_labels = (
-    df_cat.sort_values('Season')
-    .groupby(['facet_label', 'snowfall_category'])
-    .tail(1)
-)
 
 p4 = (
     ggplot(df_cat, aes(x='Season', y='countx', color='snowfall_category', group='snowfall_category'))
     + geom_line(size=1.8)
     + geom_point(size=3)
     # + geom_smooth(method='glm', se=False, linetype='dashed', size=1.2, alpha=0.7)
-    + geom_text(
-        data=df_cat_labels,
-        mapping=aes(x='Season', y='countx', label='snowfall_category', color='snowfall_category'),
-        ha='left', nudge_x=-0.5, nudge_y=1, size=16, show_legend=False
-    )
     + labs(
         title='Snowfall Category Counts by Season',
         subtitle='Each line shows count of snowfall days per category (dashed = trend)',
@@ -199,6 +216,7 @@ p4 = (
     )
     + scale_color_manual(values=category_colors)
     + facet_wrap('~facet_label', scales='free_x', ncol=4)
+    + scale_x_continuous(breaks=year_breaks)
     + theme_light(base_size=16)
     + theme(
         legend_position='right',
@@ -219,3 +237,30 @@ p4 = (
 p2.save("/workspaces/CamOnAirFlow/charts/winter_snowfall_vs_avg.png", width=32, height=28, dpi=150, limitsize=False)
 p3.save("/workspaces/CamOnAirFlow/charts/monthly_proportion_snowfall.png", width=32, height=28, dpi=150, limitsize=False)
 p4.save("/workspaces/CamOnAirFlow/charts/snowfall_category_distribution.png", width=32, height=28, dpi=150, limitsize=False)
+# Plot 5: Total winter snowfall per month (not proportion), same layout as P3
+
+
+p5 = (
+    ggplot(df_plot, aes('year_col', 'total_monthly_snowfall', fill='month_name'))
+    + geom_bar(stat='identity', position='stack')
+    + facet_wrap('~facet_label', scales='free_x', ncol=4)
+    + labs(
+        title='Total Winter Snowfall per Month',
+        subtitle='Each bar shows the total snowfall (cm) by month',
+        x='Year', y='Total Snowfall (cm)'
+    )
+    + theme_light(base_size=16)
+    + scale_x_continuous(breaks=year_breaks)
+    + theme(
+        legend_position='right',
+        axis_text_x=element_text(rotation=45, hjust=1, size=10),
+        axis_title_x=element_text(size=14, weight='bold'),
+        plot_title=element_text(weight='bold', size=18),
+        plot_subtitle=element_text(size=12),
+        panel_spacing=0.05,
+        strip_text_x=element_text(color="black", weight="bold", size=12),
+        strip_background=element_rect(fill="#e0e0e0", color="#888888")
+    )
+)
+
+p5.save("/workspaces/CamOnAirFlow/charts/total_snowfall_per_month.png", width=32, height=28, dpi=150, limitsize=False)

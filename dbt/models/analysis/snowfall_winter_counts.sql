@@ -5,15 +5,16 @@ FROM {{ source('snowfall', 'ski_field_snowfall') }}
 select
   date,
 	location,
+  country,
   case 
-    when snowfall <= 1 then '<=1'
-    when snowfall > 1 and snowfall <= 5 then '>1and<=5'
-    when snowfall > 5 and snowfall <= 15 then '>5and<=15'
-    when snowfall > 15 and snowfall <= 25 then '>15and<=25'
-    when snowfall > 25 and snowfall <= 50 then '>25and<=50'
-    when snowfall > 50 and snowfall <= 100 then '>50and<=100'
-    when snowfall > 100 then '>100'
-    else 'NULL Entry or Error' end as snowfall_category,
+    when snowfall <= 1 then '1cm or less'
+    when snowfall > 1 and snowfall <= 5 then 'Between 1 & 5cm'
+    when snowfall > 5 and snowfall <= 15 then 'Between 5 & 15cm'
+    when snowfall > 15 and snowfall <= 25 then 'Between 15 & 25cm'
+    when snowfall > 25 and snowfall <= 50 then 'Between 25 & 50cm'
+    when snowfall > 50 and snowfall <= 100 then 'Between 50 & 100cm'
+    when snowfall > 100 then 'More than 100cm'
+    else 'NULL or Error' end as snowfall_category,
   case 
     when snowfall <= 1 then 1
     when snowfall > 1 and snowfall <= 5 then 2
@@ -26,8 +27,8 @@ select
 )
 
 select 
-  year(date) as Season, location as ski_field, snowfall_category,
+  year(date) as Season, country, location as ski_field, snowfall_category,
   count(*) as countx
   from categories
-  group by year(date), location, snowfall_category, snowfall_order
-order by year(date) asc, location asc, snowfall_order asc
+  group by year(date), country, location, snowfall_category, snowfall_order
+order by year(date) asc, country, location asc, snowfall_order asc

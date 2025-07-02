@@ -50,34 +50,56 @@ def get_ski_fields_with_timestamp():
     ]
 
 SKI_FIELDS = get_ski_fields_with_timestamp()
-START_DATE = date(1988, 1, 1)
+START_DATE = date(1982, 1, 1)
 BATCH_SIZE = 500  # Number of rows to yield at once
 FORCE_SNOW_DEPTH_RELOAD = False  # <-- Set to False after one-off load
 
-def get_all_missing_dates(logger, locations, start_date, end_date, dataset):
+def get_all_missing_date_ranges_by_season(logger, locations, start_date, end_date, dataset):
     """
     Returns:
-      missing_dates: dict of location_name -> set of missing dates (as date objects)
+      missing_ranges: dict of location_name -> dict of season_year -> (min_date, max_date)
       table_truncated: bool, True if the table is empty (truncated)
+    Only includes June-November dates.
     """
     try:
-        missing_dates = {}
-        all_dates = set(pd.date_range(start_date, end_date).date)
+        all_dates = pd.date_range(start_date, end_date)
+        winter_dates = [d.date() for d in all_dates if 6 <= d.month <= 11]
         table_truncated = dataset is None or dataset.empty
 
+        missing_ranges = {}
         for loc in locations:
             name = loc["name"]
             if table_truncated or name not in dataset["location"].unique():
-                missing_dates[name] = all_dates
+                missing = set(winter_dates)
             else:
                 loc_df = dataset[dataset["location"] == name]
                 existing_dates = set(pd.to_datetime(loc_df["date"]).dt.date)
-                missing_dates[name] = all_dates - existing_dates
-        return missing_dates, table_truncated
+                missing = set(winter_dates) - existing_dates
+
+            # Group missing dates by year and get min/max per year
+            seasons = {}
+            for d in sorted(missing):
+                seasons.setdefault(d.year, []).append(d)
+            # For each season, get min/max
+            season_ranges = {
+                year: (min(ds), max(ds)) for year, ds in seasons.items()
+            }
+            missing_ranges[name] = season_ranges
+
+        return missing_ranges, table_truncated
     except Exception as e:
-        logger.error(f"Failed to retrieve missing dates from dataset: {e}")
-        missing_dates = {loc["name"]: set(pd.date_range(start_date, end_date).date) for loc in locations}
-        return missing_dates, False
+        logger.error(f"Failed to retrieve missing date ranges from dataset: {e}")
+        # fallback: all winter dates for all locations, grouped by year
+        missing_ranges = {}
+        for loc in locations:
+            seasons = {}
+            for d in [d.date() for d in pd.date_range(start_date, end_date) if 6 <= d.month <= 11]:
+                seasons.setdefault(d.year, []).append(d)
+            season_ranges = {
+                year: (min(ds), max(ds)) for year, ds in seasons.items()
+            }
+            missing_ranges[loc["name"]] = season_ranges
+        return missing_ranges, False
 
 def fetch_snowfall_data(location, start_date, end_date):
     """Fetch historical snowfall and snow depth data for a specific location."""
@@ -147,33 +169,15 @@ def snowfall_source(logger: logging.Logger, dataset):
         state["Known_Locations"] = list(Known_Locations)
         new_locations = set()
 
-        # Only consider June to November for all years
-        def is_winter_month(d):
-            return 6 <= d.month <= 11
-
-        missing_dates_by_location, table_truncated = get_all_missing_dates(
+        missing_ranges_by_location, table_truncated = get_all_missing_date_ranges_by_season(
             logger, SKI_FIELDS, START_DATE, end_date, dataset
         )
-        # Filter missing_dates_by_location to only June-Nov
-        for loc in missing_dates_by_location:
-            missing_dates_by_location[loc] = {d for d in missing_dates_by_location[loc] if is_winter_month(d)}
 
         if table_truncated:
             state["Processed_Ranges"] = {}
 
         logger.info("Starting snowfall data collection for ski fields")
         processed_info = {}
-
-        # <-- Set to False after one-off load
-        # if FORCE_SNOW_DEPTH_RELOAD:
-        #     for loc in missing_dates_by_location:
-        #         if dataset is not None:
-        #             loc_df = dataset[dataset["location"] == loc]
-        #             all_june_nov_dates = set(
-        #                 pd.to_datetime(loc_df["date"])
-        #                 .dt.date[loc_df["date"].apply(lambda d: 6 <= d.month <= 11)]
-        #             )
-        #             missing_dates_by_location[loc] = all_june_nov_dates
 
         for location in SKI_FIELDS:
             location_name = location["name"]
@@ -184,30 +188,20 @@ def snowfall_source(logger: logging.Logger, dataset):
                 new_locations.add(location_name)
             logger.info(f"Processing {location_name}, {country}")
 
-            missing_dates = sorted(missing_dates_by_location.get(location_name, []))
-            if not missing_dates:
-                logger.info(f"No missing dates for {location_name}, skipping.")
+            season_ranges = missing_ranges_by_location.get(location_name, {})
+            if not season_ranges:
+                logger.info(f"No missing ranges for {location_name}, skipping.")
                 continue
 
-            # Group missing dates by winter season (year)
-            # This is required as i only want filter data, if i 
-            # do min max of missing dates per location it will fetch 
-            # non winter months as well
-            seasons = {}
-            for d in missing_dates:
-                seasons.setdefault(d.year, []).append(d)
-            for season_year, season_dates in seasons.items():
-                chunk_dates = sorted(season_dates)
-                start_str = chunk_dates[0].strftime("%Y-%m-%d")
-                end_str = chunk_dates[-1].strftime("%Y-%m-%d")
-                logger.info(f"Requesting data for {location_name} {season_year} winter: {start_str} to {end_str}")
+            for season_year, (start_date, end_date) in season_ranges.items():
+                logger.info(f"Requesting data for {location_name} {season_year} winter: {start_date} to {end_date}")
 
                 try:
-                    data = fetch_snowfall_data(location, start_str, end_str)
+                    data = fetch_snowfall_data(location, str(start_date), str(end_date))
                     state["Daily_Requests"][today_str] = state["Daily_Requests"].get(today_str, 0) + 1
 
                     if not data or "daily" not in data or not data["daily"].get("time"):
-                        logger.warning(f"No data returned for {location_name} ({start_str} to {end_str})")
+                        logger.warning(f"No data returned for {location_name} ({start_date} to {end_date})")
                         continue
 
                     # --- Process daily snowfall/temperature ---
@@ -245,13 +239,13 @@ def snowfall_source(logger: logging.Logger, dataset):
                     # Store processed range for this winter season
                     processed_info.setdefault(location_key, []).append({
                         "season_year": season_year,
-                        "start": str(chunk_dates[0]),
-                        "end": str(chunk_dates[-1]),
+                        "start": str(start_date),
+                        "end": str(end_date),
                         "timestamp": datetime.now().isoformat()
                     })
 
                 except Exception as e:
-                    logger.error(f"Error processing {start_str} to {end_str} for {location_name}: {e}")
+                    logger.error(f"Error processing {start_date} to {end_date} for {location_name}: {e}")
                 tyme.sleep(1)
 
         # After all processing, update the state once:

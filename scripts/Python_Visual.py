@@ -2,7 +2,7 @@ import duckdb
 from dotenv import load_dotenv
 from project_path import get_project_paths, set_dlt_env_vars
 import os
-from plotnine import ggplot, aes, geom_line, geom_point, geom_text, scale_x_continuous, geom_hline, labs, scale_fill_manual, scale_color_manual, facet_wrap, theme_light, theme, element_text, geom_bar, element_rect
+from plotnine import ggplot, aes, geom_line, geom_point, element_line, geom_text, scale_x_continuous, geom_hline, labs, scale_fill_manual, scale_color_manual, facet_wrap, theme_light, theme, element_text, geom_bar, element_rect
 import pandas as pd
 
 # Load environment variables and set DLT config
@@ -45,16 +45,16 @@ def calculate_year_breaks(year_series):
     min_year = int(year_series.min())
     max_year = int(year_series.max())
     year_range = max_year - min_year + 1
-
-    # Aim for 8-10 breaks
-    if year_range <= 10:
+    if year_range <= 6:
         step = 1
-    elif year_range <= 20:
+    elif year_range <= 10: 
         step = 2
-    elif year_range <= 40:
-        step = 5
-    else:
-        step = 10
+    elif year_range <= 30:
+        step = 3
+    elif year_range <= 48:
+        step = 4
+    else: 
+        step = 6
 
     breaks = list(range(min_year, max_year + 1, step))
     return breaks
@@ -97,6 +97,8 @@ color_list = [
 # Add this before plotting:
 yearly['facet_label'] = yearly['country'] + ' - ' + yearly['ski_field']
 
+yearly_breaks = calculate_year_breaks(yearly['year_col'])
+
 # Plot 1: Yearly trend with change vs previous year
 p1 = (
     ggplot(yearly, aes('year_col', 'total_winter_snowfall', color='ski_field'))
@@ -106,6 +108,7 @@ p1 = (
     + labs(title='Total Winter Snowfall by Year',
            subtitle='Point color: green=increase, red=decrease vs previous year',
            x='Year', y='Total Winter Snowfall (cm)')
+    + scale_x_continuous(breaks=yearly_breaks)
     + scale_fill_manual(values={True: '#2ca02c', False: '#d62728'})
     + scale_color_manual(values=color_list)
     + facet_wrap('~facet_label', scales='free_x', ncol=4)
@@ -118,7 +121,8 @@ p1 = (
         plot_subtitle=element_text(size=14),
         panel_spacing=0.05,  # Reduce space between panels
         strip_text_x=element_text(color="black", weight="bold", size=12),
-        strip_background=element_rect(fill="#e0e0e0", color="#888888")
+        strip_background=element_rect(fill="#e0e0e0", color="#888888"),
+        panel_grid_major_x=element_line(color="#343434", size=0.5, linetype='dashed')  
     )
 )
 
@@ -134,6 +138,7 @@ p2 = (
         subtitle='Dashed line = ski field avg; dotted orange =overall avg; blue=above avg, orange=below avg',
         x='Year', y='Total Winter Snowfall (cm)'
     )
+    + scale_x_continuous(breaks=yearly_breaks)
     + scale_fill_manual(values={True: '#1f77b4', False: '#ff7f0e'})
     + scale_color_manual(values=color_list)
     + facet_wrap('~facet_label', scales='free_x', ncol=4)
@@ -146,7 +151,8 @@ p2 = (
         plot_subtitle=element_text(size=14),
         panel_spacing=0.05,  # Reduce space between panels
         strip_text_x=element_text(color="black", weight="bold", size=12),
-        strip_background=element_rect(fill="#e0e0e0", color="#888888")
+        strip_background=element_rect(fill="#e0e0e0", color="#888888"),
+        panel_grid_major_x=element_line(color="#343434", size=0.5, linetype='dashed')  
     )
 )
 
@@ -154,7 +160,7 @@ p2 = (
 df_plot = df[df['year_col'] != 2025]
 
 # Dynamically calculate date breaks
-year_breaks = calculate_year_breaks(df_plot['year_col'])
+df_plot_year_breaks = calculate_year_breaks(df_plot['year_col'])
 
 # Plot 3: Monthly proportion of total winter snowfall (without 2025)
 p3 = (
@@ -166,7 +172,7 @@ p3 = (
         subtitle='Each bar shows the % of season snowfall by month',
         x='Year', y='Proportion of Season Snowfall'
     )
-    + scale_x_continuous(breaks=year_breaks)
+    + scale_x_continuous(breaks=df_plot_year_breaks)
     + theme_light(base_size=16)
     + theme(
         legend_position='right',
@@ -176,7 +182,8 @@ p3 = (
         plot_subtitle=element_text(size=12),
         panel_spacing=0.05,
         strip_text_x=element_text(color="black", weight="bold", size=12),
-        strip_background=element_rect(fill="#e0e0e0", color="#888888")
+        strip_background=element_rect(fill="#e0e0e0", color="#888888"),
+        panel_grid_major_x=element_line(color="#343434", size=0.5, linetype='dashed')  
     )
 )
 
@@ -226,7 +233,8 @@ p4 = (
         plot_subtitle=element_text(size=12),
         panel_spacing=0.05,
         strip_text_x=element_text(color="black", weight="bold", size=12),
-        strip_background=element_rect(fill="#e0e0e0", color="#888888")
+        strip_background=element_rect(fill="#e0e0e0", color="#737171"),
+        panel_grid_major_x=element_line(color="#343434", size=0.5, linetype='dashed')  
     )
 )
 
@@ -250,7 +258,7 @@ p5 = (
         x='Year', y='Total Snowfall (cm)'
     )
     + theme_light(base_size=16)
-    + scale_x_continuous(breaks=year_breaks)
+    + scale_x_continuous(breaks=df_plot_year_breaks)
     + theme(
         legend_position='right',
         axis_text_x=element_text(rotation=45, hjust=1, size=10),
@@ -259,7 +267,8 @@ p5 = (
         plot_subtitle=element_text(size=12),
         panel_spacing=0.05,
         strip_text_x=element_text(color="black", weight="bold", size=12),
-        strip_background=element_rect(fill="#e0e0e0", color="#888888")
+        strip_background=element_rect(fill="#e0e0e0", color="#888888"),
+        panel_grid_major_x=element_line(color="#343434", size=0.5, linetype='dashed')  
     )
 )
 

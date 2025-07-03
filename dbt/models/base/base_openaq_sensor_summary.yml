@@ -6,11 +6,11 @@ models:
       Monthly summary of OpenAQ sensor data by sensor, city, country, and parameter.
       Includes record counts, days reported, value statistics, summary statistics, coverage, and null counts.
     columns:
-      - name: year
+      - name: year_col
         description: Year of the data.
         data_tests:
           - not_null
-      - name: month
+      - name: month_num
         description: Month of the data (1-12).
         data_tests:
           - not_null

@@ -50,7 +50,7 @@ def get_ski_fields_with_timestamp():
     ]
 
 SKI_FIELDS = get_ski_fields_with_timestamp()
-START_DATE = date(1982, 1, 1)
+START_DATE = date(1978, 1, 1)
 BATCH_SIZE = 500  # Number of rows to yield at once
 FORCE_SNOW_DEPTH_RELOAD = False  # <-- Set to False after one-off load
 
@@ -177,12 +177,10 @@ def snowfall_source(logger: logging.Logger, dataset):
             state["Processed_Ranges"] = {}
 
         logger.info("Starting snowfall data collection for ski fields")
-        processed_info = {}
 
         for location in SKI_FIELDS:
             location_name = location["name"]
             country = location["country"]
-            location_key = f"{country}_{location_name.replace(' ', '_')}"
 
             if location_name not in state["Known_Locations"]:
                 new_locations.add(location_name)
@@ -236,20 +234,10 @@ def snowfall_source(logger: logging.Logger, dataset):
                     for i in range(0, len(merged), BATCH_SIZE):
                         yield merged.iloc[i:i+BATCH_SIZE].to_dict(orient="records")
 
-                    # Store processed range for this winter season
-                    processed_info.setdefault(location_key, []).append({
-                        "season_year": season_year,
-                        "start": str(start_date),
-                        "end": str(end_date),
-                        "timestamp": datetime.now().isoformat()
-                    })
 
                 except Exception as e:
                     logger.error(f"Error processing {start_date} to {end_date} for {location_name}: {e}")
                 tyme.sleep(1)
-
-        # After all processing, update the state once:
-        state["Processed_Ranges"] = processed_info
 
         if new_locations:
             state["Known_Locations"] = list(Known_Locations.union(new_locations))

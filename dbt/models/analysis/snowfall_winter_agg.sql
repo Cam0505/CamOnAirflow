@@ -1,5 +1,3 @@
-
-
 WITH winter_snowfall AS (
     SELECT
         location AS ski_field

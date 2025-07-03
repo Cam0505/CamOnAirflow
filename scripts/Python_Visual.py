@@ -34,7 +34,7 @@ df = con.execute("""
 
 df_cat = con.execute("""
 select 
-  Season, ski_field, country, snowfall_category, 
+  season, ski_field, country, snowfall_category, 
   countx
   from camonairflow.public_analysis.snowfall_winter_counts
 """).df()
@@ -193,7 +193,7 @@ category_order = ['1cm or less', 'Between 1 & 5cm', 'Between 5 & 15cm', 'Between
 df_cat['snowfall_category'] = pd.Categorical(df_cat['snowfall_category'], categories=category_order, ordered=True)
 
 # Dynamically calculate date breaks
-year_breaks = calculate_year_breaks(df_cat['Season'])
+year_breaks = calculate_year_breaks(df_cat['season'])
 
 df_cat['facet_label'] = df_cat['country'] + ' - ' + df_cat['ski_field']
 
@@ -208,11 +208,11 @@ category_colors = {
     'NULL or Error': '#666666'
 }
 
-df_cat = df_cat[df_cat['Season'] != 2025]
+df_cat = df_cat[df_cat['season'] != 2025]
 
 
 p4 = (
-    ggplot(df_cat, aes(x='Season', y='countx', color='snowfall_category', group='snowfall_category'))
+    ggplot(df_cat, aes(x='season', y='countx', color='snowfall_category', group='snowfall_category'))
     + geom_line(size=1.8)
     + geom_point(size=3)
     # + geom_smooth(method='glm', se=False, linetype='dashed', size=1.2, alpha=0.7)

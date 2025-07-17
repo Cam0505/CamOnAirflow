@@ -168,29 +168,24 @@ def run_pipeline(logger) -> bool:
         pipelines_dir=str(DLT_PIPELINE_DIR),
         dev_mode=False
     )
-    row_counts = None
+    row_counts_dict = {}
     try:
         dataset = pipeline.dataset()["geo_cities"].df()
         if dataset is not None:
             row_counts = dataset.groupby(
                 "country_code").size().reset_index(name="count")
+            row_counts_dict = dict(
+                zip(row_counts["country_code"], row_counts["count"]))
             logger.info(f"Grouped Row Counts:\n{row_counts}")
     except PipelineNeverRan:
         logger.warning(
             "⚠️ No previous runs found for this pipeline. Assuming first run.")
-        row_counts = None
+        row_counts_dict = {}
     except DatabaseUndefinedRelation:
         logger.warning(
             "⚠️ Table Doesn't Exist. Assuming truncation.")
-        row_counts = None
- 
-    if row_counts is not None:
-        row_counts_dict = dict(
-            zip(row_counts["country_code"], row_counts["count"]))
-    else:
-        logger.warning(
-            "⚠️ No tables found yet in dataset — assuming first run.")
         row_counts_dict = {}
+ 
 
     source = geo_source(logger, row_counts_dict)
 

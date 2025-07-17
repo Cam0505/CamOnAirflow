@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import datetime
 from itertools import groupby
 from operator import itemgetter
+import matplotlib.dates as mdates
 
 # Load environment variables and set DLT config
 paths = get_project_paths()
@@ -39,9 +40,9 @@ df = con.execute("""
 """).df()
 
 def classify_ice_point(ndsi, ndwi, ndii):
-    if ndsi > 0.40 and ndii < 0.70 and ndwi < 0.25:
+    if ndsi > 0.40 and ndii < 0.60 and ndwi < 0.20:
         return "Good Ice Conditions"
-    elif ndsi > 0.40 and (ndii >= 0.70 or ndwi >= 0.25):
+    elif ndsi > 0.40 and (ndii >= 0.60 or ndwi >= 0.20):
         return "Wet Conditions"
     elif 0.20 < ndsi <= 0.40:
         return "Patchy Conditions"
@@ -50,7 +51,7 @@ def classify_ice_point(ndsi, ndwi, ndii):
     else:
         return "Bare Rock or error"
 
-df = df[df["location"] == "Wye Creek"]
+df = df[df["location"] == "Island Gully"]
 df["date"] = pd.to_datetime(df["date"])
 df = df.reset_index(drop=True)  # for groupby processing
 df["label"] = df.apply(
@@ -76,7 +77,7 @@ for label, group in groupby(enumerate(df["label"]), key=itemgetter(1)):
 
     ax.axvspan(start, end, color=label_colors.get(label, "#ffffff"), alpha=0.2)
 
-    if duration >= 14:
+    if duration >= 10:
         midpoint = start + (end - start) / 2
         ax.text(midpoint, -0.85, label, fontsize=7.5, ha="center", va="bottom", rotation=90, alpha=0.8)
 
@@ -90,6 +91,8 @@ ax.plot(df.index, df["ndii"], label="NDII (raw)", linestyle="-.", alpha=0.4)
 ax.plot(df.index, df["ndsi_smooth"], label="NDSI (smoothed)", marker="o")
 ax.plot(df.index, df["ndwi_smooth"], label="NDWI (smoothed)", marker="x")
 ax.plot(df.index, df["ndii_smooth"], label="NDII (smoothed)", marker="^")
+
+ax.xaxis.set_major_locator(mdates.AutoDateLocator(minticks=14, maxticks=40))
 
 # Final formatting
 ax.set_title("Ice Quality Indices Over Time (Statistical API)")

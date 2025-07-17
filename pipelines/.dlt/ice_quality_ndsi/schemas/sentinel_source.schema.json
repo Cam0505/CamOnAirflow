@@ -1,6 +1,6 @@
 {
-  "version": 2,
-  "version_hash": "qsGJuzPqhWn3/AGqPmJhjvMvrOZ4zFgT4JNJVoWXlCA=",
+  "version": 3,
+  "version_hash": "qyUHwmPYenS7Nh1iL34UV40+GCTFL15m2uKgL7tTL8E=",
   "engine_version": 11,
   "name": "sentinel_source",
   "tables": {
@@ -135,6 +135,16 @@
           "nullable": false,
           "unique": true,
           "row_key": true
+        },
+        "elevation": {
+          "name": "elevation",
+          "data_type": "double",
+          "nullable": true
+        },
+        "slope": {
+          "name": "slope",
+          "data_type": "double",
+          "nullable": true
         }
       },
       "write_disposition": "merge",
@@ -240,6 +250,7 @@
     }
   },
   "previous_hashes": [
+    "qsGJuzPqhWn3/AGqPmJhjvMvrOZ4zFgT4JNJVoWXlCA=",
     "jM79j4/VJcrHAub3A1WloujmVDC+TepcKeHvdB6Ew+E=",
     "HzuV5XScoWJiYs10LZHTILIMQ+jaTp2Drnfkg2Ahsmg="
   ]

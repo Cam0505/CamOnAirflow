@@ -154,7 +154,7 @@ def group_dates_to_ranges(dates: List[date]) -> List[Tuple[date, date]]:
     logger.debug(f"group_dates_to_ranges input: {dates} output: {ranges}")
     return ranges
 
-BATCH_SIZE = 100  # Number of rows to yield at once
+BATCH_SIZE = 500  # Number of rows to yield at once
 
 @dlt.source
 def openaq_source(logger: logging.Logger):

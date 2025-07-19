@@ -2,7 +2,12 @@ import dlt
 import logging
 from dotenv import load_dotenv
 from dlt.sources.helpers import requests
+from dlt.pipeline.exceptions import PipelineNeverRan
+from dlt.destinations.exceptions import DatabaseUndefinedRelation
+from datetime import datetime, timedelta, date
+from zoneinfo import ZoneInfo
 from os import getenv
+import json
 import math
 import pandas as pd
 from project_path import get_project_paths, set_dlt_env_vars
@@ -31,13 +36,20 @@ if not SENTINEL_CLIENT_SECRET:
 LOCATIONS = [
     {"name": "Wye Creek", "lat": -45.087551, "lon": 168.810442},
     {"name": "SE Face Mount Ward", "lat": -43.867239, "lon": 169.833754},
-    {"name": "Island Gully", "lat": -42.137246, "lon": 172.728013}
+    {"name": "Island Gully", "lat": -42.133076, "lon": 172.755765}
 ]
 # 12m buffer around each point
 EPSILON = 0.00018
 
-START_DATE = "2022-05-01"
-END_DATE = "2025-07-16"
+START_DATE = date(2021, 1, 1)
+BUFFER_DAYS = 7  # configurable number of days to reprocess to handle late arrivals
+TODAY = datetime.now(ZoneInfo("Australia/Sydney")).date()
+END_DATE = TODAY - timedelta(days=2)
+
+def json_converter(o):
+    if isinstance(o, date):
+        return o.isoformat()
+    return str(o)
 
 def get_access_token():
     url = "https://services.sentinel-hub.com/oauth/token"
@@ -205,19 +217,6 @@ function evaluatePixel(sample) {
 
 
 
-def classify_ice_point(ndsi, ndwi, ndii):
-    if ndsi > 0.40 and ndii < 0.70 and ndwi < 0.25:
-        return "Good Ice Conditions"
-    elif ndsi > 0.40 and (ndii >= 0.70 or ndwi >= 0.25):
-        return "Wet Conditions"
-    elif 0.20 < ndsi <= 0.40:
-        return "Patchy Conditions"
-    elif ndsi > 0.4 and ndii < 0.3:
-        return "Drier Ice Conditions"
-    else:
-        return "Bare Rock or error"
-
-
 def process_and_store(data, location, elev, slope):
     rows = []
     for t in data["data"]:
@@ -243,16 +242,141 @@ def process_and_store(data, location, elev, slope):
     return df.to_dict(orient="records") 
 
 
+def compute_fetch_ranges(
+    global_min: date,
+    global_max: date,
+    state_min: date | None,
+    state_max: date | None,
+    buffer_days: int = 7,
+    truncation: bool = False
+) -> list[tuple[date, date]]:
+    """
+    Returns a list of (fetch_start, fetch_end) tuples for needed fetches.
+    If no fetching needed, returns [].
+    - If truncation, always fetch (global_min, global_max).
+    - If no state (first run), fetch (global_min, global_max).
+    - If state_min > global_min, fetch (global_min, state_min).
+    - If state_max < global_max, fetch (max(global_min, state_max-buffer), global_max).
+    - If fully up-to-date, return [].
+    """
+    ranges = []
+
+    if truncation:
+        return [(global_min, global_max)]
+
+    # First run, or state wiped
+    if state_min is None or state_max is None:
+        return [(global_min, global_max)]
+
+    # Gap at the beginning: state doesn't cover full global_min
+    if state_min > global_min:
+        ranges.append((global_min, state_min))
+
+    # Gap at the end: state doesn't reach to global_max (add buffer)
+    if state_max < global_max:
+        fetch_start = max(global_min, state_max - timedelta(days=buffer_days))
+        if fetch_start < global_max:  # Make sure range makes sense
+            ranges.append((fetch_start, global_max))
+
+    return ranges
+
+
 @dlt.source
-def sentinel_source(logger: logging.Logger, token: str, start_date: str, end_date: str):
+def sentinel_source(logger: logging.Logger, token: str, locations_with_data: set):
     @dlt.resource(write_disposition="merge", name="ice_indices", 
                   primary_key=["location", "date"])
     def ice_indices_resource():
+        state = dlt.current.source_state().setdefault("ice_indices", {
+            "location_dates": {},
+            "location_status": {},
+            "run_dates": {},
+            "slope&elevations": {}
+        })
+
         for loc in LOCATIONS:
-            elev, slope = get_site_elevation_and_slope(loc["lat"], loc["lon"], EPSILON)
+            loc_name = loc["name"]
+
+            # Always clear run_dates for this location at the start of this run
+            state["run_dates"][loc_name] = []
+
+            # Pull relevant values from state and row_max_min_dict
+            truncation = loc_name not in locations_with_data
+            state_dates = state["location_dates"].get(loc_name, {})
+            state_min = state_dates.get("start_date")
+            state_max = state_dates.get("end_date")
+
+            if loc_name not in state["slope&elevations"]:
+                logger.info(f"Fetching elevation and slope for {loc_name}")
+                elev, slope = get_site_elevation_and_slope(loc["lat"], loc["lon"], EPSILON)
+                # Set elevation and slope in state
+                state["slope&elevations"][loc_name] = {
+                    "elevation": elev,
+                    "slope": slope
+                }
+            else:
+                logger.info(f"Using cached elevation and slope for {loc_name}")
+                elev = state["slope&elevations"][loc_name]["elevation"]
+                slope = state["slope&elevations"][loc_name]["slope"]
+
             BBOX = [loc["lon"] - EPSILON, loc["lat"] - EPSILON, loc["lon"] + EPSILON, loc["lat"] + EPSILON]
-            raw = fetch_stats_ndsi(token, BBOX, start_date, end_date, logger)
-            yield from process_and_store(raw, loc["name"], elev, slope)
+
+
+            ranges = compute_fetch_ranges(
+                global_min=START_DATE,
+                global_max=END_DATE,
+                state_min=state_min,
+                state_max=state_max,
+                buffer_days=BUFFER_DAYS,
+                truncation=truncation
+            )
+
+            try:
+                fetched_any = False
+
+                if ranges:
+                    # Set run_dates to exactly the attempted ranges
+                    state["run_dates"][loc_name] = ranges
+
+                    # Compute min/max for location_dates in a simple way
+                    run_start = min(fetch_start for fetch_start, _ in ranges)
+                    run_end = max(fetch_end for _, fetch_end in ranges)
+
+                    # Combine with previous state if present
+                    new_start = min([d for d in [state_min, run_start] if d is not None])
+                    new_end = max([d for d in [state_max, run_end] if d is not None])
+
+                    state["location_dates"][loc_name] = {
+                        "start_date": new_start,
+                        "end_date": new_end
+                    }
+
+                    for fetch_start, fetch_end in ranges:
+                        logger.info(f"Fetching {loc_name} from {fetch_start} to {fetch_end}")
+                        try:
+                            raw = fetch_stats_ndsi(token, BBOX, fetch_start, fetch_end, logger)
+                            records = process_and_store(raw, loc_name, elev, slope)
+                            if records:
+                                fetched_any = True
+                                yield from records
+                        except Exception as e:
+                            logger.error(f"❌ Failed fetching {loc_name} range {fetch_start} to {fetch_end}: {e}")
+                else:
+                    logger.info(f"{loc_name} is up-to-date")
+                    state["run_dates"][loc_name] = []
+
+                # Update location_status
+                if fetched_any:
+                    state["location_status"][loc_name] = "success"
+                elif ranges:
+                    state["location_status"][loc_name] = "no_data"
+                else:
+                    state["location_status"][loc_name] = "skipped"
+
+            except Exception as e:
+                logger.error(f"❌ Unexpected failure for {loc_name}: {e}")
+                state["run_dates"][loc_name] = []
+                state["location_status"][loc_name] = "failed"
+            
     return ice_indices_resource
 
 
@@ -268,6 +392,28 @@ if __name__ == "__main__":
         dev_mode=False
     )
 
-    source = sentinel_source(logger, token, START_DATE, END_DATE)
-    load_info = pipeline.run(source)
-    logger.info(f"✅ Pipeline run completed: {load_info}")
+    locations_with_data = set()
+    try:
+        dataset = pipeline.dataset()["ice_indices"].df()
+        if dataset is not None:
+            non_empty_locations = dataset["location"].unique()
+            locations_with_data = set(str(loc) for loc in non_empty_locations)
+    except PipelineNeverRan:
+        logger.warning(
+            "⚠️ No previous runs found for this pipeline. Assuming first run.")
+    except DatabaseUndefinedRelation:
+        logger.warning(
+            "⚠️ Table Doesn't Exist. Assuming truncation.")
+    except ValueError as ve:
+        logger.warning(
+            f"⚠️ ValueError: {ve}. Assuming first run or empty dataset.")
+
+    source = sentinel_source(logger, token, locations_with_data)
+    try:
+        load_info = pipeline.run(source)
+        outcome_data = source.state.get('ice_indices', {})
+        logger.info("Weather State Metadata:\n" +
+                    json.dumps(outcome_data, indent=2, default=json_converter))
+        logger.info(f"✅ Pipeline run completed: {load_info}")
+    except Exception as e:
+        logger.error(f"❌ Pipeline run failed: {e}")

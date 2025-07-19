@@ -36,7 +36,8 @@ if not SENTINEL_CLIENT_SECRET:
 LOCATIONS = [
     {"name": "Wye Creek", "lat": -45.087551, "lon": 168.810442},
     {"name": "SE Face Mount Ward", "lat": -43.867239, "lon": 169.833754},
-    {"name": "Island Gully", "lat": -42.133076, "lon": 172.755765}
+    {"name": "Island Gully", "lat": -42.133076, "lon": 172.755765},
+    {"name": "Shrimpton Ice", "lat": -44.222395, "lon": 169.307676}
 ]
 # 12m buffer around each point
 EPSILON = 0.00018

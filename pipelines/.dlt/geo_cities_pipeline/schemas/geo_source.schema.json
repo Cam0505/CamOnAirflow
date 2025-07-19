@@ -1,8 +1,8 @@
 {
-  "version": 6,
-  "version_hash": "WOWRNP+4ZvzyqCJwrrMLd9E0mxjsDdjvSDNJLi753pM=",
+  "version": 2,
+  "version_hash": "Nc6U88lw/dDuY9RZfQaszgrevs561LSMg830yMQQamk=",
   "engine_version": 11,
-  "name": "rainfall_source",
+  "name": "geo_source",
   "tables": {
     "_dlt_version": {
       "name": "_dlt_version",
@@ -75,33 +75,52 @@
       "resource": "_dlt_loads",
       "description": "Created by DLT. Tracks completed loads"
     },
-    "ice_climbing_rainfall": {
+    "geo_cities": {
       "columns": {
-        "date": {
-          "name": "date",
+        "city_id": {
+          "name": "city_id",
           "nullable": false,
           "primary_key": true,
-          "data_type": "date"
+          "data_type": "bigint"
         },
-        "location": {
-          "name": "location",
-          "nullable": false,
-          "primary_key": true,
-          "data_type": "text"
+        "city": {
+          "name": "city",
+          "data_type": "text",
+          "nullable": true
+        },
+        "latitude": {
+          "name": "latitude",
+          "data_type": "double",
+          "nullable": true
+        },
+        "longitude": {
+          "name": "longitude",
+          "data_type": "double",
+          "nullable": true
         },
         "country": {
           "name": "country",
           "data_type": "text",
           "nullable": true
         },
-        "rain_sum": {
-          "name": "rain_sum",
-          "data_type": "double",
+        "country_code": {
+          "name": "country_code",
+          "data_type": "text",
           "nullable": true
         },
-        "precipitation_sum": {
-          "name": "precipitation_sum",
-          "data_type": "double",
+        "region": {
+          "name": "region",
+          "data_type": "text",
+          "nullable": true
+        },
+        "region_code": {
+          "name": "region_code",
+          "data_type": "text",
+          "nullable": true
+        },
+        "continent": {
+          "name": "continent",
+          "data_type": "text",
           "nullable": true
         },
         "_dlt_load_id": {
@@ -118,8 +137,8 @@
         }
       },
       "write_disposition": "merge",
-      "name": "ice_climbing_rainfall",
-      "resource": "ice_climbing_rainfall",
+      "name": "geo_cities",
+      "resource": "geo_cities",
       "x-normalizer": {
         "seen-data": true
       }
@@ -176,112 +195,6 @@
       "x-normalizer": {
         "seen-data": true
       }
-    },
-    "ski_field_lookup": {
-      "columns": {
-        "name": {
-          "name": "name",
-          "nullable": false,
-          "primary_key": true,
-          "data_type": "text"
-        },
-        "country": {
-          "name": "country",
-          "data_type": "text",
-          "nullable": true
-        },
-        "lat": {
-          "name": "lat",
-          "data_type": "double",
-          "nullable": true
-        },
-        "lon": {
-          "name": "lon",
-          "data_type": "double",
-          "nullable": true
-        },
-        "timezone": {
-          "name": "timezone",
-          "data_type": "text",
-          "nullable": true
-        },
-        "last_updated": {
-          "name": "last_updated",
-          "data_type": "timestamp",
-          "nullable": true
-        },
-        "_dlt_load_id": {
-          "name": "_dlt_load_id",
-          "data_type": "text",
-          "nullable": false
-        },
-        "_dlt_id": {
-          "name": "_dlt_id",
-          "data_type": "text",
-          "nullable": false,
-          "unique": true,
-          "row_key": true
-        }
-      },
-      "write_disposition": "merge",
-      "name": "ski_field_lookup",
-      "resource": "ski_field_lookup",
-      "x-normalizer": {
-        "seen-data": true
-      }
-    },
-    "ice_climbing_lookup": {
-      "columns": {
-        "name": {
-          "name": "name",
-          "nullable": false,
-          "primary_key": true,
-          "data_type": "text"
-        },
-        "country": {
-          "name": "country",
-          "data_type": "text",
-          "nullable": true
-        },
-        "lat": {
-          "name": "lat",
-          "data_type": "double",
-          "nullable": true
-        },
-        "lon": {
-          "name": "lon",
-          "data_type": "double",
-          "nullable": true
-        },
-        "timezone": {
-          "name": "timezone",
-          "data_type": "text",
-          "nullable": true
-        },
-        "last_updated": {
-          "name": "last_updated",
-          "data_type": "timestamp",
-          "nullable": true
-        },
-        "_dlt_load_id": {
-          "name": "_dlt_load_id",
-          "data_type": "text",
-          "nullable": false
-        },
-        "_dlt_id": {
-          "name": "_dlt_id",
-          "data_type": "text",
-          "nullable": false,
-          "unique": true,
-          "row_key": true
-        }
-      },
-      "write_disposition": "merge",
-      "name": "ice_climbing_lookup",
-      "resource": "ice_climbing_lookup",
-      "x-normalizer": {
-        "seen-data": true
-      }
     }
   },
   "settings": {
@@ -317,13 +230,7 @@
       "config": {
         "propagation": {
           "tables": {
-            "ice_climbing_rainfall": {
-              "_dlt_id": "_dlt_root_id"
-            },
-            "ski_field_lookup": {
-              "_dlt_id": "_dlt_root_id"
-            },
-            "ice_climbing_lookup": {
+            "geo_cities": {
               "_dlt_id": "_dlt_root_id"
             }
           }
@@ -332,11 +239,7 @@
     }
   },
   "previous_hashes": [
-    "9j0SwqqfaZdlkkBIZkLlDCnWUhTwhF74R9kmIoHNFD4=",
-    "KlWoSOR0kHaNl3IZ6LYWy3V3ft9gEgmSRgr92L4Bd38=",
-    "TTWjluxdGr/HC7ulL5/vaezedpkf9Lkyi8fJLUQj59w=",
-    "yWCt90DXARpBBsRIG9n0LPbqYWhE3CInIOw3Qzz5we4=",
-    "9SujU8mSS6lAbo5qlyPPI+Y5cOBdRLe2PmfSxWULSog=",
-    "xqQeQfFKc5sMQ5krdvpb97aAqVNO9ykIpTaEbF0U85c="
+    "916XuIXnww9v3UJvHNqBjo0N+z33PuyJ5XZoh6uT2/o=",
+    "cPmjTkHDyFDVYVFwR8vQ4+PHcrVxomt9jjfc00g1CFY="
   ]
 }

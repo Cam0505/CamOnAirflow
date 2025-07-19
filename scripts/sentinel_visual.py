@@ -40,18 +40,18 @@ df = con.execute("""
 """).df()
 
 def classify_ice_point(ndsi, ndwi, ndii):
-    if ndsi > 0.40 and ndii < 0.60 and ndwi < 0.20:
+    if ndsi > 0.40 and ndii < 0.70 and ndwi < 0.20:
         return "Good Ice Conditions"
-    elif ndsi > 0.40 and (ndii >= 0.60 or ndwi >= 0.20):
+    elif ndsi > 0.40 and (ndii >= 0.70 or ndwi >= 0.20):
         return "Wet Conditions"
     elif 0.20 < ndsi <= 0.40:
         return "Patchy Conditions"
-    elif ndsi > 0.4 and ndii < 0.3:
+    elif ndsi > 0.40 and ndii < 0.30:
         return "Drier Ice Conditions"
     else:
         return "Bare Rock or error"
 
-df = df[df["location"] == "Island Gully"]
+df = df[df["location"] == "Shrimpton Ice"]
 df["date"] = pd.to_datetime(df["date"])
 df = df.reset_index(drop=True)  # for groupby processing
 df["label"] = df.apply(

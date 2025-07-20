@@ -34,68 +34,76 @@ df = con.execute("""
         location,
         ndsi_smooth,
         ndwi_smooth,
-        ndii_smooth,
+        ndii_smooth
     FROM camonairflow.main.ice_indices 
     ORDER BY date ASC
 """).df()
 
+# NZ-optimized classifier
 def classify_ice_point(ndsi, ndwi, ndii):
-    if ndsi > 0.40 and ndii < 0.70 and ndwi < 0.20:
-        return "Good Ice Conditions"
-    elif ndsi > 0.40 and (ndii >= 0.70 or ndwi >= 0.20):
-        return "Wet Conditions"
+    if ndsi > 0.40:
+        if ndii < 0.60 and ndwi < 0.25:
+            return "Good Ice Conditions"
+        elif ndii >= 0.60 or ndwi >= 0.25:
+            return "Wet/Thawing Ice"
+        elif ndii < 0.30:
+            return "Dry/Brittle Ice"
+        else:
+            return "Uncertain Ice"
     elif 0.20 < ndsi <= 0.40:
-        return "Patchy Conditions"
-    elif ndsi > 0.40 and ndii < 0.30:
-        return "Drier Ice Conditions"
+        if ndii <= 0.70 and ndwi < 0.30:
+            return "Patchy Ice/Snow"
+        else:
+            return "Patchy & Wet"
     else:
-        return "Bare Rock or error"
+        return "Bare Rock or Error"
 
-df = df[df["location"] == "Shrimpton Ice"]
+# Only plot one location (e.g. Wye Creek)
+df = df[df["location"] == "Island Gully"]
 df["date"] = pd.to_datetime(df["date"])
-df = df.reset_index(drop=True)  # for groupby processing
+df = df.reset_index(drop=True)
 df["label"] = df.apply(
     lambda row: classify_ice_point(row["ndsi_smooth"], row["ndwi_smooth"], row["ndii_smooth"]),
     axis=1
 )
 
+# Color palette for all possible labels
 label_colors = {
-    "Good Ice Conditions": "#66c2a5",
-    "Wet Conditions": "#fc8d62",
-    "Patchy Conditions": "#ffd92f",
-    "Bare Rock or error": "#e78ac3",
+    "Good Ice Conditions": "#66c2a5",     # greenish
+    "Wet/Thawing Ice": "#fc8d62",         # orange
+    "Dry/Brittle Ice": "#8da0cb",         # blue/purple
+    "Patchy Ice/Snow": "#ffd92f",         # yellow
+    "Patchy & Wet": "#fdb863",            # tan
+    "Uncertain Ice": "#bdbdbd",           # light grey
+    "Bare Rock or Error": "#e78ac3",      # pink
 }
 
 fig, ax = plt.subplots(figsize=(12, 6))
 
-# Draw shaded regions and vertical band labels
+# Draw shaded regions and label the middle of each (vertical bands)
 for label, group in groupby(enumerate(df["label"]), key=itemgetter(1)):
     indices = [i for i, _ in group]
     start = df["date"].iloc[indices[0]]
     end = df["date"].iloc[indices[-1]] + datetime.timedelta(days=1)
     duration = (end - start).days
 
-    ax.axvspan(start, end, color=label_colors.get(label, "#ffffff"), alpha=0.2)
+    ax.axvspan(start, end, color=label_colors.get(label, "#ffffff"), alpha=0.23)
 
     if duration >= 10:
         midpoint = start + (end - start) / 2
         ax.text(midpoint, -0.85, label, fontsize=7.5, ha="center", va="bottom", rotation=90, alpha=0.8)
 
-# Plot smoothed and raw indices
+# Plot indices (smoothed and raw)
 df.set_index("date", inplace=True)
-
 ax.plot(df.index, df["ndsi"], label="NDSI (raw)", linestyle="--", alpha=0.4)
 ax.plot(df.index, df["ndwi"], label="NDWI (raw)", linestyle=":", alpha=0.4)
 ax.plot(df.index, df["ndii"], label="NDII (raw)", linestyle="-.", alpha=0.4)
-
 ax.plot(df.index, df["ndsi_smooth"], label="NDSI (smoothed)", marker="o")
 ax.plot(df.index, df["ndwi_smooth"], label="NDWI (smoothed)", marker="x")
 ax.plot(df.index, df["ndii_smooth"], label="NDII (smoothed)", marker="^")
 
 ax.xaxis.set_major_locator(mdates.AutoDateLocator(minticks=14, maxticks=40))
-
-# Final formatting
-ax.set_title("Ice Quality Indices Over Time (Statistical API)")
+ax.set_title(f"Ice Quality Indices Over Time (Statistical API) for {df['location'].iloc[0]}")
 ax.set_xlabel("Date")
 ax.set_ylabel("Index Value")
 ax.set_ylim(-1, 1)

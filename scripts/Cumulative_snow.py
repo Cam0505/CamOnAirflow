@@ -56,7 +56,7 @@ df_ends = df[df['is_latest']].groupby(['facet_label', 'year_col']).last().reset_
 
 # --- X Axis: Month ticks ---
 def season_month_ticks(year=2022):
-    months = [6,7,8,9,10,11]
+    months = [6, 7, 8, 9, 10, 11]
     tick_days = []
     tick_labels = []
     start = date(year, 6, 1)

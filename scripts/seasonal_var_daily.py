@@ -40,7 +40,8 @@ df = con.execute("""
         daily_snowfall_cm,
         cumulative_snowfall_cm
     FROM camonairflow.public_analysis.snowfall_cumulative_daily
-    WHERE year_col >= 2000
+    WHERE year_col >= 1990
+    and country in ('AU', 'NZ')
 """).df()
 
 # --- Calculate daily mean for each day and field ---
@@ -73,12 +74,12 @@ def legend_label(row):
     elif row['year_col'] in last4_years:
         return str(row['year_col'])
     else:
-        return f"2000–{years_sorted[-6]}"
+        return f"1990–{years_sorted[-6]}"
 
 df['color'] = df['year_col'].map(year2color)
 df['legend_label'] = df.apply(legend_label, axis=1)
 
-legend_labels = [str(current_year)] + [str(y) for y in last4_years] + [f"2000–{years_sorted[-6]}"]
+legend_labels = [str(current_year)] + [str(y) for y in last4_years] + [f"1990–{years_sorted[-6]}"]
 legend_colors = [year2color[current_year]] + [year2color[y] for y in last4_years] + [OLDER_YEARS_COLOR]
 
 # --- Plot ---
@@ -100,8 +101,8 @@ p = (
         title="Daily Cumulative Snowfall Anomaly vs. Historical Mean",
         subtitle=(
             f"Red = {current_year}, last 4 = blue/green/yellow/black, "
-            f"grey = 2000–{years_sorted[-6]}\n"
-            "Anomaly = Cumulative snowfall minus daily mean (2000–present)"
+            f"grey = 1990–{years_sorted[-6]}\n"
+            "Anomaly = Cumulative snowfall minus daily mean (1990–present)"
         ),
         x="Month (Season starts in June)", y="Cumulative Snowfall Anomaly (cm)"
     )

@@ -1,6 +1,6 @@
 {
-  "version": 5,
-  "version_hash": "EO9ebWlaA71Br+gdJzTXRdPJhEsgXlppKgNsa5OTBCg=",
+  "version": 6,
+  "version_hash": "UYtqc+MysA5LyvTppxgV2LvwP4MtDgSoqv0UW0ocj3s=",
   "engine_version": 11,
   "name": "snowfall_source",
   "tables": {
@@ -228,7 +228,7 @@
           "row_key": true
         }
       },
-      "write_disposition": "replace",
+      "write_disposition": "merge",
       "name": "ski_field_lookup",
       "resource": "ski_field_lookup",
       "x-normalizer": {
@@ -271,6 +271,9 @@
           "tables": {
             "ski_field_snowfall": {
               "_dlt_id": "_dlt_root_id"
+            },
+            "ski_field_lookup": {
+              "_dlt_id": "_dlt_root_id"
             }
           }
         }
@@ -278,6 +281,7 @@
     }
   },
   "previous_hashes": [
+    "EO9ebWlaA71Br+gdJzTXRdPJhEsgXlppKgNsa5OTBCg=",
     "rDhh1XWuwPHuHLspn45exGoiCXJY8ur4T5EIiv6s4Qo=",
     "OWMCtI/ZAh5iV2Itef1ED98pC3knIpeVWEm0AzjOARc=",
     "2UsRsh8xSyScok896BzwtRqtkXUZXROfSlV9VBEz1Jg=",

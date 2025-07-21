@@ -33,7 +33,8 @@ df = con.execute("""
         daily_snowfall_cm,
         cumulative_snowfall_cm
     FROM camonairflow.public_analysis.snowfall_cumulative_daily
-    WHERE year_col >= 2000
+    WHERE year_col >= 1990
+    and country in ('AU', 'NZ')
 """).df()
 
 # --- Assign Colors: grey (oldest) to black (newest, except latest) ---

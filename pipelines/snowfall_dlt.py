@@ -46,6 +46,18 @@ def get_ski_fields_with_timestamp():
             {"name": "Mt Buller", "country": "AU", "lat": -37.1467, "lon": 146.4473, "timezone": "Australia/Melbourne"},
             {"name": "Falls Creek", "country": "AU", "lat": -36.8655, "lon": 147.2861, "timezone": "Australia/Melbourne"},
             {"name": "Mt Hotham", "country": "AU", "lat": -36.9762, "lon": 147.1359, "timezone": "Australia/Melbourne"},
+            # Chile
+            {"name": "Valle Nevado", "country": "CL", "lat": -33.3556, "lon": -70.2489, "timezone": "America/Santiago"},
+            {"name": "Portillo", "country": "CL", "lat": -32.8352, "lon": -70.1309, "timezone": "America/Santiago"},
+            {"name": "La Parva", "country": "CL", "lat": -33.3319, "lon": -70.2917, "timezone": "America/Santiago"},
+            {"name": "El Colorado", "country": "CL", "lat": -33.3500, "lon": -70.2833, "timezone": "America/Santiago"},
+            {"name": "Nevados de Chillan", "country": "CL", "lat": -36.9086, "lon": -71.4064, "timezone": "America/Santiago"},
+            # Argentina
+            {"name": "Cerro Catedral", "country": "AR", "lat": -41.1739, "lon": -71.5489, "timezone": "America/Argentina/Buenos_Aires"},
+            {"name": "Las Lenas", "country": "AR", "lat": -35.1500, "lon": -70.0833, "timezone": "America/Argentina/Buenos_Aires"},
+            {"name": "Cerro Castor", "country": "AR", "lat": -54.7203, "lon": -68.0000, "timezone": "America/Argentina/Buenos_Aires"},
+            {"name": "Chapelco", "country": "AR", "lat": -40.1622, "lon": -71.2106, "timezone": "America/Argentina/Buenos_Aires"},
+            {"name": "Cerro Bayo", "country": "AR", "lat": -40.7500, "lon": -71.6000, "timezone": "America/Argentina/Buenos_Aires"},
         ]
     ]
 

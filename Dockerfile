@@ -1,7 +1,4 @@
-FROM quay.io/astronomer/astro-runtime:12.9.0-slim
-
-# Copy packages.txt from parent folder into container
-COPY packages.txt .
+FROM mcr.microsoft.com/devcontainers/python:3.11
 
 USER root
 RUN apt-get update && apt-get install -y git curl build-essential && \
@@ -13,7 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY dbt/packages.yml dbt/dbt_project.yml ./dbt/
 RUN cd dbt && dbt deps
 
-USER astro
+USER vscode
 WORKDIR /workspaces/CamOnAirFlow 
 
 EXPOSE 8080

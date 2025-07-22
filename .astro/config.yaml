@@ -1,7 +1,0 @@
-project:
-  name: cam-on-air-flow
-
-mounts:
-  - source: ./dbt
-    target: /usr/local/airflow/dbt
-    type: bind

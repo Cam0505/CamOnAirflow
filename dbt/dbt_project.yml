@@ -14,7 +14,6 @@ macro-paths: ["macros"]
 target-path: "target"
 clean-targets: ["target", "dbt_packages", "logs"]
 
-require-dbt-version: [">=1.8.2", "<1.9.0"]
 
 models:
   camonairflow:

@@ -41,7 +41,7 @@ df = con.execute("""
         cumulative_snowfall_cm
     FROM camonairflow.public_analysis.snowfall_cumulative_daily
     WHERE year_col >= 1990
-    and country in ('AU', 'NZ')
+    and country in ('AR', 'CL')
 """).df()
 
 # --- Calculate daily mean for each day and field ---

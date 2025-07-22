@@ -11,9 +11,9 @@
   },
   "runArgs": [
     "--cpus=4",
-    "--memory=6g",
+    "--memory=7g",
     "--init",
-    "--user=astro"
+    "--user=vscode"
   ],
   "workspaceFolder": "/workspaces/CamOnAirFlow",
   "mounts": [
@@ -41,7 +41,6 @@
     "postCreateCommand": "",
     "containerEnv": {
       "PYTHONPATH": "/workspaces/CamOnAirFlow",
-      "AIRFLOW_HOME": "/workspaces/CamOnAirFlow",
       "DBT_PROFILES_DIR": "/workspaces/CamOnAirFlow/dbt",
       "ENV_FILE": "/workspaces/CamOnAirFlow/.env"
     },
@@ -49,11 +48,10 @@
       "terminal.integrated.defaultProfile.linux": "bash",
       "python.analysis.extraPaths": [
         "/workspaces/CamOnAirFlow",
-        "/workspaces/CamOnAirFlow/dags",
         "/workspaces/CamOnAirFlow/dlt_pipeline",
       ]
     }
   },
-  "remoteUser": "astro",
+  "remoteUser": "vscode",
   "updateRemoteUserUID": false
 }

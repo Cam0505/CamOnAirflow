@@ -23,6 +23,8 @@
       "type": "bind"
     }
   ],
+  "postCreateCommand": "echo PYTHONPATH is $PYTHONPATH",
+  "remoteUser": "vscode",
   "customizations": {
     "vscode": {
       "settings": {
@@ -38,20 +40,17 @@
         "ms-azuretools.vscode-docker"
       ]
     },
-    "postCreateCommand": "",
-    "containerEnv": {
-      "PYTHONPATH": "/workspaces/CamOnAirFlow",
-      "DBT_PROFILES_DIR": "/workspaces/CamOnAirFlow/dbt",
-      "ENV_FILE": "/workspaces/CamOnAirFlow/.env"
-    },
     "settings": {
       "terminal.integrated.defaultProfile.linux": "bash",
       "python.analysis.extraPaths": [
         "/workspaces/CamOnAirFlow",
-        "/workspaces/CamOnAirFlow/dlt_pipeline",
+        "/workspaces/CamOnAirFlow/dlt_pipeline"
       ]
     }
   },
-  "remoteUser": "vscode",
-  "updateRemoteUserUID": false
+  "containerEnv": {
+    "PYTHONPATH": "/workspaces/CamOnAirFlow",
+    "DBT_PROFILES_DIR": "/workspaces/CamOnAirFlow/dbt",
+    "ENV_FILE": "/workspaces/CamOnAirFlow/.env"
+  }
 }

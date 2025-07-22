@@ -11,7 +11,7 @@
   },
   "runArgs": [
     "--cpus=4",
-    "--memory=7g",
+    "--memory=5g",
     "--init",
     "--user=vscode"
   ],
@@ -37,6 +37,8 @@
         "ms-python.python",
         "ms-python.vscode-pylance",
         "dbt-labs.dbt",
+        "github.vscode-github-actions",
+        "GitHub.copilot",
         "ms-azuretools.vscode-docker"
       ]
     },

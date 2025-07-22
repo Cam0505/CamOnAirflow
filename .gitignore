@@ -21,17 +21,6 @@ dbt/dbt_packages/
 .AppleDouble
 .LSOverride
 
-# Airflow-specific
-airflow-webserver.pid
-webserver_config.py
-airflow.cfg
-airflow.db
-astro
-.airflow
-airflow-dag-run.log
-airflow-worker.log
-airflow-scheduler.log
-
 # Python-related
 __pycache__/
 *.pyc

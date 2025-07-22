@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "version_hash": "TKawfrQB2UAT7Humc6HdpTO2JdlRA5DRmCOJ90ANbtU=",
+  "version_hash": "Vs6h9TiNBGEE06m7+qqqNSh6ArBpxq07/vyufDfw8Es=",
   "engine_version": 11,
-  "name": "gsheet_finance_source",
+  "name": "ski_source",
   "tables": {
     "_dlt_version": {
       "name": "_dlt_version",
@@ -75,26 +75,112 @@
       "resource": "_dlt_loads",
       "description": "Created by DLT. Tracks completed loads"
     },
-    "gsheets_finance": {
+    "ski_runs": {
       "columns": {
-        "id": {
-          "name": "id",
-          "nullable": false,
-          "primary_key": true,
-          "data_type": "text"
+        "osm_id": {
+          "name": "osm_id",
+          "data_type": "bigint",
+          "nullable": true
         },
-        "stock": {
-          "name": "stock",
+        "resort": {
+          "name": "resort",
           "data_type": "text",
           "nullable": true
         },
-        "date_time": {
-          "name": "date_time",
-          "data_type": "timestamp",
+        "country_code": {
+          "name": "country_code",
+          "data_type": "text",
           "nullable": true
         },
-        "price": {
-          "name": "price",
+        "run_name": {
+          "name": "run_name",
+          "data_type": "text",
+          "nullable": true
+        },
+        "difficulty": {
+          "name": "difficulty",
+          "data_type": "text",
+          "nullable": true
+        },
+        "piste_type": {
+          "name": "piste_type",
+          "data_type": "text",
+          "nullable": true
+        },
+        "run_length_m": {
+          "name": "run_length_m",
+          "data_type": "double",
+          "nullable": true
+        },
+        "n_points": {
+          "name": "n_points",
+          "data_type": "bigint",
+          "nullable": true
+        },
+        "_dlt_load_id": {
+          "name": "_dlt_load_id",
+          "data_type": "text",
+          "nullable": false
+        },
+        "_dlt_id": {
+          "name": "_dlt_id",
+          "data_type": "text",
+          "nullable": false,
+          "unique": true,
+          "row_key": true
+        }
+      },
+      "write_disposition": "replace",
+      "name": "ski_runs",
+      "resource": "ski_runs",
+      "x-normalizer": {
+        "seen-data": true
+      }
+    },
+    "ski_run_points": {
+      "columns": {
+        "osm_id": {
+          "name": "osm_id",
+          "data_type": "bigint",
+          "nullable": true
+        },
+        "resort": {
+          "name": "resort",
+          "data_type": "text",
+          "nullable": true
+        },
+        "country_code": {
+          "name": "country_code",
+          "data_type": "text",
+          "nullable": true
+        },
+        "run_name": {
+          "name": "run_name",
+          "data_type": "text",
+          "nullable": true
+        },
+        "point_index": {
+          "name": "point_index",
+          "data_type": "bigint",
+          "nullable": true
+        },
+        "lat": {
+          "name": "lat",
+          "data_type": "double",
+          "nullable": true
+        },
+        "lon": {
+          "name": "lon",
+          "data_type": "double",
+          "nullable": true
+        },
+        "distance_along_run_m": {
+          "name": "distance_along_run_m",
+          "data_type": "double",
+          "nullable": true
+        },
+        "elevation_m": {
+          "name": "elevation_m",
           "data_type": "double",
           "nullable": true
         },
@@ -111,62 +197,9 @@
           "row_key": true
         }
       },
-      "write_disposition": "merge",
-      "name": "gsheets_finance",
-      "resource": "gsheets_finance",
-      "x-normalizer": {
-        "seen-data": true
-      }
-    },
-    "_dlt_pipeline_state": {
-      "columns": {
-        "version": {
-          "name": "version",
-          "data_type": "bigint",
-          "nullable": false
-        },
-        "engine_version": {
-          "name": "engine_version",
-          "data_type": "bigint",
-          "nullable": false
-        },
-        "pipeline_name": {
-          "name": "pipeline_name",
-          "data_type": "text",
-          "nullable": false
-        },
-        "state": {
-          "name": "state",
-          "data_type": "text",
-          "nullable": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "data_type": "timestamp",
-          "nullable": false
-        },
-        "version_hash": {
-          "name": "version_hash",
-          "data_type": "text",
-          "nullable": true
-        },
-        "_dlt_load_id": {
-          "name": "_dlt_load_id",
-          "data_type": "text",
-          "nullable": false
-        },
-        "_dlt_id": {
-          "name": "_dlt_id",
-          "data_type": "text",
-          "nullable": false,
-          "unique": true,
-          "row_key": true
-        }
-      },
-      "write_disposition": "append",
-      "file_format": "preferred",
-      "name": "_dlt_pipeline_state",
-      "resource": "_dlt_pipeline_state",
+      "write_disposition": "replace",
+      "name": "ski_run_points",
+      "resource": "ski_run_points",
       "x-normalizer": {
         "seen-data": true
       }
@@ -201,20 +234,10 @@
   "normalizers": {
     "names": "snake_case",
     "json": {
-      "module": "dlt.common.normalizers.json.relational",
-      "config": {
-        "propagation": {
-          "tables": {
-            "gsheets_finance": {
-              "_dlt_id": "_dlt_root_id"
-            }
-          }
-        }
-      }
+      "module": "dlt.common.normalizers.json.relational"
     }
   },
   "previous_hashes": [
-    "CIx3w5BJX+rfhuOlq9AZhU0TkZOK9HcJ0r3gxsxza1I=",
-    "u6LYiTadF6rJq6MzySfiXYLkzKOoTtGG3dw7ddfeFKg="
+    "A5dRSHz/mefPb/2biFEbGGgreLitjgTH3hMWoBBRawg="
   ]
 }

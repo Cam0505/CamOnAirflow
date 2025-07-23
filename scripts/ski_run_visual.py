@@ -4,7 +4,6 @@ import duckdb
 import os
 from dotenv import load_dotenv
 from project_path import get_project_paths, set_dlt_env_vars
-import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 

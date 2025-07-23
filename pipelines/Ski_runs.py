@@ -48,6 +48,7 @@ def get_elevations_batch(coords_list):
             while len(elevations) < len(batch):
                 elevations.append(None)
         except Exception as e:
+            logger.error(f"Error fetching elevations: {e}")
             elevations = [None] * len(batch)
         results.extend(elevations)
     return results

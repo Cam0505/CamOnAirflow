@@ -30,6 +30,7 @@ df = con.execute("""
         snowfall.total_monthly_snowfall,
         snowfall.country
     FROM camonairflow.public_analysis.snowfall_winter_agg as snowfall
+                 where country in ('NZ', 'AU')
 """).df()
 
 df_cat = con.execute("""
@@ -162,30 +163,6 @@ df_plot = df[df['year_col'] != 2025]
 # Dynamically calculate date breaks
 df_plot_year_breaks = calculate_year_breaks(df_plot['year_col'])
 
-# Plot 3: Monthly proportion of total winter snowfall (without 2025)
-p3 = (
-    ggplot(df_plot, aes('year_col', 'month_prop', fill='month_name'))
-    + geom_bar(stat='identity', position='stack')
-    + facet_wrap('~facet_label', scales='free_x', ncol=4)
-    + labs(
-        title='Monthly Proportion of Total Winter Snowfall',
-        subtitle='Each bar shows the % of season snowfall by month',
-        x='Year', y='Proportion of Season Snowfall'
-    )
-    + scale_x_continuous(breaks=df_plot_year_breaks)
-    + theme_light(base_size=16)
-    + theme(
-        legend_position='right',
-        axis_text_x=element_text(rotation=45, hjust=1, size=10),
-        axis_title_x=element_text(size=14, weight='bold'),
-        plot_title=element_text(weight='bold', size=18),
-        plot_subtitle=element_text(size=12),
-        panel_spacing=0.05,
-        strip_text_x=element_text(color="black", weight="bold", size=12),
-        strip_background=element_rect(fill="#e0e0e0", color="#888888"),
-        panel_grid_major_x=element_line(color="#343434", size=0.5, linetype='dashed')  
-    )
-)
 
 # Set ordered categories for better control in the plot
 category_order = ['1cm or less', 'Between 1 & 5cm', 'Between 5 & 15cm', 'Between 15 & 25cm', 
@@ -243,7 +220,6 @@ p4 = (
 
 # Save with a wide and shorter aspect ratio, under 6100px in both dimensions
 p2.save("/workspaces/CamOnAirFlow/charts/winter_snowfall_vs_avg.png", width=32, height=28, dpi=150, limitsize=False)
-p3.save("/workspaces/CamOnAirFlow/charts/monthly_proportion_snowfall.png", width=32, height=28, dpi=150, limitsize=False)
 p4.save("/workspaces/CamOnAirFlow/charts/snowfall_category_distribution.png", width=32, height=28, dpi=150, limitsize=False)
 # Plot 5: Total winter snowfall per month (not proportion), same layout as P3
 

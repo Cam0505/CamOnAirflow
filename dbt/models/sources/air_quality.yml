@@ -13,9 +13,10 @@ sources:
                 - datetime
                 - city
                 - sensor_id
-        freshness:
-          warn_after: {count: 5, period: day}
-          error_after: {count: 9, period: day}
+        config:
+          freshness:
+            warn_after: {count: 5, period: day}
+            error_after: {count: 9, period: day}
         loaded_at_field: CAST(datetime AS TIMESTAMP)
         columns:
           - name: summary__min

@@ -1,0 +1,11 @@
+version: 2
+
+sources:
+  - name: ski_runs
+    database: camonairflow
+    schema: main
+
+    tables:
+      - name: ski_runs
+      - name: ski_run_points
+        

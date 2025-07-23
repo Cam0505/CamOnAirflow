@@ -4,6 +4,7 @@ Calculates ice formation, degradation, quality and other metrics.
 """
 
 import pandas as pd
+from typing import Any
 # import numpy as np
 
 def count_freeze_thaw(series):
@@ -19,26 +20,32 @@ def freeze_thaw_factor(cycles):
     else:
         return max(0.8, 1 - 0.2 * ((cycles - 4) / 4))  # penalty
 
-def model(dbt, session):
+def model(dbt: Any, session: Any):
     # Get daily weather stats
+
+    dbt.config(
+        materialized="table",
+        unique_key=["location", "date"]
+    )
+
     daily_weather = dbt.ref("base_daily_weather").df()
-    
+
     # Get thresholds
     thresholds = dbt.source("ice_climbing", "ice_climbing_thresholds").df()
-    
+
     # Process each location with its specific thresholds
     result_dfs = []
-    
+
     for location in daily_weather['location'].unique():
         loc_df = daily_weather[daily_weather['location'] == location]
-        
+
         # Get thresholds for this location
         loc_thresholds = thresholds[thresholds['name'] == location]
-        
+
         if loc_thresholds.empty:
             print(f"Warning: No thresholds found for {location}, skipping")
             continue
-            
+
         # Extract threshold values
         forming_temp = loc_thresholds['forming_temp'].iloc[0]
         forming_hours = loc_thresholds['forming_hours'].iloc[0]
@@ -46,30 +53,30 @@ def model(dbt, session):
         formed_days = int(loc_thresholds['formed_days'].iloc[0])
         degrade_temp = loc_thresholds['degrade_temp'].iloc[0]
         degrade_hours = loc_thresholds['degrade_hours'].iloc[0]
-        
+
         # Calculate additional metrics
         loc_df = loc_df.sort_values('date')
-        
+
         # Calculate freeze-thaw cycles from the raw hourly data
         hourly = dbt.source("ice_climbing", "weather_hourly_raw").df()
         hourly = hourly[hourly['location'] == location]
-        
+
         # Calculate freeze-thaw cycles per day
         freeze_thaw_cycles = hourly.groupby('date')['temperature_2m'].apply(count_freeze_thaw)
-        
+
         # Add freeze-thaw cycles to daily data
         loc_df = loc_df.merge(
             freeze_thaw_cycles.reset_index().rename(columns={'temperature_2m': 'freeze_thaw_cycles'}),
             on='date', how='left'
         )
-        
+
         # Fill NAs
         loc_df['freeze_thaw_cycles'] = loc_df['freeze_thaw_cycles'].fillna(0)
-        
+
         # Calculate hours below freezing and above degradation threshold
         hours_below_freeze = hourly[hourly['temperature_2m'] < forming_temp].groupby('date').size()
         hours_above_degrade = hourly[hourly['temperature_2m'] > degrade_temp].groupby('date').size()
-        
+
         # Add to daily stats
         loc_df = loc_df.merge(
             hours_below_freeze.reset_index().rename(columns={0: 'hours_below_freeze'}),
@@ -79,11 +86,11 @@ def model(dbt, session):
             hours_above_degrade.reset_index().rename(columns={0: 'hours_above_degrade'}),
             on='date', how='left'
         )
-        
+
         # Fill NAs
         loc_df['hours_below_freeze'] = loc_df['hours_below_freeze'].fillna(0)
         loc_df['hours_above_degrade'] = loc_df['hours_above_degrade'].fillna(0)
-        
+
         # Forming day: at least forming_hours below freezing
         loc_df["is_forming_day"] = (loc_df["hours_below_freeze"] >= forming_hours).astype(int)
 
@@ -137,9 +144,9 @@ def model(dbt, session):
             (1 - 0.9 * loc_df["is_ice_degrading"]) *  
             loc_df["freeze_thaw_cycles"].apply(freeze_thaw_factor)
         ).clip(0, 1)
-        
+
         result_dfs.append(loc_df)
-    
+
     # Combine all location results
     if result_dfs:
         result = pd.concat(result_dfs, ignore_index=True)

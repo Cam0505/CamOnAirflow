@@ -5,7 +5,9 @@ import logging
 from dotenv import load_dotenv
 from project_path import get_project_paths, set_dlt_env_vars
 from geopy.distance import geodesic
+import numpy as np
 
+# --- ENV setup ---
 paths = get_project_paths()
 set_dlt_env_vars(paths)
 DLT_PIPELINE_DIR = paths["DLT_PIPELINE_DIR"]
@@ -13,19 +15,18 @@ ENV_FILE = paths["ENV_FILE"]
 load_dotenv(dotenv_path=ENV_FILE)
 
 SKI_FIELDS = [
-    {"name": "Remarkables", "country": "NZ", "lat": -45.0579, "lon": 168.8194},
-    {"name": "Cardrona", "country": "NZ", "lat": -44.8746, "lon": 168.9481},
-    {"name": "Treble Cone", "country": "NZ", "lat": -44.6335, "lon": 168.8972},
-    {"name": "Mount Hutt", "country": "NZ", "lat": -43.4707, "lon": 171.5306},
-    {"name": "Ohau", "country": "NZ", "lat": -44.2255, "lon": 169.7747},
-    {"name": "Coronet Peak", "country": "NZ", "lat": -44.9206, "lon": 168.7349},
-    {"name": "Whakapapa", "country": "NZ", "lat": -39.2546, "lon": 175.5456},
-    {"name": "Turoa", "country": "NZ", "lat": -39.3067, "lon": 175.5289},
-    {"name": "Thredbo", "country": "AU", "lat": -36.5040, "lon": 148.2987},
-    {"name": "Perisher", "country": "AU", "lat": -36.4058, "lon": 148.4134},
-    {"name": "Mt Buller", "country": "AU", "lat": -37.1467, "lon": 146.4473},
-    {"name": "Falls Creek", "country": "AU", "lat": -36.8655, "lon": 147.2861},
-    {"name": "Mt Hotham", "country": "AU", "lat": -36.9762, "lon": 147.1359},
+    {"name": "Remarkables", "country": "NZ", "lat": -45.0579, "lon": 168.8194, "radius_m": 3000},
+    {"name": "Cardrona", "country": "NZ", "lat": -44.8746, "lon": 168.9481, "radius_m": 3000},
+    {"name": "Treble Cone", "country": "NZ", "lat": -44.6335, "lon": 168.8972, "radius_m": 3000},
+    {"name": "Mount Hutt", "country": "NZ", "lat": -43.4707, "lon": 171.5306, "radius_m": 3000},
+    {"name": "Ohau", "country": "NZ", "lat": -44.2255, "lon": 169.7747, "radius_m": 3000},
+    {"name": "Coronet Peak", "country": "NZ", "lat": -44.9206, "lon": 168.7349, "radius_m": 3000},
+    {"name": "Whakapapa", "country": "NZ", "lat": -39.2546, "lon": 175.5456, "radius_m": 3000},
+    {"name": "Turoa", "country": "NZ", "lat": -39.3067, "lon": 175.5289, "radius_m": 3000},
+    {"name": "Mount Dobson", "country": "NZ", "lat": -43.9419, "lon": 170.6648, "radius_m": 3000},
+    {"name": "Mount Olympus", "country": "NZ", "lat": -43.1917, "lon": 171.6062, "radius_m": 3000},
+    {"name": "Mount Cheeseman", "country": "NZ", "lat": -43.1573, "lon": 171.6683, "radius_m": 1500},
+    {"name": "Temple Basin", "country": "NZ", "lat": -42.9087, "lon": 171.5766, "radius_m": 3000}
 ]
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -53,15 +54,44 @@ def get_elevations_batch(coords_list):
         results.extend(elevations)
     return results
 
+def smooth_steep_gradients(elevs, dists, threshold=0.25, window=5):
+    elevs = np.array(elevs, dtype=float)
+    dists = np.array(dists, dtype=float)
+    if len(elevs) < 3:
+        return elevs.tolist(), [0.0] * len(elevs)
+    grads = np.gradient(elevs, dists, edge_order=2)
+    smoothed = elevs.copy()
+    for i in range(len(elevs)):
+        if abs(grads[i]) > threshold:
+            w_start = max(0, i - window//2)
+            w_end = min(len(elevs), i + window//2 + 1)
+            smoothed[i] = np.mean(elevs[w_start:w_end])
+    smoothed_grads = np.gradient(smoothed, dists, edge_order=2)
+    return smoothed.tolist(), smoothed_grads.tolist()
+
+def trim_to_downhill(coords, elevations):
+    """
+    Returns the coords and elevations from the first max to the last min (inclusive).
+    """
+    if len(elevations) < 2:
+        return coords, elevations
+    max_elev = max(elevations)
+    min_elev = min(elevations)
+    start_idx = next(i for i, e in enumerate(elevations) if e == max_elev)
+    # find last min_elev index, search from end
+    end_idx = len(elevations) - 1 - next(i for i, e in enumerate(reversed(elevations)) if e == min_elev)
+    if end_idx < start_idx:
+        # Bad geometry, skip trimming
+        return coords, elevations
+    return coords[start_idx:end_idx+1], elevations[start_idx:end_idx+1]
+
 @dlt.source
 def ski_source():
-    # --------- FETCH ALL RUNS ONLY ONCE, SHARE AS VARIABLE ----------
     ski_runs_data = []
-    radius_m = 3000
     for field in SKI_FIELDS:
         query = f"""
         [out:json][timeout:60];
-        way["piste:type"](around:{radius_m},{field["lat"]},{field["lon"]});
+        way["piste:type"](around:{field['radius_m']},{field["lat"]},{field["lon"]});
         out tags geom;
         """
         logger.info(f"Fetching ski runs near {field['name']} ...")
@@ -107,13 +137,27 @@ def ski_source():
             coords = [(pt["lat"], pt["lon"]) for pt in run["geometry"]]
             if len(coords) < 2:
                 continue
+            elevations = get_elevations_batch(coords)
+            # --- Prune to downhill segment before distance calculation ---
+            coords, elevations = trim_to_downhill(coords, elevations)
+            if len(coords) < 2:
+                continue
+            # Now recalculate cumulative distances
             cum_distances = [0.0]
             for i in range(1, len(coords)):
                 cum_distances.append(
                     cum_distances[-1] + geodesic(coords[i - 1], coords[i]).meters
                 )
-            elevations = get_elevations_batch(coords)
-            for idx, ((lat, lon), dist, elev) in enumerate(zip(coords, cum_distances, elevations)):
+            if len(elevations) >= 3:
+                elevations_smooth, gradients_smooth = smooth_steep_gradients(
+                    elevations, cum_distances, threshold=0.25, window=5
+                )
+            else:
+                elevations_smooth = elevations
+                gradients_smooth = [0.0] * len(elevations)
+            for idx, ((lat, lon), dist, elev, elev_sm, grad_sm) in enumerate(
+                zip(coords, cum_distances, elevations, elevations_smooth, gradients_smooth)
+            ):
                 yield {
                     "osm_id": run["osm_id"],
                     "resort": run["resort"],
@@ -124,6 +168,8 @@ def ski_source():
                     "lon": lon,
                     "distance_along_run_m": dist,
                     "elevation_m": elev,
+                    "elevation_smoothed_m": elev_sm,
+                    "gradient_smoothed": grad_sm,
                 }
 
     return [ski_runs, ski_run_points]

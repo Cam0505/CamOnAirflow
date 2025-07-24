@@ -1,5 +1,4 @@
 from scipy.signal import savgol_filter
-from matplotlib.lines import Line2D
 import duckdb
 import os
 from dotenv import load_dotenv
@@ -16,7 +15,8 @@ if not database_string:
     raise ValueError("Missing MD in environment.")
 con = duckdb.connect(database_string)
 
-RESORTS = ['Remarkables', 'Mount Hutt', 'Cardrona', 'Treble Cone', 'Coronet Peak', 'Turoa', 'Whakapapa']
+RESORTS = ['Remarkables', 'Mount Hutt', 'Cardrona', 'Treble Cone', 'Coronet Peak',
+           'Temple Basin', 'Mount Cheeseman', 'Mount Dobson', 'Mount Olympus']
 
 # --- Load from correct point table ---
 points = con.execute(f"""
@@ -34,7 +34,9 @@ runs = con.execute(f"""
         osm_id,
         resort,
         run_name,
-        difficulty,
+        case when difficulty = 'extreme' then 'intermediate' 
+            when difficulty = 'expert' then 'advanced'
+            else difficulty end as difficulty,
         run_length_m
     FROM camonairflow.public_base.base_filtered_ski_runs
     WHERE resort in {tuple(RESORTS)}
@@ -43,7 +45,9 @@ runs = con.execute(f"""
 gradient_stats = con.execute(f"""
     SELECT
         resort,
-        difficulty,
+        case when difficulty = 'extreme' then 'intermediate' 
+            when difficulty = 'expert' then 'advanced'
+            else difficulty end as difficulty,
         run_count,
         mean_gradient
     FROM camonairflow.public_base.base_ski_gradient_stats
@@ -54,10 +58,8 @@ gradient_stats = con.execute(f"""
 difficulty_colors = {
     "novice": "#4daf4a",
     "easy": "#377eb8",
-    "intermediate": "#ff7f00",
-    "advanced": "#e41a1c",
-    "expert": "#a65628",
-    "extreme": "#800080",
+    "intermediate": "#d90f0f",
+    "advanced": "#0e0d0d",
     "freeride": "#00CED1",
     None: "#999999",
     "nan": "#999999"
@@ -138,24 +140,6 @@ for ax, resort in zip(axes, RESORTS):
 # Blank the last two axes (bottom right) for legend
 for i in range(len(RESORTS), nrows * ncols):
     axes[i].axis('off')
-
-# --- Horizontal Legend in lower right blank slot, 2 rows ---
-legend_elements = [
-    Line2D([0], [0], color=color, lw=3, label=diff if diff else 'nan')
-    for diff, color in difficulty_colors.items() if diff in all_diffs
-]
-# Put legend in axes[7] (second to last), centered horizontally, with 2 rows
-axes[-2].legend(
-    handles=legend_elements,
-    loc='center',
-    ncol=4,  # 2 rows, will wrap (7 total entries)
-    fontsize=16,
-    title="Difficulty",
-    title_fontsize=17,
-    frameon=True,
-    bbox_to_anchor=(1.15, 0.5)  # Move a little to the right
-)
-axes[-2].axis('off')  # Hide axes but show legend
 
 plt.suptitle(
     'Ski Run Elevation Profiles by Resort\nAll runs (filtered, smoothed, colored by difficulty)\nAvg gradient per difficulty (top right)',

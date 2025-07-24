@@ -5,7 +5,6 @@ Calculates ice formation, degradation, quality and other metrics.
 
 import pandas as pd
 from typing import Any
-# import numpy as np
 
 def count_freeze_thaw(series):
     # Count number of times temperature crosses 0°C

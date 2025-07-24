@@ -23,7 +23,7 @@
       "type": "bind"
     }
   ],
-  "postCreateCommand": "echo PYTHONPATH is $PYTHONPATH",
+  "postCreateCommand": ".devcontainer/postcreate.sh",
   "remoteUser": "vscode",
   "customizations": {
     "vscode": {
@@ -38,7 +38,6 @@
         "ms-python.vscode-pylance",
         "dbt-labs.dbt",
         "github.vscode-github-actions",
-        "GitHub.copilot",
         "ms-azuretools.vscode-docker"
       ]
     },

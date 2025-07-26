@@ -5,6 +5,8 @@ import logging
 from dotenv import load_dotenv
 from project_path import get_project_paths, set_dlt_env_vars
 from geopy.distance import geodesic
+from dlt.pipeline.exceptions import PipelineNeverRan
+from dlt.destinations.exceptions import DatabaseUndefinedRelation
 import numpy as np
 
 # --- ENV setup ---
@@ -26,7 +28,9 @@ SKI_FIELDS = [
     {"name": "Mount Dobson", "country": "NZ", "lat": -43.9419, "lon": 170.6648, "radius_m": 3000},
     {"name": "Mount Olympus", "country": "NZ", "lat": -43.1917, "lon": 171.6062, "radius_m": 3000},
     {"name": "Mount Cheeseman", "country": "NZ", "lat": -43.1573, "lon": 171.6683, "radius_m": 1500},
-    {"name": "Temple Basin", "country": "NZ", "lat": -42.9087, "lon": 171.5766, "radius_m": 3000}
+    {"name": "Temple Basin", "country": "NZ", "lat": -42.9087, "lon": 171.5766, "radius_m": 3000},
+    {"name": "Porters", "country": "NZ", "lat": -43.2703, "lon": 171.6294, "radius_m": 3000},
+    {"name": "RoundHill", "country": "NZ", "lat": -43.8263, "lon": 170.6617, "radius_m": 3000}
 ]
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -86,9 +90,14 @@ def trim_to_downhill(coords, elevations):
     return coords[start_idx:end_idx+1], elevations[start_idx:end_idx+1]
 
 @dlt.source
-def ski_source():
+def ski_source(known_locations: set):
     ski_runs_data = []
     for field in SKI_FIELDS:
+        # Skip fields that are already in the database
+        if field["name"] in known_locations:
+            logger.info(f"Skipping {field['name']} - already in database")
+            continue
+
         query = f"""
         [out:json][timeout:60];
         way["piste:type"](around:{field['radius_m']},{field["lat"]},{field["lon"]});
@@ -108,7 +117,7 @@ def ski_source():
                 "geometry": run["geometry"],
             })
 
-    @dlt.resource(table_name="ski_runs", write_disposition="replace")
+    @dlt.resource(write_disposition="merge", table_name="ski_runs", primary_key=["osm_id"])
     def ski_runs():
         for run in ski_runs_data:
             tags = run.get("tags", {})
@@ -130,7 +139,7 @@ def ski_source():
                 "n_points": len(coords),
             }
 
-    @dlt.resource(table_name="ski_run_points", write_disposition="replace")
+    @dlt.resource(write_disposition="merge", table_name="ski_run_points", primary_key=["osm_id", "point_index"])
     def ski_run_points():
         for run in ski_runs_data:
             tags = run.get("tags", {})
@@ -183,8 +192,29 @@ def run_pipeline(logger):
         pipelines_dir=str(DLT_PIPELINE_DIR),
         dev_mode=False
     )
+    dataset = None
+    known_locations = set()
+
+    # Try different table names that might exist
+    table_name = "ski_runs"
+
     try:
-        pipeline.run(ski_source())
+        logger.info(f"Trying to access table: {table_name}")
+        dataset = pipeline.dataset()[table_name].df()
+        if dataset is not None and not dataset.empty:
+            known_locations = set(dataset["resort"].unique())
+            logger.info(f"Found {len(known_locations)} known locations: {known_locations}")
+    except (ValueError, KeyError, DatabaseUndefinedRelation) as e:
+        logger.info(f"Table {table_name} not found: {e}")
+    except Exception as e:
+        logger.warning(f"Error accessing table {table_name}: {e}")
+
+    if not known_locations:
+        logger.info("No existing ski runs data found, treating as first run")
+
+
+    try:
+        pipeline.run(ski_source(known_locations))
     except Exception as e:
         logger.error(f"❌ Pipeline run failed: {e}")
         return False

@@ -16,7 +16,8 @@ if not database_string:
 con = duckdb.connect(database_string)
 
 RESORTS = ['Remarkables', 'Mount Hutt', 'Cardrona', 'Treble Cone', 'Coronet Peak',
-           'Temple Basin', 'Mount Cheeseman', 'Mount Dobson', 'Mount Olympus']
+           'Temple Basin', 'Mount Cheeseman', 'Mount Dobson', 'Mount Olympus', 
+           'Porters', 'RoundHill', 'Turoa']
 
 # --- Load from correct point table ---
 points = con.execute(f"""
@@ -82,8 +83,8 @@ def smooth_elevation(y, window=9, poly=2):
 max_distance = points['distance_along_run_m'].max() * 1.05
 
 ncols = 3
-nrows = 3  # Always 3x3 grid for 7 resorts + 2 blanks for legend
-fig, axes = plt.subplots(nrows, ncols, figsize=(26, 20), sharey=True)
+nrows = 4  # 4x3 grid for 12 resorts
+fig, axes = plt.subplots(nrows, ncols, figsize=(20, 32), sharey=True)
 axes = axes.flatten()
 
 # Find min/max elevation for nice axis consistency
@@ -137,7 +138,7 @@ for ax, resort in zip(axes, RESORTS):
                 bbox=dict(facecolor='white', alpha=0.73, edgecolor='none', boxstyle='round,pad=0.16')
             )
 
-# Blank the last two axes (bottom right) for legend
+# Blank any remaining axes if we have fewer than 12 resorts
 for i in range(len(RESORTS), nrows * ncols):
     axes[i].axis('off')
 
@@ -147,6 +148,6 @@ plt.suptitle(
 
 plt.tight_layout(rect=(0, 0.03, 1, 0.96))
 plt.subplots_adjust(hspace=0.36, wspace=0.18)
-plt.savefig("charts/ski_run_elevations_matplotlib.png", dpi=200, bbox_inches='tight')
+plt.savefig("charts/ski_run_elevations_matplotlib.png", dpi=250, bbox_inches='tight')
 plt.show()
 print("✅ Saved chart: ski_run_elevations_matplotlib.png")

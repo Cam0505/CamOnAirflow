@@ -32,14 +32,14 @@ def get_ski_fields_with_timestamp():
         {**field, "last_updated": now}
         for field in [
             # New Zealand 
-            {"name": "Remarkables", "country": "NZ", "lat": -45.0579, "lon": 168.8194, "timezone": "Pacific/Auckland"},
+            {"name": "Remarkables", "country": "NZ", "lat": -45.0661, "lon": 168.8196, "timezone": "Pacific/Auckland"},
             {"name": "Cardrona", "country": "NZ", "lat": -44.8746, "lon": 168.9481, "timezone": "Pacific/Auckland"},
-            {"name": "Treble Cone", "country": "NZ", "lat": -44.6335, "lon": 168.8972, "timezone": "Pacific/Auckland"},
+            {"name": "Treble Cone", "country": "NZ", "lat": -44.6301, "lon": 168.8806, "timezone": "Pacific/Auckland"},
             {"name": "Mount Hutt", "country": "NZ", "lat": -43.4707, "lon": 171.5306, "timezone": "Pacific/Auckland"},
             {"name": "Ohau", "country": "NZ", "lat": -44.2255, "lon": 169.7747, "timezone": "Pacific/Auckland"},
             {"name": "Coronet Peak", "country": "NZ", "lat": -44.9206, "lon": 168.7349, "timezone": "Pacific/Auckland"},
-            {"name": "Whakapapa", "country": "NZ", "lat": -39.2546, "lon": 175.5456, "timezone": "Pacific/Auckland"},
-            {"name": "Turoa", "country": "NZ", "lat": -39.3067, "lon": 175.5289, "timezone": "Pacific/Auckland"},
+            {"name": "Whakapapa", "country": "NZ", "lat": -39.2659, "lon": 175.5600, "timezone": "Pacific/Auckland"},
+            {"name": "Turoa", "country": "NZ", "lat": -39.3002, "lon": 175.5525, "timezone": "Pacific/Auckland"},
             # Australia
             {"name": "Thredbo", "country": "AU", "lat": -36.5040, "lon": 148.2987, "timezone": "Australia/Sydney"},
             {"name": "Perisher", "country": "AU", "lat": -36.4058, "lon": 148.4134, "timezone": "Australia/Sydney"},
@@ -259,7 +259,7 @@ def snowfall_source(logger: logging.Logger, dataset):
     return ski_field_data
 
 if __name__ == "__main__":
-    
+
     # Set up DLT pipeline
     pipeline = dlt.pipeline(
         pipeline_name="snowfall_pipeline",

@@ -1,8 +1,8 @@
 {
-  "version": 5,
-  "version_hash": "SUvLJB5lcmKvleQBVkcL98WRoi7qp05iB2YlTO8nook=",
+  "version": 4,
+  "version_hash": "UsbKxO79jPjXsCqWYCuOuWPrQYKF3nXdHEi3oUi7lOI=",
   "engine_version": 11,
-  "name": "ice_climbing_hourly_source",
+  "name": "comprehensive_weather_source",
   "tables": {
     "_dlt_version": {
       "name": "_dlt_version",
@@ -75,7 +75,7 @@
       "resource": "_dlt_loads",
       "description": "Created by DLT. Tracks completed loads"
     },
-    "weather_hourly_raw": {
+    "weather_hourly_enriched": {
       "columns": {
         "datetime": {
           "name": "datetime",
@@ -88,8 +88,18 @@
           "data_type": "double",
           "nullable": true
         },
-        "precipitation": {
-          "name": "precipitation",
+        "relative_humidity_2m": {
+          "name": "relative_humidity_2m",
+          "data_type": "bigint",
+          "nullable": true
+        },
+        "dew_point_2m": {
+          "name": "dew_point_2m",
+          "data_type": "double",
+          "nullable": true
+        },
+        "rain": {
+          "name": "rain",
           "data_type": "double",
           "nullable": true
         },
@@ -98,19 +108,14 @@
           "data_type": "double",
           "nullable": true
         },
-        "cloudcover": {
-          "name": "cloudcover",
+        "snow_depth": {
+          "name": "snow_depth",
+          "data_type": "double",
+          "nullable": true
+        },
+        "weather_code": {
+          "name": "weather_code",
           "data_type": "bigint",
-          "nullable": true
-        },
-        "windspeed_10m": {
-          "name": "windspeed_10m",
-          "data_type": "double",
-          "nullable": true
-        },
-        "dew_point_2m": {
-          "name": "dew_point_2m",
-          "data_type": "double",
           "nullable": true
         },
         "surface_pressure": {
@@ -118,8 +123,45 @@
           "data_type": "double",
           "nullable": true
         },
-        "relative_humidity_2m": {
-          "name": "relative_humidity_2m",
+        "wind_speed_10m": {
+          "name": "wind_speed_10m",
+          "data_type": "double",
+          "nullable": true
+        },
+        "wind_direction_10m": {
+          "name": "wind_direction_10m",
+          "data_type": "bigint",
+          "nullable": true
+        },
+        "soil_temperature_0_to_7cm": {
+          "name": "soil_temperature_0_to_7cm",
+          "data_type": "double",
+          "nullable": true
+        },
+        "soil_moisture_0_to_7cm": {
+          "name": "soil_moisture_0_to_7cm",
+          "data_type": "double",
+          "nullable": true
+        },
+        "is_day": {
+          "name": "is_day",
+          "data_type": "bigint",
+          "nullable": true
+        },
+        "sunshine_duration": {
+          "name": "sunshine_duration",
+          "data_type": "double",
+          "nullable": true
+        },
+        "snow_depth_water_equivalent": {
+          "name": "snow_depth_water_equivalent",
+          "nullable": true,
+          "x-normalizer": {
+            "seen-null-first": true
+          }
+        },
+        "cloud_cover_low": {
+          "name": "cloud_cover_low",
           "data_type": "bigint",
           "nullable": true
         },
@@ -128,13 +170,13 @@
           "data_type": "double",
           "nullable": true
         },
-        "sunshine_duration": {
-          "name": "sunshine_duration",
+        "precipitation": {
+          "name": "precipitation",
           "data_type": "double",
           "nullable": true
         },
-        "is_day": {
-          "name": "is_day",
+        "cloudcover": {
+          "name": "cloudcover",
           "data_type": "bigint",
           "nullable": true
         },
@@ -164,6 +206,66 @@
           "data_type": "date",
           "nullable": true
         },
+        "hour": {
+          "name": "hour",
+          "data_type": "bigint",
+          "nullable": true
+        },
+        "day_of_year": {
+          "name": "day_of_year",
+          "data_type": "bigint",
+          "nullable": true
+        },
+        "month": {
+          "name": "month",
+          "data_type": "bigint",
+          "nullable": true
+        },
+        "year": {
+          "name": "year",
+          "data_type": "bigint",
+          "nullable": true
+        },
+        "is_winter": {
+          "name": "is_winter",
+          "data_type": "bool",
+          "nullable": true
+        },
+        "temp_celsius": {
+          "name": "temp_celsius",
+          "data_type": "double",
+          "nullable": true
+        },
+        "temp_freezing": {
+          "name": "temp_freezing",
+          "data_type": "bigint",
+          "nullable": true
+        },
+        "temp_below_minus5": {
+          "name": "temp_below_minus5",
+          "data_type": "bigint",
+          "nullable": true
+        },
+        "total_precipitation": {
+          "name": "total_precipitation",
+          "data_type": "double",
+          "nullable": true
+        },
+        "precip_type": {
+          "name": "precip_type",
+          "data_type": "text",
+          "nullable": true
+        },
+        "wind_u": {
+          "name": "wind_u",
+          "data_type": "double",
+          "nullable": true
+        },
+        "wind_v": {
+          "name": "wind_v",
+          "data_type": "double",
+          "nullable": true
+        },
         "_dlt_load_id": {
           "name": "_dlt_load_id",
           "data_type": "text",
@@ -175,16 +277,11 @@
           "nullable": false,
           "unique": true,
           "row_key": true
-        },
-        "snow_depth": {
-          "name": "snow_depth",
-          "data_type": "double",
-          "nullable": true
         }
       },
       "write_disposition": "merge",
-      "name": "weather_hourly_raw",
-      "resource": "weather_hourly_raw",
+      "name": "weather_hourly_enriched",
+      "resource": "weather_hourly_enriched",
       "x-normalizer": {
         "seen-data": true
       }
@@ -242,7 +339,7 @@
         "seen-data": true
       }
     },
-    "ice_climbing_thresholds": {
+    "location_metadata": {
       "columns": {
         "name": {
           "name": "name",
@@ -265,33 +362,18 @@
           "data_type": "double",
           "nullable": true
         },
-        "forming_temp": {
-          "name": "forming_temp",
+        "timezone": {
+          "name": "timezone",
+          "data_type": "text",
+          "nullable": true
+        },
+        "elevation": {
+          "name": "elevation",
           "data_type": "double",
           "nullable": true
         },
-        "forming_hours": {
-          "name": "forming_hours",
-          "data_type": "double",
-          "nullable": true
-        },
-        "forming_days": {
-          "name": "forming_days",
-          "data_type": "double",
-          "nullable": true
-        },
-        "formed_days": {
-          "name": "formed_days",
-          "data_type": "double",
-          "nullable": true
-        },
-        "degrade_temp": {
-          "name": "degrade_temp",
-          "data_type": "double",
-          "nullable": true
-        },
-        "degrade_hours": {
-          "name": "degrade_hours",
+        "slope": {
+          "name": "slope",
           "data_type": "double",
           "nullable": true
         },
@@ -309,8 +391,8 @@
         }
       },
       "write_disposition": "merge",
-      "name": "ice_climbing_thresholds",
-      "resource": "ice_climbing_thresholds",
+      "name": "location_metadata",
+      "resource": "location_metadata",
       "x-normalizer": {
         "seen-data": true
       }
@@ -349,10 +431,10 @@
       "config": {
         "propagation": {
           "tables": {
-            "weather_hourly_raw": {
+            "weather_hourly_enriched": {
               "_dlt_id": "_dlt_root_id"
             },
-            "ice_climbing_thresholds": {
+            "location_metadata": {
               "_dlt_id": "_dlt_root_id"
             }
           }
@@ -361,10 +443,9 @@
     }
   },
   "previous_hashes": [
-    "S97fAaK4e4F4jfLodxzc37HTYtaMd0jJ5UE1KQ8W9QA=",
-    "CCqT65U+YhKYNoNZGo88Srhh8vFWviZi9Q/vJdNXGmk=",
-    "whgUheGeQr2cb2Gs1eblymw9hzfWgIBiQ/sg4jZsfDY=",
-    "bnSIiwMCubYN4YVWe5kVWgwVNLQJ/5E2WoXOGFj37FU=",
-    "AxGz7O9YfMAUOXvqtS9n+vMv/MM/Dc4rtYc3d2XwvXI="
+    "z924orwEOiqUb7KCSoBZdzR+mlrdLU+wYa2TZxj/ypI=",
+    "3l9NMB0x5nguR/MVGJ874GHgthBN01pOf8xuDmx0ncU=",
+    "8ekAdrbzr9d3tHfDn5BWhL7n0Yvh0qkH0CUD/O/t2KI=",
+    "a6qwpEwREEr3iiqA2IfIyXnXjnXV95LvndIL+Fbqgvg="
   ]
 }

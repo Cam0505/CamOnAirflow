@@ -33,14 +33,6 @@ df = con.execute("""
                  where country in ('NZ', 'AU')
 """).df()
 
-df_cat = con.execute("""
-select 
-  season, ski_field, country, snowfall_category, 
-  countx
-  from camonairflow.public_analysis.snowfall_winter_counts
-""").df()
-
-
 def calculate_year_breaks(year_series):
     """Calculate appropriate year breaks based on data range"""
     min_year = int(year_series.min())
@@ -133,7 +125,7 @@ p2 = (
     + geom_line(size=1.8)
     + geom_hline(aes(yintercept='long_term_avg'), linetype='dashed', color='#1f77b4', size=1.2)
     + geom_hline(yintercept=overall_avg, linetype='dotted', color='#ff7f0e', size=1.2)
-    + geom_point(aes(fill='above_avg'), size=4, color='black', alpha=0.8, show_legend=False)
+    + geom_point(aes(fill='above_avg'), size=2.5, color='black', alpha=0.8, show_legend=False)  # Reduced from size=4
     + labs(
         title='Winter Snowfall vs Long-Term & Overall Average',
         subtitle='Dashed line = ski field avg; dotted orange =overall avg; blue=above avg, orange=below avg',
@@ -142,16 +134,16 @@ p2 = (
     + scale_x_continuous(breaks=yearly_breaks)
     + scale_fill_manual(values={True: '#1f77b4', False: '#ff7f0e'})
     + scale_color_manual(values=color_list)
-    + facet_wrap('~facet_label', scales='free_x', ncol=4)
-    + theme_light(base_size=16)
+    + facet_wrap('~facet_label', scales='free_x', ncol=3)  # 3 columns for better readability on mobile
+    + theme_light(base_size=14)  # Slightly smaller for better fit
     + theme(
         legend_position='right',
-        axis_text_x=element_text(rotation=45, hjust=1, size=12),
-        axis_title_x=element_text(size=16, weight='bold'),
-        plot_title=element_text(weight='bold', size=20),
-        plot_subtitle=element_text(size=14),
-        panel_spacing=0.05,  # Reduce space between panels
-        strip_text_x=element_text(color="black", weight="bold", size=12),
+        axis_text_x=element_text(rotation=45, hjust=1, size=10),  # Smaller axis text
+        axis_title_x=element_text(size=14, weight='bold'),
+        plot_title=element_text(weight='bold', size=18),  # Readable title size
+        plot_subtitle=element_text(size=11),  # Smaller subtitle
+        panel_spacing=0.08,  # Slightly more space between panels
+        strip_text_x=element_text(color="black", weight="bold", size=10),  # Smaller strip text
         strip_background=element_rect(fill="#e0e0e0", color="#888888"),
         panel_grid_major_x=element_line(color="#343434", size=0.5, linetype='dashed')  
     )
@@ -164,88 +156,34 @@ df_plot = df[df['year_col'] != 2025]
 df_plot_year_breaks = calculate_year_breaks(df_plot['year_col'])
 
 
-# Set ordered categories for better control in the plot
-category_order = ['1cm or less', 'Between 1 & 5cm', 'Between 5 & 15cm', 'Between 15 & 25cm', 
-                  'Between 25 & 50cm', 'Between 50 & 100cm', 'More than 100cm', 'NULL or Error']
-df_cat['snowfall_category'] = pd.Categorical(df_cat['snowfall_category'], categories=category_order, ordered=True)
-
-# Dynamically calculate date breaks
-year_breaks = calculate_year_breaks(df_cat['season'])
-
-df_cat['facet_label'] = df_cat['country'] + ' - ' + df_cat['ski_field']
-
-category_colors = {
-    '1cm or less': '#1b9e77',
-    'Between 1 & 5cm': '#d95f02',
-    'Between 5 & 15cm': '#7570b3',
-    'Between 15 & 25cm': '#e7298a',
-    'Between 25 & 50cm': '#66a61e',
-    'Between 50 & 100cm': '#e6ab02',
-    'More than 100cm': '#a6761d',
-    'NULL or Error': '#666666'
-}
-
-df_cat = df_cat[df_cat['season'] != 2025]
-
-
-p4 = (
-    ggplot(df_cat, aes(x='season', y='countx', color='snowfall_category', group='snowfall_category'))
-    + geom_line(size=1.8)
-    + geom_point(size=3)
-    # + geom_smooth(method='glm', se=False, linetype='dashed', size=1.2, alpha=0.7)
-    + labs(
-        title='Snowfall Category Counts by Season',
-        subtitle='Each line shows count of snowfall days per category (dashed = trend)',
-        x='Season (Year)', y='Count of Days'
-    )
-    + scale_color_manual(values=category_colors)
-    + facet_wrap('~facet_label', scales='free_x', ncol=4)
-    + scale_x_continuous(breaks=year_breaks)
-    + theme_light(base_size=16)
-    + theme(
-        legend_position='right',
-        axis_text_x=element_text(rotation=45, hjust=1, size=10),
-        axis_title_x=element_text(size=14, weight='bold'),
-        plot_title=element_text(weight='bold', size=18),
-        plot_subtitle=element_text(size=12),
-        panel_spacing=0.05,
-        strip_text_x=element_text(color="black", weight="bold", size=12),
-        strip_background=element_rect(fill="#e0e0e0", color="#737171"),
-        panel_grid_major_x=element_line(color="#343434", size=0.5, linetype='dashed')  
-    )
-)
-
-
-
-
-# Save with a wide and shorter aspect ratio, under 6100px in both dimensions
-p2.save("/workspaces/CamOnAirFlow/charts/winter_snowfall_vs_avg.png", width=32, height=28, dpi=150, limitsize=False)
-p4.save("/workspaces/CamOnAirFlow/charts/snowfall_category_distribution.png", width=32, height=28, dpi=150, limitsize=False)
+# Save optimized for Facebook - square/portrait aspect ratio for better mobile viewing
+# Facebook optimal: 1200x1200 for square posts, or 1080x1350 for portrait
+p2.save("/workspaces/CamOnAirFlow/charts/winter_snowfall_vs_avg.png", width=12, height=15, dpi=100, limitsize=False)
 # Plot 5: Total winter snowfall per month (not proportion), same layout as P3
 
 
 p5 = (
     ggplot(df_plot, aes('year_col', 'total_monthly_snowfall', fill='month_name'))
     + geom_bar(stat='identity', position='stack')
-    + facet_wrap('~facet_label', scales='free_x', ncol=4)
+    + facet_wrap('~facet_label', scales='free_x', ncol=3)  # 3 columns for better mobile readability
     + labs(
         title='Total Winter Snowfall per Month',
         subtitle='Each bar shows the total snowfall (cm) by month',
         x='Year', y='Total Snowfall (cm)'
     )
-    + theme_light(base_size=16)
+    + theme_light(base_size=14)  # Smaller base size for better fit
     + scale_x_continuous(breaks=df_plot_year_breaks)
     + theme(
         legend_position='right',
-        axis_text_x=element_text(rotation=45, hjust=1, size=10),
-        axis_title_x=element_text(size=14, weight='bold'),
-        plot_title=element_text(weight='bold', size=18),
-        plot_subtitle=element_text(size=12),
-        panel_spacing=0.05,
-        strip_text_x=element_text(color="black", weight="bold", size=12),
+        axis_text_x=element_text(rotation=45, hjust=1, size=9),  # Smaller axis text
+        axis_title_x=element_text(size=12, weight='bold'),  # Smaller axis title
+        plot_title=element_text(weight='bold', size=16),  # Smaller plot title
+        plot_subtitle=element_text(size=10),  # Smaller subtitle
+        panel_spacing=0.08,  # Slightly more space
+        strip_text_x=element_text(color="black", weight="bold", size=10),  # Smaller strip text
         strip_background=element_rect(fill="#e0e0e0", color="#888888"),
         panel_grid_major_x=element_line(color="#343434", size=0.5, linetype='dashed')  
     )
 )
 
-p5.save("/workspaces/CamOnAirFlow/charts/total_snowfall_per_month.png", width=32, height=28, dpi=150, limitsize=False)
+p5.save("/workspaces/CamOnAirFlow/charts/total_snowfall_per_month.png", width=12, height=15, dpi=100, limitsize=False)

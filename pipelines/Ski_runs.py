@@ -5,7 +5,6 @@ import logging
 from dotenv import load_dotenv
 from project_path import get_project_paths, set_dlt_env_vars
 from geopy.distance import geodesic
-from dlt.pipeline.exceptions import PipelineNeverRan
 from dlt.destinations.exceptions import DatabaseUndefinedRelation
 import numpy as np
 

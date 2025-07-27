@@ -4,10 +4,19 @@ from dotenv import load_dotenv
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo 
 import pandas as pd
+import pyarrow as pa
 import dlt
 from dlt.sources.helpers import requests
 from dlt.pipeline.exceptions import PipelineNeverRan
 from dlt.destinations.exceptions import DatabaseUndefinedRelation
+
+# Optional imports for performance optimization
+try:
+    import connectorx as cx
+    CONNECTORX_AVAILABLE = True
+except ImportError:
+    CONNECTORX_AVAILABLE = False
+    cx = None
 import os
 import time as tyme
 from project_path import get_project_paths, set_dlt_env_vars
@@ -53,9 +62,10 @@ class PipelineConfig:
     CHUNK_THRESHOLD: int = 50000
     CHUNK_SIZE: int = 10000
     MAX_RETRIES: int = 3
-    RETRY_DELAY: int = 2
+    RETRY_DELAY: int = 6
     API_TIMEOUT: int = 60
     ELEVATION_TIMEOUT: int = 10
+    USE_CONNECTORX: bool = True  # Enable ConnectorX for database operations
 
 # Create configuration instance
 config = PipelineConfig()
@@ -73,27 +83,27 @@ API_HOURLY_MEASURES = [
     "temperature_2m", "relative_humidity_2m", "dew_point_2m", "rain", "snowfall", 
     "snow_depth", "weather_code", "surface_pressure", "wind_speed_10m", 
     "wind_direction_10m", "soil_temperature_0_to_7cm", "soil_moisture_0_to_7cm", 
-    "is_day", "sunshine_duration", "snow_depth_water_equivalent", "cloud_cover_low", 
+    "is_day", "sunshine_duration", "cloud_cover_low", 
     "shortwave_radiation", "precipitation", "cloudcover", "wind_gusts_10m"
 ]
 
-start_dt = datetime(2021, 1, 15, 0, 0, 0, tzinfo=timezone.utc)
+start_dt = datetime(2019, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
 end_dt = datetime.now(timezone.utc) - timedelta(days=END_DT_LAG_DAYS)
 
 # Locations for comprehensive weather analysis - focused on snow/ice environments
 WEATHER_LOCATIONS = [
-    {"name": "Wye Creek", "country": "NZ", "lat": -45.087551, "lon": 168.810442, "timezone": "Pacific/Auckland"},
-    {"name": "Island Gully", "country": "NZ", "lat": -42.133076, "lon": 172.755765, "timezone": "Pacific/Auckland"},
-    {"name": "Milford Sound", "country": "NZ", "lat": -44.770974, "lon": 168.036796, "timezone": "Pacific/Auckland"},
-    {"name": "Bush Stream", "country": "NZ", "lat": -43.8487, "lon": 170.0439, "timezone": "Pacific/Auckland"},
-    {"name": "Shrimpton Ice", "country": "NZ", "lat": -44.222395, "lon": 169.307676, "timezone": "Pacific/Auckland"},
-    {"name": "SE Face Mount Ward", "country": "NZ", "lat": -43.867239, "lon": 169.833754, "timezone": "Pacific/Auckland"},
+    {"name": "Wye Creek", "country": "NZ", "lat": -45.087551, "lon": 168.810442, "timezone": "Pacific/Auckland", "venue_type": "ice_climbing"},
+    {"name": "Island Gully", "country": "NZ", "lat": -42.133076, "lon": 172.755765, "timezone": "Pacific/Auckland", "venue_type": "ice_climbing"},
+    {"name": "Milford Sound", "country": "NZ", "lat": -44.770974, "lon": 168.036796, "timezone": "Pacific/Auckland", "venue_type": "ice_climbing"},
+    {"name": "Bush Stream", "country": "NZ", "lat": -43.8487, "lon": 170.0439, "timezone": "Pacific/Auckland", "venue_type": "ice_climbing"},
+    {"name": "Shrimpton Ice", "country": "NZ", "lat": -44.222395, "lon": 169.307676, "timezone": "Pacific/Auckland", "venue_type": "ice_climbing"},
+    {"name": "SE Face Mount Ward", "country": "NZ", "lat": -43.867239, "lon": 169.833754, "timezone": "Pacific/Auckland", "venue_type": "ice_climbing"},
     # Add ski field locations for broader analysis
-    {"name": "Remarkables", "country": "NZ", "lat": -45.0661, "lon": 168.8196, "timezone": "Pacific/Auckland"},
-    {"name": "Cardrona", "country": "NZ", "lat": -44.8746, "lon": 168.9481, "timezone": "Pacific/Auckland"},
-    {"name": "Treble Cone", "country": "NZ", "lat": -44.6301, "lon": 168.8806, "timezone": "Pacific/Auckland"},
-    {"name": "Mount Hutt", "country": "NZ", "lat": -43.4707, "lon": 171.5306, "timezone": "Pacific/Auckland"},
-    {"name": "Coronet Peak", "country": "NZ", "lat": -44.9206, "lon": 168.7349, "timezone": "Pacific/Auckland"},
+    # {"name": "Remarkables", "country": "NZ", "lat": -45.0661, "lon": 168.8196, "timezone": "Pacific/Auckland", "venue_type": "ski_field"},
+    # {"name": "Cardrona", "country": "NZ", "lat": -44.8746, "lon": 168.9481, "timezone": "Pacific/Auckland", "venue_type": "ski_field"},
+    # {"name": "Treble Cone", "country": "NZ", "lat": -44.6301, "lon": 168.8806, "timezone": "Pacific/Auckland", "venue_type": "ski_field"},
+    # {"name": "Mount Hutt", "country": "NZ", "lat": -43.4707, "lon": 171.5306, "timezone": "Pacific/Auckland", "venue_type": "ski_field"},
+    # {"name": "Coronet Peak", "country": "NZ", "lat": -44.9206, "lon": 168.7349, "timezone": "Pacific/Auckland", "venue_type": "ski_field"},
 ]
 
 # Elevation and terrain analysis functions (adapted from Spectral_Analysis.py pattern)
@@ -249,6 +259,132 @@ def get_site_elevation_and_slope(lat: float, lon: float, epsilon: float = 0.0001
         raise DataProcessingError(f"Failed to calculate elevation and slope for {lat}, {lon}") from e
 
 
+def check_table_status_fast(logger: logging.Logger, pipeline: Any, schema: str, table: str) -> Tuple[bool, bool, bool]:
+    """
+    Check table status using ConnectorX for ultra-fast database queries (if available).
+
+    Args:
+        logger: Logger instance
+        pipeline: DLT pipeline instance
+        schema: Database schema name
+        table: Table name
+
+    Returns:
+        Tuple of (table_exists, table_empty, table_missing)
+    """
+    if CONNECTORX_AVAILABLE and config.USE_CONNECTORX and cx is not None:
+        try:
+            # Get connection string from DLT pipeline
+            destination_config = pipeline._get_destination_client_initial_config()
+
+            # Construct ConnectorX compatible connection string
+            # This example is for MotherDuck/DuckDB - adjust for your database
+            if "motherduck" in str(destination_config):
+                connection_string = f"duckdb:///{destination_config.get('database', 'local.db')}"
+
+                # Use ConnectorX for ultra-fast count query
+                count_query = f"SELECT COUNT(*) as row_count FROM {schema}.{table}"
+                df = cx.read_sql(connection_string, count_query)
+
+                row_count = df['row_count'].iloc[0]
+                table_empty = (row_count == 0)
+                logger.info(f"Table {schema}.{table} exists with {row_count} rows (ConnectorX)")
+                return True, table_empty, False
+
+        except Exception as e:
+            logger.warning(f"ConnectorX query failed, falling back to standard method: {e}")
+
+    # Fallback to standard method
+    return check_table_status(logger, pipeline.sql_client(), schema, table)
+
+
+def get_missing_datetime_ranges_fast(
+    logger: logging.Logger, 
+    locations: List[Dict[str, Any]], 
+    start_dt: datetime, 
+    end_dt: datetime, 
+    pipeline: Any
+) -> Tuple[Dict[str, List[Dict[str, Any]]], bool, bool, bool]:
+    """
+    Enhanced missing datetime analysis using ConnectorX for faster queries.
+    """
+    if CONNECTORX_AVAILABLE and config.USE_CONNECTORX and cx is not None:
+        try:
+            logger.info("Using ConnectorX for enhanced missing datetime analysis")
+            # For complex analytics queries, ConnectorX can be 10-100x faster than standard SQL
+
+            # Get connection details
+            destination_config = pipeline._get_destination_client_initial_config()
+            connection_string = f"duckdb:///{destination_config.get('database', 'local.db')}"
+
+            # Build optimized query for ConnectorX
+            location_names = [loc["name"] for loc in locations]
+            locations_list = "', '".join(location_names)
+
+            optimized_query = f"""
+            WITH location_stats AS (
+                SELECT 
+                    location,
+                    MIN(datetime) as first_record,
+                    MAX(datetime) as last_record,
+                    COUNT(*) as total_records
+                FROM weather_analysis.weather_hourly_enriched 
+                WHERE location IN ('{locations_list}')
+                GROUP BY location
+            ),
+            expected_hours AS (
+                SELECT 
+                    location,
+                    CAST((EXTRACT(EPOCH FROM TIMESTAMP '{end_dt.strftime("%Y-%m-%d %H:00:00")}') - 
+                          EXTRACT(EPOCH FROM TIMESTAMP '{start_dt.strftime("%Y-%m-%d %H:00:00")}')) / 3600 AS INTEGER) as expected_count
+                FROM (SELECT UNNEST(['{locations_list}']) as location)
+            )
+            SELECT 
+                ls.location,
+                ls.first_record,
+                ls.last_record,
+                ls.total_records,
+                eh.expected_count,
+                (eh.expected_count - ls.total_records) as missing_count,
+                CASE 
+                    WHEN ls.total_records = 0 THEN 'empty'
+                    WHEN ls.total_records < eh.expected_count * 0.95 THEN 'incomplete'
+                    ELSE 'complete'
+                END as data_status
+            FROM location_stats ls
+            FULL OUTER JOIN expected_hours eh ON ls.location = eh.location
+            """
+
+            # Execute with ConnectorX for maximum speed
+            result_df = cx.read_sql(connection_string, optimized_query)
+
+            # Process results
+            issues_by_location = {loc["name"]: [] for loc in locations}
+            table_exists = len(result_df) > 0
+            table_empty = result_df['total_records'].sum() == 0 if table_exists else True
+            table_missing = not table_exists
+
+            for _, row in result_df.iterrows():
+                location = row['location']
+                if row['data_status'] in ['empty', 'incomplete']:
+                    issues_by_location[location].append({
+                        "type": "missing_data",
+                        "start": start_dt,
+                        "end": end_dt,
+                        "count": int(row['missing_count']),
+                        "missing_columns": False
+                    })
+
+            logger.info(f"ConnectorX analysis completed for {len(result_df)} locations")
+            return issues_by_location, table_exists, table_empty, table_missing
+
+        except Exception as e:
+            logger.warning(f"ConnectorX enhanced analysis failed, falling back: {e}")
+
+    # Fallback to standard SQL method
+    return get_missing_datetime_ranges_sql(logger, locations, start_dt, end_dt, pipeline)
+
+
 def check_table_status(logger: logging.Logger, client: Any, schema: str, table: str) -> Tuple[bool, bool, bool]:
     """
     Check the existence and status of a database table.
@@ -283,8 +419,6 @@ def check_table_status(logger: logging.Logger, client: Any, schema: str, table: 
     except Exception as e:
         logger.error(f"Unexpected error checking {schema}.{table}: {e}")
         raise SchemaValidationError(f"Failed to check table status for {schema}.{table}") from e
-
-
 
 def get_missing_datetime_ranges_sql(
     logger: logging.Logger, 
@@ -536,7 +670,7 @@ def fetch_hourly_data(
         retry_delay = config.RETRY_DELAY
 
     # Validate inputs
-    required_location_fields = ["name", "lat", "lon", "timezone"]
+    required_location_fields = ["name", "lat", "lon", "timezone", "venue_type"]
     missing_fields = [field for field in required_location_fields if field not in location]
     if missing_fields:
         raise ValueError(f"Location missing required fields {missing_fields}: {location}")
@@ -618,6 +752,121 @@ def fetch_hourly_data(
     return None
 
 
+def process_weather_data_pyarrow(data: Dict[str, Any], location: Dict[str, Any]) -> pa.Table:
+    """
+    Process weather data using PyArrow for optimal performance.
+
+    Args:
+        data: API response data containing hourly weather measurements
+        location: Location metadata dictionary
+
+    Returns:
+        PyArrow Table with processed and enriched weather data
+
+    Raises:
+        DataProcessingError: If data processing fails
+    """
+    try:
+        h = data["hourly"]
+
+        # Create PyArrow arrays directly from API data for better performance
+        arrays = {}
+
+        # Parse timestamps - use pandas for timestamp parsing, then convert to PyArrow
+        timestamps = pd.to_datetime(h["time"])
+        datetime_array = pa.array(timestamps)
+        arrays["datetime"] = datetime_array
+
+        # Add all API columns efficiently
+        for col in API_HOURLY_MEASURES:
+            if col in h and h[col] is not None:
+                # Handle different data types appropriately
+                if col in ["weather_code", "is_day"]:  # Integer columns
+                    arrays[col] = pa.array(h[col], type=pa.int32())
+                else:  # Float columns (most weather data)
+                    arrays[col] = pa.array(h[col], type=pa.float32())
+
+        # Add metadata columns
+        num_rows = len(h["time"])
+        arrays["location"] = pa.array([location["name"]] * num_rows)
+        arrays["country"] = pa.array([location["country"]] * num_rows)
+        arrays["timezone"] = pa.array([location["timezone"]] * num_rows)
+        arrays["venue_type"] = pa.array([location["venue_type"]] * num_rows)
+
+        # Add date column efficiently
+        dates = timestamps.date
+        arrays["date"] = pa.array(dates)
+
+        # Add time-based enrichments using vectorized operations
+        arrays["hour"] = pa.array(timestamps.hour)
+        arrays["day_of_year"] = pa.array(timestamps.dayofyear)
+        arrays["month"] = pa.array(timestamps.month)
+        arrays["year"] = pa.array(timestamps.year)
+
+        # Southern hemisphere winter (June-September = months 6-9)
+        is_winter = timestamps.month.isin([6, 7, 8, 9])
+        arrays["is_winter"] = pa.array(is_winter)
+
+        # Temperature enrichments (if temperature data exists)
+        if "temperature_2m" in arrays:
+            temp_values = h["temperature_2m"]
+            arrays["temp_celsius"] = pa.array(temp_values, type=pa.float32())
+            arrays["temp_freezing"] = pa.array([t <= 0 if t is not None else None for t in temp_values])
+            arrays["temp_below_minus5"] = pa.array([t <= -5 if t is not None else None for t in temp_values])
+
+        # Precipitation enrichments
+        if "rain" in h and "snowfall" in h:
+            rain_vals = [r if r is not None else 0.0 for r in h["rain"]]
+            snow_vals = [s if s is not None else 0.0 for s in h["snowfall"]]
+
+            total_precip = [r + s for r, s in zip(rain_vals, snow_vals)]
+            arrays["total_precipitation"] = pa.array(total_precip, type=pa.float32())
+
+            # Create precipitation type categorization
+            precip_types = []
+            for r, s in zip(rain_vals, snow_vals):
+                if r > 0 and s > 0:
+                    precip_types.append("mixed")
+                elif r > 0:
+                    precip_types.append("rain")
+                elif s > 0:
+                    precip_types.append("snow")
+                else:
+                    precip_types.append("none")
+
+            arrays["precip_type"] = pa.array(precip_types)
+
+        # Wind component calculations (vectorized)
+        if "wind_speed_10m" in h and "wind_direction_10m" in h:
+            wind_speed = h["wind_speed_10m"]
+            wind_dir = h["wind_direction_10m"]
+
+            wind_u = []
+            wind_v = []
+
+            for speed, direction in zip(wind_speed, wind_dir):
+                if speed is not None and direction is not None:
+                    wind_dir_rad = direction * math.pi / 180
+                    wind_u.append(-speed * math.sin(wind_dir_rad))
+                    wind_v.append(-speed * math.cos(wind_dir_rad))
+                else:
+                    wind_u.append(None)
+                    wind_v.append(None)
+
+            arrays["wind_u"] = pa.array(wind_u, type=pa.float32())
+            arrays["wind_v"] = pa.array(wind_v, type=pa.float32())
+
+        # Create PyArrow table
+        table = pa.table(arrays)
+
+        logger.info(f"Processed {len(table)} records with {len(table.columns)} columns using PyArrow")
+        return table
+
+    except Exception as e:
+        logger.error(f"PyArrow processing failed: {e}")
+        raise DataProcessingError(f"Failed to process weather data with PyArrow: {e}") from e
+
+
 @dlt.source
 def comprehensive_weather_source(logger: logging.Logger):
     @dlt.resource(write_disposition="merge", name="weather_hourly_enriched", primary_key=["location", "datetime"])
@@ -629,10 +878,15 @@ def comprehensive_weather_source(logger: logging.Logger):
         })
         processed = 0
 
-        # Use SQL-based missing datetimes to offload computation to database
-        missing_ranges_by_loc, table_exists, table_empty, table_missing = get_missing_datetime_ranges_sql(
-            logger, WEATHER_LOCATIONS, start_dt, end_dt, dlt.current.pipeline()
-        )
+        # Use enhanced missing datetimes analysis for better performance
+        if CONNECTORX_AVAILABLE and config.USE_CONNECTORX and cx is not None:
+            missing_ranges_by_loc, table_exists, table_empty, table_missing = get_missing_datetime_ranges_fast(
+                logger, WEATHER_LOCATIONS, start_dt, end_dt, dlt.current.pipeline()
+            )
+        else:
+            missing_ranges_by_loc, table_exists, table_empty, table_missing = get_missing_datetime_ranges_sql(
+                logger, WEATHER_LOCATIONS, start_dt, end_dt, dlt.current.pipeline()
+            )
 
         locations_to_fetch = []
 
@@ -731,62 +985,27 @@ def comprehensive_weather_source(logger: logging.Logger):
                     logger.warning(f"No data returned for {location_name}, skipping.")
                     continue
 
-                # Process the data
-                h = data["hourly"]
-                df = pd.DataFrame({"datetime": pd.to_datetime(h["time"])})
+                # Process the data using PyArrow directly
+                processed_data = process_weather_data_pyarrow(data, location)
 
-                # Add all columns from the API response
-                for col in API_HOURLY_MEASURES:
-                    if col in h:
-                        df[col] = h.get(col)
+                # Convert to records for DLT processing
+                # PyArrow table - convert to pandas for chunking (DLT handles PyArrow tables)
+                df = processed_data.to_pandas()
 
-                # Add metadata
-                df["location"] = location_name
-                df["country"] = location["country"]
-                df["timezone"] = location["timezone"]
-                df["date"] = df["datetime"].dt.date  # Store date for easier filtering in DBT
-
-                # Add enrichment fields for spectral analysis
-                df["hour"] = df["datetime"].dt.hour
-                df["day_of_year"] = df["datetime"].dt.dayofyear
-                df["month"] = df["datetime"].dt.month
-                df["year"] = df["datetime"].dt.year
-                df["is_winter"] = df["month"].isin([6, 7, 8, 9])  # Southern hemisphere winter
-
-                # Add temperature derivatives
-                if "temperature_2m" in df.columns:
-                    df["temp_celsius"] = df["temperature_2m"]
-                    df["temp_freezing"] = (df["temperature_2m"] <= 0).astype(int)
-                    df["temp_below_minus5"] = (df["temperature_2m"] <= -5).astype(int)
-
-                # Add precipitation derivatives
-                if "rain" in df.columns and "snowfall" in df.columns:
-                    df["total_precipitation"] = df["rain"].fillna(0) + df["snowfall"].fillna(0)
-                    df["precip_type"] = "none"
-                    df.loc[(df["rain"] > 0) & (df["snowfall"] == 0), "precip_type"] = "rain"
-                    df.loc[(df["snowfall"] > 0) & (df["rain"] == 0), "precip_type"] = "snow"
-                    df.loc[(df["rain"] > 0) & (df["snowfall"] > 0), "precip_type"] = "mixed"
-
-                # Add wind derivatives
-                if "wind_speed_10m" in df.columns and "wind_direction_10m" in df.columns:
-                    # Convert wind to u/v components for analysis
-                    wind_dir_rad = df["wind_direction_10m"] * math.pi / 180
-                    df["wind_u"] = -df["wind_speed_10m"] * wind_dir_rad.apply(math.sin)
-                    df["wind_v"] = -df["wind_speed_10m"] * wind_dir_rad.apply(math.cos)
-
-                logger.info(f"Fetched {len(df)} records for {location_name} with {len(df.columns)} fields including enrichments")
+                logger.info(f"Processed {len(df)} records for {location_name} with {len(df.columns)} fields using PyArrow")
 
                 if df.empty:
                     logger.info(f"No new data to process for {location_name}, skipping.")
                     continue
 
-                CHUNK_THRESHOLD = 50000
-                chunk_size = 10000 if len(df) > CHUNK_THRESHOLD else len(df)
+                # Efficient chunking strategy
+                CHUNK_THRESHOLD = config.CHUNK_THRESHOLD
+                chunk_size = config.CHUNK_SIZE if len(df) > CHUNK_THRESHOLD else len(df)
 
                 for i in range(0, len(df), chunk_size):
                     chunk = df.iloc[i:i+chunk_size].to_dict("records")
-                    for j in range(0, len(chunk), BATCH_SIZE):
-                        yield chunk[j:j+BATCH_SIZE]
+                    for j in range(0, len(chunk), config.BATCH_SIZE):
+                        yield chunk[j:j+config.BATCH_SIZE]
 
                 processed += 1
                 logger.info(f"Processed and yielded raw data for {location_name}.")
@@ -858,7 +1077,7 @@ def location_metadata_resource(logger: logging.Logger):
             slope = state["elevation_data"][location_name]["slope"]
 
             # Validate required location fields
-            required_fields = ["name", "country", "lat", "lon", "timezone"]
+            required_fields = ["name", "country", "lat", "lon", "timezone", "venue_type"]
             missing_fields = [field for field in required_fields if field not in loc]
             if missing_fields:
                 logger.error(f"Location {location_name} missing required fields: {missing_fields}")
@@ -871,6 +1090,7 @@ def location_metadata_resource(logger: logging.Logger):
                 "lat": float(loc["lat"]),
                 "lon": float(loc["lon"]),
                 "timezone": loc["timezone"],
+                "venue_type": loc["venue_type"],
                 "elevation": elevation,
                 "slope": slope
             }
@@ -907,6 +1127,14 @@ if __name__ == "__main__":
             pipelines_dir=str(DLT_PIPELINE_DIR),
             dev_mode=False
         )
+
+        # Configure DLT for optimal performance with PyArrow
+        logger.info("Using PyArrow optimizations for data processing")
+
+        # Set table format for better performance (if using MotherDuck/DuckDB)
+        destination_config = {
+            "table_format": "delta"  # Always use delta format with PyArrow
+        }
 
         # Check existing pipeline state
         try:

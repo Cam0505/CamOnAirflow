@@ -1,6 +1,6 @@
 {
   "version": 4,
-  "version_hash": "UsbKxO79jPjXsCqWYCuOuWPrQYKF3nXdHEi3oUi7lOI=",
+  "version_hash": "UAZtS8Fe8Mgvbebt+96i7mtyCdscUnkMrBVHcnHCD50=",
   "engine_version": 11,
   "name": "comprehensive_weather_source",
   "tables": {
@@ -90,7 +90,7 @@
         },
         "relative_humidity_2m": {
           "name": "relative_humidity_2m",
-          "data_type": "bigint",
+          "data_type": "double",
           "nullable": true
         },
         "dew_point_2m": {
@@ -130,7 +130,7 @@
         },
         "wind_direction_10m": {
           "name": "wind_direction_10m",
-          "data_type": "bigint",
+          "data_type": "double",
           "nullable": true
         },
         "soil_temperature_0_to_7cm": {
@@ -153,16 +153,9 @@
           "data_type": "double",
           "nullable": true
         },
-        "snow_depth_water_equivalent": {
-          "name": "snow_depth_water_equivalent",
-          "nullable": true,
-          "x-normalizer": {
-            "seen-null-first": true
-          }
-        },
         "cloud_cover_low": {
           "name": "cloud_cover_low",
-          "data_type": "bigint",
+          "data_type": "double",
           "nullable": true
         },
         "shortwave_radiation": {
@@ -177,7 +170,7 @@
         },
         "cloudcover": {
           "name": "cloudcover",
-          "data_type": "bigint",
+          "data_type": "double",
           "nullable": true
         },
         "wind_gusts_10m": {
@@ -198,6 +191,11 @@
         },
         "timezone": {
           "name": "timezone",
+          "data_type": "text",
+          "nullable": true
+        },
+        "venue_type": {
+          "name": "venue_type",
           "data_type": "text",
           "nullable": true
         },
@@ -238,12 +236,12 @@
         },
         "temp_freezing": {
           "name": "temp_freezing",
-          "data_type": "bigint",
+          "data_type": "bool",
           "nullable": true
         },
         "temp_below_minus5": {
           "name": "temp_below_minus5",
-          "data_type": "bigint",
+          "data_type": "bool",
           "nullable": true
         },
         "total_precipitation": {
@@ -367,6 +365,11 @@
           "data_type": "text",
           "nullable": true
         },
+        "venue_type": {
+          "name": "venue_type",
+          "data_type": "text",
+          "nullable": true
+        },
         "elevation": {
           "name": "elevation",
           "data_type": "double",
@@ -443,8 +446,8 @@
     }
   },
   "previous_hashes": [
-    "z924orwEOiqUb7KCSoBZdzR+mlrdLU+wYa2TZxj/ypI=",
-    "3l9NMB0x5nguR/MVGJ874GHgthBN01pOf8xuDmx0ncU=",
+    "GftURLg927PL8eeWaYrMh+8hJbt3NT14teuSYJeUD/I=",
+    "kgiNthdCM5uXWT5ZKrJ8NTUt3/m3Nvhg15gExEWPS4w=",
     "8ekAdrbzr9d3tHfDn5BWhL7n0Yvh0qkH0CUD/O/t2KI=",
     "a6qwpEwREEr3iiqA2IfIyXnXjnXV95LvndIL+Fbqgvg="
   ]

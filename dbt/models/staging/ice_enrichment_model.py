@@ -20,6 +20,27 @@ def freeze_thaw_factor(cycles):
         return max(0.8, 1 - 0.2 * ((cycles - 4) / 4))  # penalty
 
 def model(dbt: Any, session: Any):
+    # DISABLED: This model is temporarily disabled due to incorrect logic
+    # TODO: Fix the data sources and column references before re-enabling
+
+    # Return empty DataFrame with expected schema to prevent DBT errors
+    result = pd.DataFrame(columns=[
+        'location', 'country', 'date', 'timezone',
+        'hours_count', 'mean_temperature', 'total_precip', 'total_snow',
+        'mean_cloud', 'mean_wind', 'mean_dewpoint', 'mean_pressure',
+        'mean_rh', 'mean_shortwave', 'sunshine_hours', 'daylight_hours',
+        'freeze_thaw_cycles', 'hours_below_freeze', 'hours_above_degrade',
+        'is_forming_day', 'is_ice_forming', 'forming_score',
+        'ice_has_formed', 'is_ice_degrading', 'ice_quality'
+    ])
+    return result
+
+
+# ORIGINAL LOGIC PRESERVED BELOW (commented out for future reference):
+"""
+Original ice enrichment model logic - DISABLED
+
+def model(dbt: Any, session: Any):
     # Get daily weather stats
 
     dbt.config(
@@ -161,3 +182,4 @@ def model(dbt: Any, session: Any):
             'ice_has_formed', 'is_ice_degrading', 'ice_quality'
         ])
     return result
+"""

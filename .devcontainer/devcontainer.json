@@ -38,6 +38,7 @@
         "ms-python.vscode-pylance",
         "dbt-labs.dbt",
         "github.vscode-github-actions",
+        "GitHub.copilot",
         "ms-azuretools.vscode-docker"
       ]
     },

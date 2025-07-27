@@ -6,6 +6,7 @@ sources:
     schema: skifields
 
     tables:
+      - name: ski_field_snowfall_hourly
       - name: ski_field_snowfall
         data_tests:
           - dbt_utils.unique_combination_of_columns:

@@ -12,16 +12,17 @@ Basic analysis of snow melt patterns:
 
 WITH daily_snow AS (
     SELECT 
-        CAST(datetime AS DATE) as date,
+        date,
         location,
-        EXTRACT(YEAR FROM datetime) as year,
-        AVG(temperature) as temperature_mean,
-        AVG(snow_depth) as avg_snow_depth
-    FROM {{ source('snowfall', 'ski_field_snowfall_hourly') }}
-    WHERE snow_depth IS NOT NULL 
-      AND snow_depth > 0
-      AND EXTRACT(MONTH FROM datetime) BETWEEN 6 AND 11  -- Winter months (Southern Hemisphere)
-    GROUP BY CAST(datetime AS DATE), location, EXTRACT(YEAR FROM datetime)
+        country,
+        EXTRACT(YEAR FROM date) as year,
+        AVG(temperature_mean) as temperature_mean,
+        AVG(avg_snow_depth) as avg_snow_depth
+    FROM {{ source('snowfall', 'ski_field_snowfall') }}
+    WHERE avg_snow_depth IS NOT NULL 
+      AND avg_snow_depth > 0
+      AND EXTRACT(MONTH FROM date) BETWEEN 6 AND 11  -- Winter months (Southern Hemisphere)
+    GROUP BY date, location, country, EXTRACT(YEAR FROM date)
 ),
 
 snow_with_changes AS (
@@ -55,19 +56,20 @@ snow_with_changes AS (
 annual_snowfall_stats AS (
     SELECT 
         location,
-        EXTRACT(YEAR FROM datetime) as year,
+        country,
+        EXTRACT(YEAR FROM date) as year,
         SUM(snowfall) as total_annual_snowfall,
-        AVG(temperature) as avg_temperature
-    FROM {{ source('snowfall', 'ski_field_snowfall_hourly') }}
-    where EXTRACT(MONTH FROM datetime) BETWEEN 6 AND 11
-    GROUP BY location, EXTRACT(YEAR FROM datetime) 
+        AVG(temperature_mean) as avg_temperature
+    FROM {{ source('snowfall', 'ski_field_snowfall') }}
+    where EXTRACT(MONTH FROM date) BETWEEN 6 AND 11
+    GROUP BY location, country, EXTRACT(YEAR FROM date) 
 ),
 
 annual_decay_stats AS (
     SELECT 
         location,
         year,
-        
+        country,
         -- Count metrics
         COUNT(*) as total_snow_days,
         SUM(is_decay_day) as decay_days,
@@ -79,7 +81,7 @@ annual_decay_stats AS (
         
     FROM snow_with_changes
     WHERE daily_snow_change IS NOT NULL  -- Exclude first day per location
-    GROUP BY location, year
+    GROUP BY location, year, country
     HAVING SUM(is_decay_day) >= 10  -- At least 10 decay days per year for reliable stats
 ),
 
@@ -109,6 +111,7 @@ baseline_stats AS (
 SELECT 
     ads.location,
     ads.year,
+    ads.country,
     ads.total_snow_days,
     ads.decay_days,
     

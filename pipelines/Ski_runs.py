@@ -72,19 +72,29 @@ def smooth_steep_gradients(elevs, dists, threshold=0.25, window=5):
     smoothed_grads = np.gradient(smoothed, dists, edge_order=2)
     return smoothed.tolist(), smoothed_grads.tolist()
 
+def project_run_to_xy(coords):
+    base = coords[0]
+    x_vals = []
+    y_vals = []
+    for lat, lon in coords:
+        x = geodesic((base[0], base[1]), (base[0], lon)).meters
+        if lon < base[1]:
+            x *= -1
+        y = geodesic((base[0], base[1]), (lat, base[1])).meters
+        if lat < base[0]:
+            y *= -1
+        x_vals.append(x)
+        y_vals.append(y)
+    return x_vals, y_vals
+
 def trim_to_downhill(coords, elevations):
-    """
-    Returns the coords and elevations from the first max to the last min (inclusive).
-    """
     if len(elevations) < 2:
         return coords, elevations
     max_elev = max(elevations)
     min_elev = min(elevations)
     start_idx = next(i for i, e in enumerate(elevations) if e == max_elev)
-    # find last min_elev index, search from end
     end_idx = len(elevations) - 1 - next(i for i, e in enumerate(reversed(elevations)) if e == min_elev)
     if end_idx < start_idx:
-        # Bad geometry, skip trimming
         return coords, elevations
     return coords[start_idx:end_idx+1], elevations[start_idx:end_idx+1]
 
@@ -92,7 +102,6 @@ def trim_to_downhill(coords, elevations):
 def ski_source(known_locations: set):
     ski_runs_data = []
     for field in SKI_FIELDS:
-        # Skip fields that are already in the database
         if field["name"] in known_locations:
             logger.info(f"Skipping {field['name']} - already in database")
             continue
@@ -146,11 +155,9 @@ def ski_source(known_locations: set):
             if len(coords) < 2:
                 continue
             elevations = get_elevations_batch(coords)
-            # --- Prune to downhill segment before distance calculation ---
             coords, elevations = trim_to_downhill(coords, elevations)
             if len(coords) < 2:
                 continue
-            # Now recalculate cumulative distances
             cum_distances = [0.0]
             for i in range(1, len(coords)):
                 cum_distances.append(
@@ -163,8 +170,9 @@ def ski_source(known_locations: set):
             else:
                 elevations_smooth = elevations
                 gradients_smooth = [0.0] * len(elevations)
-            for idx, ((lat, lon), dist, elev, elev_sm, grad_sm) in enumerate(
-                zip(coords, cum_distances, elevations, elevations_smooth, gradients_smooth)
+            x_m, y_m = project_run_to_xy(coords)
+            for idx, ((lat, lon), dist, elev, elev_sm, grad_sm, x, y) in enumerate(
+                zip(coords, cum_distances, elevations, elevations_smooth, gradients_smooth, x_m, y_m)
             ):
                 yield {
                     "osm_id": run["osm_id"],
@@ -175,9 +183,12 @@ def ski_source(known_locations: set):
                     "lat": lat,
                     "lon": lon,
                     "distance_along_run_m": dist,
+                    "x_from_start_m": dist - cum_distances[0],
                     "elevation_m": elev,
-                    "elevation_smoothed_m": elev_sm,
-                    "gradient_smoothed": grad_sm,
+                    "elevation_smoothed_m": float(elev_sm) if elev_sm is not None else None,
+                    "gradient_smoothed": float(grad_sm) if grad_sm is not None else None,
+                    "x_m": float(x),
+                    "y_m": float(y)
                 }
 
     return [ski_runs, ski_run_points]
@@ -194,23 +205,19 @@ def run_pipeline(logger):
     dataset = None
     known_locations = set()
 
-    # Try different table names that might exist
-    table_name = "ski_runs"
-
     try:
-        logger.info(f"Trying to access table: {table_name}")
-        dataset = pipeline.dataset()[table_name].df()
+        logger.info("Trying to access table: ski_runs")
+        dataset = pipeline.dataset()["ski_runs"].df()
         if dataset is not None and not dataset.empty:
             known_locations = set(dataset["resort"].unique())
             logger.info(f"Found {len(known_locations)} known locations: {known_locations}")
     except (ValueError, KeyError, DatabaseUndefinedRelation) as e:
-        logger.info(f"Table {table_name} not found: {e}")
+        logger.info(f"Table ski_runs not found: {e}")
     except Exception as e:
-        logger.warning(f"Error accessing table {table_name}: {e}")
+        logger.warning(f"Error accessing table ski_runs: {e}")
 
     if not known_locations:
         logger.info("No existing ski runs data found, treating as first run")
-
 
     try:
         pipeline.run(ski_source(known_locations))

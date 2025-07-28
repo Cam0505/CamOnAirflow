@@ -13,26 +13,26 @@ def get_project_paths():
         Path(__file__).parent,              # Directory of this file
         Path.cwd()                          # Current working directory
     ]
-    
+
     # Add parent directories of current directory (up to 3 levels)
     cwd = Path.cwd()
     for i in range(1, 4):  # Check up to 3 parent directories
         if i <= len(cwd.parents):
             search_paths.append(cwd.parents[i-1])
-    
+
     # Remove None entries
     search_paths = [p for p in search_paths if p is not None]
-    
+
     # Debug info
     # print(f"Search paths: {[str(p) for p in search_paths]}")
-    
+
     for path in search_paths:
         try:
             # print(f"Checking {path}")
             # contents = list(path.iterdir()) if path.exists() else []
             # dir_names = [d.name for d in contents if d.is_dir()]
             # print(f"  Contents: {dir_names}")
-            
+
             # Check if this path contains dbt and pipelines directories
             if (path / "dbt").exists() and (path / "pipelines").exists():
                 project_root = path.resolve()
@@ -52,6 +52,7 @@ def get_project_paths():
 
     paths = {
         "PROJECT_ROOT": project_root,
+        "CHARTS_DIR": project_root / "charts",
         "DBT_DIR": project_root / "dbt",
         "REQUIREMENTS_PATH": project_root / "requirements.txt",
         "DBT_TARGETS_DIR": project_root / "dbt" / "target",

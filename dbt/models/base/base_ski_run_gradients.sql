@@ -5,7 +5,7 @@ WITH points AS (
         p.osm_id
         , p.resort
         , p.distance_along_run_m
-        , p.elevation_m
+        , p.elevation_smoothed_m
     FROM {{ source('ski_runs', 'ski_run_points') }} AS p
     INNER JOIN {{ ref('base_filtered_ski_runs') }} AS r ON p.osm_id = r.osm_id
 )
@@ -25,8 +25,8 @@ WITH points AS (
         , p.resort
         , fp.start_dist
         , fp.end_dist
-        , FIRST_VALUE(p.elevation_m) OVER (PARTITION BY p.osm_id ORDER BY p.distance_along_run_m ASC) AS start_elev
-        , LAST_VALUE(p.elevation_m) OVER (
+        , FIRST_VALUE(p.elevation_smoothed_m) OVER (PARTITION BY p.osm_id ORDER BY p.distance_along_run_m ASC) AS start_elev
+        , LAST_VALUE(p.elevation_smoothed_m) OVER (
             PARTITION BY p.osm_id ORDER BY p.distance_along_run_m ASC
             ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
         ) AS end_elev

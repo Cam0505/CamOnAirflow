@@ -18,3 +18,6 @@ geopy==2.4.1
 ConnectorX==0.4.3
 pyarrow==21.0.0
 polars==1.31.0
+geopandas==1.1.1
+contextily==1.6.2
+shapely==2.1.1

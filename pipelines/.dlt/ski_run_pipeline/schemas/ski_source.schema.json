@@ -1,6 +1,6 @@
 {
-  "version": 2,
-  "version_hash": "LFxi6a3WE56k5NPvBUWUsVhgolxbBFQjD9hJyKEX6No=",
+  "version": 3,
+  "version_hash": "HUEoMpoMb1zuIPjeoRq3WpJK/87P+sM92/BpXJsxJT4=",
   "engine_version": 11,
   "name": "ski_source",
   "tables": {
@@ -197,6 +197,16 @@
           "data_type": "double",
           "nullable": true
         },
+        "x_m": {
+          "name": "x_m",
+          "data_type": "double",
+          "nullable": true
+        },
+        "y_m": {
+          "name": "y_m",
+          "data_type": "double",
+          "nullable": true
+        },
         "_dlt_load_id": {
           "name": "_dlt_load_id",
           "data_type": "text",
@@ -208,6 +218,11 @@
           "nullable": false,
           "unique": true,
           "row_key": true
+        },
+        "x_from_start_m": {
+          "name": "x_from_start_m",
+          "data_type": "double",
+          "nullable": true
         }
       },
       "write_disposition": "merge",
@@ -316,6 +331,7 @@
     }
   },
   "previous_hashes": [
+    "YBC2XV4deDz4VAg2YmpueQH7+EiIKrV64AWY48aTj9g=",
     "qBStS/XXXOJa9JHiCH+xqpXz3ERz/yV7qXpOrHzly5o=",
     "ohPEX6EbtKAAdD/q+Gx6QGsWHX4nChKgmUR5+JidNC0="
   ]

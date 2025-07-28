@@ -15,7 +15,7 @@ import pandas as pd
 from plotnine import (
     ggplot, aes, geom_hline, geom_line, geom_point, facet_grid, facet_wrap,
     theme_minimal, theme, element_text, element_line, labs,
-    scale_x_continuous, scale_color_manual, scale_color_brewer, geom_vline
+    scale_x_continuous, scale_color_brewer
 )
 import duckdb
 from pathlib import Path
@@ -116,7 +116,6 @@ def create_multi_index_mean_comparison_plot(df):
 
     # Prepare to return a dict of plots per location
     plots = {}
-    color_palette = ['#D32F2F', '#1976D2', '#388E3C', '#FBC02D', '#7B1FA2', '#0288D1']
 
     for location in melt_df['location'].unique():
         loc_df = melt_df[melt_df['location'] == location].copy()

@@ -3,7 +3,7 @@ version: 2
 sources:
   - name: ski_runs
     database: camonairflow
-    schema: main
+    schema: ski_runs
 
     tables:
       - name: ski_runs

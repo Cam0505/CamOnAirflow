@@ -1,3 +1,4 @@
+
 import dlt
 from dlt.sources.helpers import requests
 import os
@@ -29,7 +30,16 @@ SKI_FIELDS = [
     {"name": "Mount Cheeseman", "country": "NZ", "lat": -43.1573, "lon": 171.6683, "radius_m": 1500},
     {"name": "Temple Basin", "country": "NZ", "lat": -42.9087, "lon": 171.5766, "radius_m": 3000},
     {"name": "Porters", "country": "NZ", "lat": -43.2703, "lon": 171.6294, "radius_m": 3000},
-    {"name": "RoundHill", "country": "NZ", "lat": -43.8263, "lon": 170.6617, "radius_m": 3000}
+    {"name": "RoundHill", "country": "NZ", "lat": -43.8263, "lon": 170.6617, "radius_m": 3000},
+    # Australian fields 
+    {"name": "Charlotte Pass", "country": "AU", "lat": -36.432, "lon": 148.328, "radius_m": 3000},
+    {"name": "Falls Creek", "country": "AU", "lat": -36.882, "lon": 147.278, "radius_m": 3000},
+    {"name": "Mount Baw Baw", "country": "AU", "lat": -37.837, "lon": 146.273, "radius_m": 3000},
+    {"name": "Mount Buller", "country": "AU", "lat": -37.146, "lon": 146.429, "radius_m": 3000},
+    {"name": "Mount Hotham", "country": "AU", "lat": -36.976, "lon": 147.133, "radius_m": 3000},
+    {"name": "Perisher", "country": "AU", "lat": -36.405, "lon": 148.411, "radius_m": 3000},
+    {"name": "Selwyn Snow Resort", "country": "AU", "lat": -35.938, "lon": 148.438, "radius_m": 3000},
+    {"name": "Thredbo Resort", "country": "AU", "lat": -36.504, "lon": 148.303, "radius_m": 3000},
 ]
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -72,21 +82,6 @@ def smooth_steep_gradients(elevs, dists, threshold=0.25, window=5):
     smoothed_grads = np.gradient(smoothed, dists, edge_order=2)
     return smoothed.tolist(), smoothed_grads.tolist()
 
-def project_run_to_xy(coords):
-    base = coords[0]
-    x_vals = []
-    y_vals = []
-    for lat, lon in coords:
-        x = geodesic((base[0], base[1]), (base[0], lon)).meters
-        if lon < base[1]:
-            x *= -1
-        y = geodesic((base[0], base[1]), (lat, base[1])).meters
-        if lat < base[0]:
-            y *= -1
-        x_vals.append(x)
-        y_vals.append(y)
-    return x_vals, y_vals
-
 def trim_to_downhill(coords, elevations):
     if len(elevations) < 2:
         return coords, elevations
@@ -106,11 +101,26 @@ def ski_source(known_locations: set):
             logger.info(f"Skipping {field['name']} - already in database")
             continue
 
-        query = f"""
-        [out:json][timeout:60];
-        way["piste:type"](around:{field['radius_m']},{field["lat"]},{field["lon"]});
-        out tags geom;
-        """
+        if field["country"] == "AU":
+            # Query by ski field name for Australia
+            query = f"""
+            [out:json][timeout:60];
+            (
+              node["name"="{field['name']}"];
+              way["name"="{field['name']}"];
+              relation["name"="{field['name']}"];
+            );
+            way["piste:type"](around:{field['radius_m']},{field["lat"]},{field["lon"]});
+            out tags geom;
+            """
+        else:
+            # NZ and others: query by radius
+            query = f"""
+            [out:json][timeout:60];
+            way["piste:type"](around:{field['radius_m']},{field["lat"]},{field["lon"]});
+            out tags geom;
+            """
+
         logger.info(f"Fetching ski runs near {field['name']} ...")
         response = requests.post(BASE_URL, data={"data": query}, timeout=90)
         elements = response.json().get("elements", [])
@@ -170,9 +180,9 @@ def ski_source(known_locations: set):
             else:
                 elevations_smooth = elevations
                 gradients_smooth = [0.0] * len(elevations)
-            x_m, y_m = project_run_to_xy(coords)
-            for idx, ((lat, lon), dist, elev, elev_sm, grad_sm, x, y) in enumerate(
-                zip(coords, cum_distances, elevations, elevations_smooth, gradients_smooth, x_m, y_m)
+
+            for idx, ((lat, lon), dist, elev, elev_sm, grad_sm) in enumerate(
+                zip(coords, cum_distances, elevations, elevations_smooth, gradients_smooth)
             ):
                 yield {
                     "osm_id": run["osm_id"],
@@ -183,12 +193,9 @@ def ski_source(known_locations: set):
                     "lat": lat,
                     "lon": lon,
                     "distance_along_run_m": dist,
-                    "x_from_start_m": dist - cum_distances[0],
                     "elevation_m": elev,
                     "elevation_smoothed_m": float(elev_sm) if elev_sm is not None else None,
-                    "gradient_smoothed": float(grad_sm) if grad_sm is not None else None,
-                    "x_m": float(x),
-                    "y_m": float(y)
+                    "gradient_smoothed": float(grad_sm) if grad_sm is not None else None
                 }
 
     return [ski_runs, ski_run_points]
@@ -198,7 +205,7 @@ def run_pipeline(logger):
     pipeline = dlt.pipeline(
         pipeline_name="ski_run_pipeline",
         destination=os.getenv("DLT_DESTINATION"),
-        dataset_name="main",
+        dataset_name="ski_runs",
         pipelines_dir=str(DLT_PIPELINE_DIR),
         dev_mode=False
     )

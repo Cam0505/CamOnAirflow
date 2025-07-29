@@ -1,10 +1,10 @@
+import os
+import numpy as np
+import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter
 import duckdb
-import os
 from dotenv import load_dotenv
 from project_path import get_project_paths, set_dlt_env_vars
-import matplotlib.pyplot as plt
-import numpy as np
 
 # --- ENV, DuckDB connection ---
 paths = get_project_paths()
@@ -15,47 +15,24 @@ if not database_string:
     raise ValueError("Missing MD in environment.")
 con = duckdb.connect(database_string)
 
-RESORTS = ['Remarkables', 'Mount Hutt', 'Cardrona', 'Treble Cone', 'Coronet Peak',
-           'Temple Basin', 'Mount Cheeseman', 'Mount Dobson', 'Mount Olympus', 
-           'Porters', 'RoundHill', 'Turoa']
+# --- Separate resorts ---
+NZ_RESORTS = [
+    'Remarkables', 'Mount Hutt', 'Cardrona', 'Treble Cone', 'Coronet Peak',
+    'Temple Basin', 'Mount Cheeseman', 'Mount Dobson', 'Mount Olympus',
+    'Porters', 'RoundHill', 'Turoa'
+]
 
-# --- Load from correct point table ---
-points = con.execute(f"""
-    SELECT
-        osm_id,
-        resort,
-        distance_along_run_m,
-        elevation_m
-    FROM camonairflow.main.ski_run_points
-    WHERE resort in {tuple(RESORTS)}
-""").df()
+AU_RESORTS = [
+    'Charlotte Pass', 'Falls Creek', 'Mount Baw Baw', 'Mount Buller',
+    'Mount Hotham', 'Perisher', 'Thredbo Resort'
+]
 
-runs = con.execute(f"""
-    SELECT
-        osm_id,
-        resort,
-        run_name,
-        case when difficulty = 'extreme' then 'intermediate' 
-            when difficulty = 'expert' then 'advanced'
-            else difficulty end as difficulty,
-        run_length_m
-    FROM camonairflow.public_base.base_filtered_ski_runs
-    WHERE resort in {tuple(RESORTS)}
-""").df()
+REGIONS = {
+    "New Zealand": NZ_RESORTS,
+    "Australia": AU_RESORTS
+}
 
-gradient_stats = con.execute(f"""
-    SELECT
-        resort,
-        case when difficulty = 'extreme' then 'intermediate' 
-            when difficulty = 'expert' then 'advanced'
-            else difficulty end as difficulty,
-        run_count,
-        mean_gradient
-    FROM camonairflow.public_base.base_ski_gradient_stats
-    WHERE resort in {tuple(RESORTS)}
-""").df()
-
-# Color palette
+# --- Difficulty color palette ---
 difficulty_colors = {
     "novice": "#4daf4a",
     "easy": "#377eb8",
@@ -65,12 +42,8 @@ difficulty_colors = {
     None: "#999999",
     "nan": "#999999"
 }
-all_diffs = runs['difficulty'].dropna().unique()
-for diff in all_diffs:
-    if diff not in difficulty_colors:
-        difficulty_colors[diff] = "#444444"
 
-# Smoothing function
+# --- Smoothing function ---
 def smooth_elevation(y, window=9, poly=2):
     n = len(y)
     if n < window:
@@ -80,74 +53,108 @@ def smooth_elevation(y, window=9, poly=2):
         return y
     return savgol_filter(y, window, poly)
 
-max_distance = points['distance_along_run_m'].max() * 1.05
 
-ncols = 3
-nrows = 4  # 4x3 grid for 12 resorts
-fig, axes = plt.subplots(nrows, ncols, figsize=(20, 32), sharey=True)
-axes = axes.flatten()
+# --- Plotting loop ---
+for region, resorts in REGIONS.items():
+    # Load Data
+    points = con.execute(f"""
+        SELECT osm_id, resort, distance_along_run_m, elevation_m
+        FROM camonairflow.ski_runs.ski_run_points
+        WHERE resort in {tuple(resorts)}
+    """).df()
 
-# Find min/max elevation for nice axis consistency
-min_elev = int(np.floor(points['elevation_m'].min() / 100.0) * 100)
-max_elev = int(np.ceil(points['elevation_m'].max() / 100.0) * 100)
+    runs = con.execute(f"""
+        SELECT osm_id, resort, run_name, country_code,
+            CASE WHEN difficulty = 'extreme' THEN 'intermediate'
+                 WHEN difficulty = 'expert' THEN 'advanced'
+                 ELSE difficulty END AS difficulty,
+            run_length_m
+        FROM camonairflow.public_base.base_filtered_ski_runs
+        WHERE resort in {tuple(resorts)}
+    """).df()
 
-for ax, resort in zip(axes, RESORTS):
-    runs_this = runs[runs['resort'] == resort]
-    points_this = points[points['resort'] == resort]
-    for _, run in runs_this.iterrows():
-        pts = points_this[points_this['osm_id'] == run['osm_id']].sort_values('distance_along_run_m')
-        # Ensure downhill
-        if len(pts) > 1 and pts.iloc[0]['elevation_m'] < pts.iloc[-1]['elevation_m']:
-            pts = pts.iloc[::-1]
-        y_smoothed = smooth_elevation(pts['elevation_m'].values)
-        color = difficulty_colors.get(run['difficulty'], "#444444")
-        ax.plot(pts['distance_along_run_m'], y_smoothed,
-                color=color, alpha=0.8, linewidth=2)
-    # Label the longest run at its end
-    if not runs_this.empty:
-        longest = runs_this.loc[runs_this['run_length_m'].idxmax()]
-        pts_long = points_this[points_this['osm_id'] == longest['osm_id']].sort_values('distance_along_run_m')
-        ax.text(pts_long['distance_along_run_m'].iloc[-1], pts_long['elevation_m'].iloc[-1],
-                longest['run_name'], fontsize=11, fontweight='bold', color='black', ha='right', va='bottom')
-    ax.set_title(resort, fontsize=20, fontweight='bold')
-    ax.set_xlabel("Run Distance Along Slope (meters)", fontsize=14)
-    ax.set_ylabel("Elevation (m)", fontsize=14)
-    ax.grid(True, linestyle='--', alpha=0.4)
-    ax.set_xlim(0, max_distance)
-    ax.set_ylim(min_elev, max_elev)
-    # y-axis ticks and labels now appear on every subplot
+    gradient_stats = con.execute(f"""
+        SELECT resort,
+            CASE WHEN difficulty = 'extreme' THEN 'intermediate'
+                 WHEN difficulty = 'expert' THEN 'advanced'
+                 ELSE difficulty END AS difficulty,
+            run_count, mean_gradient
+        FROM camonairflow.public_base.base_ski_gradient_stats
+        WHERE resort in {tuple(resorts)}
+    """).df()
 
-    # --- Avg Gradient Labels (top right, max 5 per panel) ---
-    labels_this = gradient_stats[(gradient_stats['resort'] == resort)]
-    if not labels_this.empty:
-        labels_this = labels_this.sort_values('mean_gradient', ascending=False)
-        ymin, ymax = ax.get_ylim()
-        xmin, xmax = ax.get_xlim()
-        y = ymax - 0.036 * (ymax - ymin)
-        x = xmax - 0.01 * (xmax - xmin)
-        lineheight = 0.066 * (ymax - ymin)
-        for i, row in enumerate(labels_this.itertuples()):
-            if i >= 5:
-                break  # Show max 5 for clarity
-            color = difficulty_colors.get(row.difficulty, "#444444")
+    # Update color map if any new difficulties appear
+    for diff in runs['difficulty'].dropna().unique():
+        if diff not in difficulty_colors:
+            difficulty_colors[diff] = "#444444"
+
+    max_distance = points['distance_along_run_m'].max() * 1.05
+    min_elev = int(np.floor(points['elevation_m'].min() / 100.0) * 100)
+    max_elev = int(np.ceil(points['elevation_m'].max() / 100.0) * 100)
+
+    # --- Plot setup ---
+    ncols = 3
+    nrows = int(np.ceil(len(resorts) / ncols))
+    fig, axes = plt.subplots(nrows, ncols, figsize=(20, 8 * nrows), sharey=True)
+    axes = axes.flatten()
+
+    for ax, resort in zip(axes, resorts):
+        runs_this = runs[runs['resort'] == resort]
+        points_this = points[points['resort'] == resort]
+        for _, run in runs_this.iterrows():
+            pts = points_this[points_this['osm_id'] == run['osm_id']].sort_values('distance_along_run_m')
+            if len(pts) > 1 and pts.iloc[0]['elevation_m'] < pts.iloc[-1]['elevation_m']:
+                pts = pts.iloc[::-1]
+            y_smoothed = smooth_elevation(pts['elevation_m'].values)
+            color = difficulty_colors.get(run['difficulty'], "#444444")
+            ax.plot(pts['distance_along_run_m'], y_smoothed, color=color, alpha=0.8, linewidth=2)
+
+        if not runs_this.empty:
+            longest = runs_this.loc[runs_this['run_length_m'].idxmax()]
+            pts_long = points_this[points_this['osm_id'] == longest['osm_id']].sort_values('distance_along_run_m')
             ax.text(
-                x, y - i * lineheight,
-                f"{row.difficulty} ({row.run_count}): {row.mean_gradient:.1f}%",
-                fontsize=13, color=color,
-                ha='right', va='top', fontweight='bold', alpha=0.98, zorder=11,
-                bbox=dict(facecolor='white', alpha=0.73, edgecolor='none', boxstyle='round,pad=0.16')
+                pts_long['distance_along_run_m'].iloc[-1], 
+                pts_long['elevation_m'].iloc[-1],
+                longest['run_name'], fontsize=11, fontweight='bold', color='black',
+                ha='right', va='bottom'
             )
+        ax.set_title(resort, fontsize=20, fontweight='bold')
+        ax.set_xlabel("Run Distance Along Slope (meters)", fontsize=14)
+        ax.set_ylabel("Elevation (m)", fontsize=14)
+        ax.grid(True, linestyle='--', alpha=0.4)
+        ax.set_xlim(0, max_distance)
+        ax.set_ylim(min_elev, max_elev)
 
-# Blank any remaining axes if we have fewer than 12 resorts
-for i in range(len(RESORTS), nrows * ncols):
-    axes[i].axis('off')
+        # Avg gradient labels
+        labels_this = gradient_stats[gradient_stats['resort'] == resort]
+        if not labels_this.empty:
+            labels_this = labels_this.sort_values('mean_gradient', ascending=False)
+            ymin, ymax = ax.get_ylim()
+            xmin, xmax = ax.get_xlim()
+            y = ymax - 0.036 * (ymax - ymin)
+            x = xmax - 0.01 * (xmax - xmin)
+            lineheight = 0.066 * (ymax - ymin)
+            for i, row in enumerate(labels_this.itertuples()):
+                if i >= 5:
+                    break
+                color = difficulty_colors.get(row.difficulty, "#444444")
+                ax.text(
+                    x, y - i * lineheight,
+                    f"{row.difficulty} ({row.run_count}): {row.mean_gradient:.1f}%",
+                    fontsize=13, color=color,
+                    ha='right', va='top', fontweight='bold', alpha=0.98, zorder=11,
+                    bbox=dict(facecolor='white', alpha=0.73, edgecolor='none', boxstyle='round,pad=0.16')
+                )
 
-plt.suptitle(
-    'Ski Run Elevation Profiles by Resort\nAll runs (filtered, smoothed, colored by difficulty)\nAvg gradient per difficulty (top right)',
-    fontsize=25, fontweight='bold', y=0.98)
+    for i in range(len(resorts), nrows * ncols):
+        axes[i].axis('off')
 
-plt.tight_layout(rect=(0, 0.03, 1, 0.96))
-plt.subplots_adjust(hspace=0.36, wspace=0.18)
-plt.savefig("charts/ski_run_elevations_matplotlib.png", dpi=250, bbox_inches='tight')
-plt.show()
-print("✅ Saved chart: ski_run_elevations_matplotlib.png")
+    plt.suptitle(
+        f'{region} Ski Run Elevation Profiles by Resort\nAll runs (filtered, smoothed, colored by difficulty)\nAvg gradient per difficulty (top right)',
+        fontsize=25, fontweight='bold', y=0.98
+    )
+    plt.tight_layout(rect=(0, 0.03, 1, 0.96))
+    plt.subplots_adjust(hspace=0.36, wspace=0.18)
+    out_path = f"charts/ski_run_elevations_matplotlib_{region.lower().replace(' ', '_')}.png"
+    plt.savefig(out_path, dpi=250, bbox_inches='tight')
+    plt.show()

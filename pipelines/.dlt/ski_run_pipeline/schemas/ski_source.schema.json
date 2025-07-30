@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "version_hash": "LFxi6a3WE56k5NPvBUWUsVhgolxbBFQjD9hJyKEX6No=",
+  "version_hash": "In2yJ/AGKz6nJhYRhUNsw6CdR/1U+Vu6FZwtiwScKT8=",
   "engine_version": 11,
   "name": "ski_source",
   "tables": {
@@ -93,6 +93,11 @@
           "data_type": "text",
           "nullable": true
         },
+        "region": {
+          "name": "region",
+          "data_type": "text",
+          "nullable": true
+        },
         "run_name": {
           "name": "run_name",
           "data_type": "text",
@@ -118,6 +123,11 @@
           "data_type": "bigint",
           "nullable": true
         },
+        "turniness_score": {
+          "name": "turniness_score",
+          "data_type": "double",
+          "nullable": true
+        },
         "_dlt_load_id": {
           "name": "_dlt_load_id",
           "data_type": "text",
@@ -129,6 +139,16 @@
           "nullable": false,
           "unique": true,
           "row_key": true
+        },
+        "grooming": {
+          "name": "grooming",
+          "nullable": true,
+          "data_type": "text"
+        },
+        "lit": {
+          "name": "lit",
+          "nullable": true,
+          "data_type": "text"
         }
       },
       "write_disposition": "merge",
@@ -213,6 +233,84 @@
       "write_disposition": "merge",
       "name": "ski_run_points",
       "resource": "ski_run_points",
+      "x-normalizer": {
+        "seen-data": true
+      }
+    },
+    "ski_lifts": {
+      "columns": {
+        "osm_id": {
+          "name": "osm_id",
+          "nullable": false,
+          "primary_key": true,
+          "data_type": "bigint"
+        },
+        "resort": {
+          "name": "resort",
+          "data_type": "text",
+          "nullable": true
+        },
+        "country_code": {
+          "name": "country_code",
+          "data_type": "text",
+          "nullable": true
+        },
+        "region": {
+          "name": "region",
+          "data_type": "text",
+          "nullable": true
+        },
+        "lift_type": {
+          "name": "lift_type",
+          "data_type": "text",
+          "nullable": true
+        },
+        "name": {
+          "name": "name",
+          "data_type": "text",
+          "nullable": true
+        },
+        "lift_length_m": {
+          "name": "lift_length_m",
+          "data_type": "double",
+          "nullable": true
+        },
+        "lift_speed_mps": {
+          "name": "lift_speed_mps",
+          "data_type": "double",
+          "nullable": true
+        },
+        "_dlt_load_id": {
+          "name": "_dlt_load_id",
+          "data_type": "text",
+          "nullable": false
+        },
+        "_dlt_id": {
+          "name": "_dlt_id",
+          "data_type": "text",
+          "nullable": false,
+          "unique": true,
+          "row_key": true
+        },
+        "occupancy": {
+          "name": "occupancy",
+          "nullable": true,
+          "data_type": "text"
+        },
+        "capacity": {
+          "name": "capacity",
+          "nullable": true,
+          "data_type": "text"
+        },
+        "duration": {
+          "name": "duration",
+          "nullable": true,
+          "data_type": "text"
+        }
+      },
+      "write_disposition": "merge",
+      "name": "ski_lifts",
+      "resource": "ski_lifts_resource",
       "x-normalizer": {
         "seen-data": true
       }
@@ -309,6 +407,9 @@
             },
             "ski_run_points": {
               "_dlt_id": "_dlt_root_id"
+            },
+            "ski_lifts": {
+              "_dlt_id": "_dlt_root_id"
             }
           }
         }
@@ -316,7 +417,7 @@
     }
   },
   "previous_hashes": [
-    "qBStS/XXXOJa9JHiCH+xqpXz3ERz/yV7qXpOrHzly5o=",
-    "ohPEX6EbtKAAdD/q+Gx6QGsWHX4nChKgmUR5+JidNC0="
+    "LrPRUz9gO38EnQHpOtp3IID6MeKcSgrZ89ZrUyzqx2E=",
+    "l1n5MNKQlRbXdPa7TF5eG26JPatk87pjuoW/CiY/Zok="
   ]
 }

@@ -8,4 +8,5 @@ sources:
     tables:
       - name: ski_runs
       - name: ski_run_points
+      - name: ski_lifts
         

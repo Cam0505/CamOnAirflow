@@ -1,4 +1,3 @@
-
 import dlt
 from dlt.sources.helpers import requests
 import os
@@ -8,6 +7,7 @@ from project_path import get_project_paths, set_dlt_env_vars
 from geopy.distance import geodesic
 from dlt.destinations.exceptions import DatabaseUndefinedRelation
 import numpy as np
+import math
 
 # --- ENV setup ---
 paths = get_project_paths()
@@ -16,30 +16,55 @@ DLT_PIPELINE_DIR = paths["DLT_PIPELINE_DIR"]
 ENV_FILE = paths["ENV_FILE"]
 load_dotenv(dotenv_path=ENV_FILE)
 
+AVERAGE_LIFT_SPEEDS = {
+    "chair_lift": 2.5,
+    "gondola": 5.0,
+    "drag_lift": 2.0,
+    "t-bar": 2.0,
+    "j-bar": 1.8,
+    "rope_tow": 1.5,
+    "platter": 2.0,
+    "magic_carpet": 1.0,
+    "mixed_lift": 3.0,
+    "funicular": 5.0,
+    "cable_car": 6.0
+}
+
+
 SKI_FIELDS = [
-    {"name": "Remarkables", "country": "NZ", "lat": -45.0579, "lon": 168.8194, "radius_m": 3000},
-    {"name": "Cardrona", "country": "NZ", "lat": -44.8746, "lon": 168.9481, "radius_m": 3000},
-    {"name": "Treble Cone", "country": "NZ", "lat": -44.6335, "lon": 168.8972, "radius_m": 3000},
-    {"name": "Mount Hutt", "country": "NZ", "lat": -43.4707, "lon": 171.5306, "radius_m": 3000},
-    {"name": "Ohau", "country": "NZ", "lat": -44.2255, "lon": 169.7747, "radius_m": 3000},
-    {"name": "Coronet Peak", "country": "NZ", "lat": -44.9206, "lon": 168.7349, "radius_m": 3000},
-    {"name": "Whakapapa", "country": "NZ", "lat": -39.2546, "lon": 175.5456, "radius_m": 3000},
-    {"name": "Turoa", "country": "NZ", "lat": -39.3067, "lon": 175.5289, "radius_m": 3000},
-    {"name": "Mount Dobson", "country": "NZ", "lat": -43.9419, "lon": 170.6648, "radius_m": 3000},
-    {"name": "Mount Olympus", "country": "NZ", "lat": -43.1917, "lon": 171.6062, "radius_m": 3000},
-    {"name": "Mount Cheeseman", "country": "NZ", "lat": -43.1573, "lon": 171.6683, "radius_m": 1500},
-    {"name": "Temple Basin", "country": "NZ", "lat": -42.9087, "lon": 171.5766, "radius_m": 3000},
-    {"name": "Porters", "country": "NZ", "lat": -43.2703, "lon": 171.6294, "radius_m": 3000},
-    {"name": "RoundHill", "country": "NZ", "lat": -43.8263, "lon": 170.6617, "radius_m": 3000},
-    # Australian fields 
-    {"name": "Charlotte Pass", "country": "AU", "lat": -36.432, "lon": 148.328, "radius_m": 3000},
-    {"name": "Falls Creek", "country": "AU", "lat": -36.882, "lon": 147.278, "radius_m": 3000},
-    {"name": "Mount Baw Baw", "country": "AU", "lat": -37.837, "lon": 146.273, "radius_m": 3000},
-    {"name": "Mount Buller", "country": "AU", "lat": -37.146, "lon": 146.429, "radius_m": 3000},
-    {"name": "Mount Hotham", "country": "AU", "lat": -36.976, "lon": 147.133, "radius_m": 3000},
-    {"name": "Perisher", "country": "AU", "lat": -36.405, "lon": 148.411, "radius_m": 3000},
-    {"name": "Selwyn Snow Resort", "country": "AU", "lat": -35.938, "lon": 148.438, "radius_m": 3000},
-    {"name": "Thredbo Resort", "country": "AU", "lat": -36.504, "lon": 148.303, "radius_m": 3000},
+    {"name": "Broken River Ski Area", "country": "NZ", "region": "Canterbury"},
+    {"name": "Cardrona Alpine Resort", "country": "NZ", "region": "Otago"},
+    {"name": "Coronet Peak", "country": "NZ", "region": "Otago"},
+    {"name": "Coronet Peak Ski Area", "country": "NZ", "region": "Otago"},
+    {"name": "Craigieburn Valley Ski Area", "country": "NZ", "region": "Canterbury"},
+    {"name": "Fox Peak Ski Area", "country": "NZ", "region": "Canterbury"},
+    {"name": "Hanmer Springs Ski Area", "country": "NZ", "region": "Canterbury"},
+    {"name": "Manganui Ski Area", "country": "NZ", "region": "Taranaki"},
+    {"name": "Mount Cheeseman Ski Area", "country": "NZ", "region": "Canterbury"},
+    {"name": "Mount Dobson Ski Field", "country": "NZ", "region": "Canterbury"},
+    {"name": "Mount Hutt Ski Area", "country": "NZ", "region": "Canterbury"},
+    {"name": "Mount Lyford Alpine Resort", "country": "NZ", "region": "Canterbury"},
+    {"name": "Mount Olympus Ski Area", "country": "NZ", "region": "Canterbury"},
+    {"name": "Mt Cheeseman Ski Area", "country": "NZ", "region": "Canterbury"},
+    {"name": "Porters Ski Area", "country": "NZ", "region": "Canterbury"},
+    {"name": "Rainbow Ski Area", "country": "NZ", "region": "Tasman"},
+    {"name": "Roundhill Ski Field", "country": "NZ", "region": "Canterbury"},
+    {"name": "Temple Basin", "country": "NZ", "region": "Canterbury"},
+    {"name": "Temple Basin Ski Area", "country": "NZ", "region": "Canterbury"},
+    {"name": "The Remarkables Ski Area", "country": "NZ", "region": "Otago"},
+    {"name": "Treble Cone Ski Area", "country": "NZ", "region": "Otago"},
+    {"name": "Tukino Skifield", "country": "NZ", "region": "Manawatu-Wanganui"},
+    {"name": "Tūroa Ski Area", "country": "NZ", "region": "Manawatu-Wanganui"},
+    {"name": "Whakapapa Ski Area", "country": "NZ", "region": "Manawatu-Wanganui"},
+    {"name": "Ōhau Snow Fields", "country": "NZ", "region": "Canterbury"},
+    {"name": "Charlotte Pass", "country": "AU", "region": "New South Wales"},
+    {"name": "Falls Creek", "country": "AU", "region": "Victoria"},
+    {"name": "Mount Baw Baw", "country": "AU", "region": "Victoria"},
+    {"name": "Mount Buller", "country": "AU", "region": "Victoria"},
+    {"name": "Mount Hotham", "country": "AU", "region": "Victoria"},
+    {"name": "Perisher", "country": "AU", "region": "New South Wales"},
+    {"name": "Selwyn Snow Resort", "country": "AU", "region": "New South Wales"},
+    {"name": "Thredbo Resort", "country": "AU", "region": "New South Wales"}
 ]
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -93,47 +118,70 @@ def trim_to_downhill(coords, elevations):
         return coords, elevations
     return coords[start_idx:end_idx+1], elevations[start_idx:end_idx+1]
 
+def compute_turniness(coords):
+    if len(coords) < 3:
+        return 0.0
+    headings = []
+    for i in range(1, len(coords)):
+        lat1, lon1 = coords[i-1]
+        lat2, lon2 = coords[i]
+        heading = math.atan2(lon2 - lon1, lat2 - lat1)
+        headings.append(heading)
+    turniness = sum(abs(headings[i] - headings[i-1]) for i in range(1, len(headings)))
+    return float(turniness)
+
 @dlt.source
 def ski_source(known_locations: set):
     ski_runs_data = []
+    ski_lifts = []
     for field in SKI_FIELDS:
         if field["name"] in known_locations:
             logger.info(f"Skipping {field['name']} - already in database")
             continue
 
-        if field["country"] == "AU":
-            # Query by ski field name for Australia
-            query = f"""
-            [out:json][timeout:60];
-            (
-              node["name"="{field['name']}"];
-              way["name"="{field['name']}"];
-              relation["name"="{field['name']}"];
-            );
-            way["piste:type"](around:{field['radius_m']},{field["lat"]},{field["lon"]});
-            out tags geom;
-            """
-        else:
-            # NZ and others: query by radius
-            query = f"""
-            [out:json][timeout:60];
-            way["piste:type"](around:{field['radius_m']},{field["lat"]},{field["lon"]});
-            out tags geom;
-            """
+        query = f'''
+        [out:json][timeout:60];
+        area["name"="{field['name']}"]["landuse"="winter_sports"]->.a;
+        (
+          way["piste:type"~"^(downhill|nordic|skitour|snow_park|sled|connection)$"](area.a);
+          way["aerialway"](area.a);
+        );
+        out tags geom;
+        '''
 
-        logger.info(f"Fetching ski runs near {field['name']} ...")
+        logger.info(f"Fetching ski runs for {field['name']} ...")
         response = requests.post(BASE_URL, data={"data": query}, timeout=90)
+        if response.status_code != 200:
+            logger.error(f"Overpass API error for {field['name']}: {response.status_code} {response.text}")
+            continue
         elements = response.json().get("elements", [])
         for run in elements:
-            if "geometry" not in run or not run["geometry"]:
-                continue
-            ski_runs_data.append({
-                "osm_id": run["id"],
-                "resort": field["name"],
-                "country_code": field["country"],
-                "tags": run.get("tags", {}),
-                "geometry": run["geometry"],
-            })
+            tags = run.get("tags", {})
+            geometry = run.get("geometry", [])
+            if "piste:type" in tags:
+                if "geometry" not in run or not run["geometry"]:
+                    continue
+                ski_runs_data.append({
+                    "osm_id": run["id"],
+                    "resort": field["name"],
+                    "country_code": field["country"],
+                    "region": field["region"],
+                    "tags": run.get("tags", {}),
+                    "geometry": geometry,
+                })
+            elif "aerialway" in tags:
+                ski_lifts.append({
+                    "osm_id": run["id"],
+                    "resort": field["name"],
+                    "country_code": field["country"],
+                    "region": field["region"],
+                    "lift_type": tags.get("aerialway"),
+                    "name": tags.get("name"),
+                    "duration": tags.get("duration"),
+                    "capacity": tags.get("aerialway:capacity"),
+                    "occupancy": tags.get("aerialway:occupancy"),
+                    "geometry": geometry,
+                })
 
     @dlt.resource(write_disposition="merge", table_name="ski_runs", primary_key=["osm_id"])
     def ski_runs():
@@ -142,19 +190,26 @@ def ski_source(known_locations: set):
             coords = [(pt["lat"], pt["lon"]) for pt in run["geometry"]]
             if len(coords) < 2:
                 continue
+
             run_length = sum(
                 geodesic(coords[i], coords[i + 1]).meters
                 for i in range(len(coords) - 1)
             )
+            turniness_score = compute_turniness(coords)
+
             yield {
                 "osm_id": run["osm_id"],
                 "resort": run["resort"],
                 "country_code": run["country_code"],
+                "region": run["region"],
                 "run_name": tags.get("name", ""),
                 "difficulty": tags.get("piste:difficulty"),
                 "piste_type": tags.get("piste:type"),
+                "grooming": tags.get("piste:grooming"),
+                "lit": tags.get("piste:lit"),
                 "run_length_m": run_length,
                 "n_points": len(coords),
+                "turniness_score": turniness_score,
             }
 
     @dlt.resource(write_disposition="merge", table_name="ski_run_points", primary_key=["osm_id", "point_index"])
@@ -198,7 +253,43 @@ def ski_source(known_locations: set):
                     "gradient_smoothed": float(grad_sm) if grad_sm is not None else None
                 }
 
-    return [ski_runs, ski_run_points]
+    @dlt.resource(write_disposition="merge", table_name="ski_lifts", primary_key=["osm_id"])
+    def ski_lifts_resource():
+        for lift in ski_lifts:
+            coords = [(pt["lat"], pt["lon"]) for pt in lift.get("geometry", [])]
+            if len(coords) < 2:
+                lift_length = None
+            else:
+                lift_length = sum(
+                    geodesic(coords[i], coords[i + 1]).meters
+                    for i in range(len(coords) - 1)
+                )
+
+            lift_type = lift.get("lift_type")
+            average_speed = AVERAGE_LIFT_SPEEDS.get(lift_type)
+
+            if lift_length and average_speed:
+                duration_sec = lift_length / average_speed
+            else:
+                duration_sec = None
+
+            lift_speed = lift_length / duration_sec if lift_length and duration_sec and duration_sec > 0 else None
+
+            yield {
+                "osm_id": lift["osm_id"],
+                "resort": lift["resort"],
+                "country_code": lift["country_code"],
+                "region": lift["region"],
+                "lift_type": lift_type,
+                "name": lift.get("name"),
+                "duration": duration_sec, 
+                "capacity": lift.get("capacity"),
+                "occupancy": lift.get("occupancy"),
+                "lift_length_m": lift_length,
+                "lift_speed_mps": lift_speed 
+            }
+
+    return [ski_runs, ski_run_points, ski_lifts_resource]
 
 def run_pipeline(logger):
     logger.info("Starting DLT pipeline...")

@@ -728,10 +728,10 @@ def comprehensive_weather_source(logger: logging.Logger):
     @dlt.resource(write_disposition="merge", name="weather_hourly_enriched", primary_key=["location", "datetime"])
     def hourly_weather_data():
         """Fetch and store enriched hourly weather data from Open-Meteo for spectral analysis."""
-        state = dlt.current.source_state().setdefault("hourly_weather", {
-            "Processed_Ranges": {},
-            "elevation_data": {}
-        })
+        # state = dlt.current.source_state().setdefault("hourly_weather", {
+        #     "Processed_Ranges": {},
+        #     "elevation_data": {}
+        # })
         processed = 0
 
         missing_ranges_by_loc, table_exists, table_empty, table_missing = get_missing_datetime_ranges_sql(

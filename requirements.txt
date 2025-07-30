@@ -15,6 +15,6 @@ flake8==7.3.0
 plotnine==0.15.0
 rasterio==1.4.3
 geopy==2.4.1
-ConnectorX==0.4.3
 pyarrow==21.0.0
 polars==1.31.0
+adjusttext==1.3.0

@@ -17,15 +17,32 @@ con = duckdb.connect(database_string)
 
 # --- Separate resorts ---
 NZ_RESORTS = [
-    'Remarkables', 'Mount Hutt', 'Cardrona', 'Treble Cone', 'Coronet Peak',
-    'Temple Basin', 'Mount Cheeseman', 'Mount Dobson', 'Mount Olympus',
-    'Porters', 'RoundHill', 'Turoa'
+    'Temple Basin Ski Area',
+    'Mount Cheeseman Ski Area',
+    'Mount Dobson Ski Field',
+    'Roundhill Ski Field',
+    'Mount Hutt Ski Area',
+    'Broken River Ski Area',
+    'Porters Ski Area',
+    'Rainbow Ski Area',
+    'Mount Olympus Ski Area',
+    'The Remarkables Ski Area',
+    'Whakapapa Ski Area',
+    'Cardrona Alpine Resort',
+    'Manganui Ski Area',
+    'Coronet Peak Ski Area',
+    'Mount Lyford Alpine Resort',
+    'Treble Cone Ski Area',
+    'Tūroa Ski Area',
+    'Craigieburn Valley Ski Area',
+    'Fox Peak Ski Area'
 ]
 
 AU_RESORTS = [
     'Charlotte Pass', 'Falls Creek', 'Mount Baw Baw', 'Mount Buller',
     'Mount Hotham', 'Perisher', 'Thredbo Resort'
 ]
+
 
 REGIONS = {
     "New Zealand": NZ_RESORTS,
@@ -93,7 +110,7 @@ for region, resorts in REGIONS.items():
     max_elev = int(np.ceil(points['elevation_m'].max() / 100.0) * 100)
 
     # --- Plot setup ---
-    ncols = 3
+    ncols = 4
     nrows = int(np.ceil(len(resorts) / ncols))
     fig, axes = plt.subplots(nrows, ncols, figsize=(20, 8 * nrows), sharey=True)
     axes = axes.flatten()
@@ -156,5 +173,5 @@ for region, resorts in REGIONS.items():
     plt.tight_layout(rect=(0, 0.03, 1, 0.96))
     plt.subplots_adjust(hspace=0.36, wspace=0.18)
     out_path = f"charts/ski_run_elevations_matplotlib_{region.lower().replace(' ', '_')}.png"
-    plt.savefig(out_path, dpi=250, bbox_inches='tight')
+    plt.savefig(out_path, dpi=300, bbox_inches='tight')
     plt.show()

@@ -1,6 +1,6 @@
 {
   "version": 4,
-  "version_hash": "UAZtS8Fe8Mgvbebt+96i7mtyCdscUnkMrBVHcnHCD50=",
+  "version_hash": "VBhDj0h7lHvq/p6LWbg1gVLTkIE664OvmDVFMxMsyQI=",
   "engine_version": 11,
   "name": "comprehensive_weather_source",
   "tables": {
@@ -80,201 +80,156 @@
         "datetime": {
           "name": "datetime",
           "nullable": false,
-          "primary_key": true,
-          "data_type": "timestamp"
+          "data_type": "text",
+          "primary_key": true
         },
         "temperature_2m": {
           "name": "temperature_2m",
-          "data_type": "double",
-          "nullable": true
+          "nullable": true,
+          "data_type": "double"
         },
         "relative_humidity_2m": {
           "name": "relative_humidity_2m",
-          "data_type": "double",
-          "nullable": true
+          "nullable": true,
+          "data_type": "double"
         },
         "dew_point_2m": {
           "name": "dew_point_2m",
-          "data_type": "double",
-          "nullable": true
+          "nullable": true,
+          "data_type": "double"
         },
         "rain": {
           "name": "rain",
-          "data_type": "double",
-          "nullable": true
+          "nullable": true,
+          "data_type": "double"
         },
         "snowfall": {
           "name": "snowfall",
-          "data_type": "double",
-          "nullable": true
+          "nullable": true,
+          "data_type": "double"
         },
         "snow_depth": {
           "name": "snow_depth",
-          "data_type": "double",
-          "nullable": true
+          "nullable": true,
+          "data_type": "double"
         },
         "weather_code": {
           "name": "weather_code",
+          "nullable": true,
           "data_type": "bigint",
-          "nullable": true
+          "precision": 32
         },
         "surface_pressure": {
           "name": "surface_pressure",
-          "data_type": "double",
-          "nullable": true
+          "nullable": true,
+          "data_type": "double"
         },
         "wind_speed_10m": {
           "name": "wind_speed_10m",
-          "data_type": "double",
-          "nullable": true
+          "nullable": true,
+          "data_type": "double"
         },
         "wind_direction_10m": {
           "name": "wind_direction_10m",
-          "data_type": "double",
-          "nullable": true
+          "nullable": true,
+          "data_type": "double"
         },
         "soil_temperature_0_to_7cm": {
           "name": "soil_temperature_0_to_7cm",
-          "data_type": "double",
-          "nullable": true
+          "nullable": true,
+          "data_type": "double"
         },
         "soil_moisture_0_to_7cm": {
           "name": "soil_moisture_0_to_7cm",
-          "data_type": "double",
-          "nullable": true
+          "nullable": true,
+          "data_type": "double"
         },
         "is_day": {
           "name": "is_day",
+          "nullable": true,
           "data_type": "bigint",
-          "nullable": true
+          "precision": 32
         },
         "sunshine_duration": {
           "name": "sunshine_duration",
-          "data_type": "double",
-          "nullable": true
+          "nullable": true,
+          "data_type": "double"
         },
         "cloud_cover_low": {
           "name": "cloud_cover_low",
-          "data_type": "double",
-          "nullable": true
+          "nullable": true,
+          "data_type": "double"
         },
         "shortwave_radiation": {
           "name": "shortwave_radiation",
-          "data_type": "double",
-          "nullable": true
+          "nullable": true,
+          "data_type": "double"
         },
         "precipitation": {
           "name": "precipitation",
-          "data_type": "double",
-          "nullable": true
+          "nullable": true,
+          "data_type": "double"
         },
         "cloudcover": {
           "name": "cloudcover",
-          "data_type": "double",
-          "nullable": true
+          "nullable": true,
+          "data_type": "double"
         },
         "wind_gusts_10m": {
           "name": "wind_gusts_10m",
-          "data_type": "double",
-          "nullable": true
+          "nullable": true,
+          "data_type": "double"
         },
         "location": {
           "name": "location",
           "nullable": false,
-          "primary_key": true,
-          "data_type": "text"
+          "data_type": "text",
+          "primary_key": true
         },
         "country": {
           "name": "country",
-          "data_type": "text",
-          "nullable": true
+          "nullable": true,
+          "data_type": "text"
         },
         "timezone": {
           "name": "timezone",
-          "data_type": "text",
-          "nullable": true
-        },
-        "venue_type": {
-          "name": "venue_type",
-          "data_type": "text",
-          "nullable": true
-        },
-        "date": {
-          "name": "date",
-          "data_type": "date",
-          "nullable": true
-        },
-        "hour": {
-          "name": "hour",
-          "data_type": "bigint",
-          "nullable": true
-        },
-        "day_of_year": {
-          "name": "day_of_year",
-          "data_type": "bigint",
-          "nullable": true
-        },
-        "month": {
-          "name": "month",
-          "data_type": "bigint",
-          "nullable": true
-        },
-        "year": {
-          "name": "year",
-          "data_type": "bigint",
-          "nullable": true
-        },
-        "is_winter": {
-          "name": "is_winter",
-          "data_type": "bool",
-          "nullable": true
+          "nullable": true,
+          "data_type": "text"
         },
         "temp_celsius": {
           "name": "temp_celsius",
-          "data_type": "double",
-          "nullable": true
+          "nullable": true,
+          "data_type": "double"
         },
         "temp_freezing": {
           "name": "temp_freezing",
-          "data_type": "bool",
-          "nullable": true
+          "nullable": true,
+          "data_type": "bool"
         },
         "temp_below_minus5": {
           "name": "temp_below_minus5",
-          "data_type": "bool",
-          "nullable": true
+          "nullable": true,
+          "data_type": "bool"
         },
         "total_precipitation": {
           "name": "total_precipitation",
-          "data_type": "double",
-          "nullable": true
+          "nullable": true,
+          "data_type": "double"
         },
         "precip_type": {
           "name": "precip_type",
-          "data_type": "text",
-          "nullable": true
+          "nullable": true,
+          "data_type": "text"
         },
         "wind_u": {
           "name": "wind_u",
-          "data_type": "double",
-          "nullable": true
+          "nullable": true,
+          "data_type": "double"
         },
         "wind_v": {
           "name": "wind_v",
-          "data_type": "double",
-          "nullable": true
-        },
-        "_dlt_load_id": {
-          "name": "_dlt_load_id",
-          "data_type": "text",
-          "nullable": false
-        },
-        "_dlt_id": {
-          "name": "_dlt_id",
-          "data_type": "text",
-          "nullable": false,
-          "unique": true,
-          "row_key": true
+          "nullable": true,
+          "data_type": "double"
         }
       },
       "write_disposition": "merge",
@@ -446,9 +401,9 @@
     }
   },
   "previous_hashes": [
-    "GftURLg927PL8eeWaYrMh+8hJbt3NT14teuSYJeUD/I=",
-    "kgiNthdCM5uXWT5ZKrJ8NTUt3/m3Nvhg15gExEWPS4w=",
-    "8ekAdrbzr9d3tHfDn5BWhL7n0Yvh0qkH0CUD/O/t2KI=",
-    "a6qwpEwREEr3iiqA2IfIyXnXjnXV95LvndIL+Fbqgvg="
+    "v7mADyKCATxZJ+W5XAKlrFD6CBwF1G8nW5otJECVqPM=",
+    "4tjmGQR3nzc80K7tSroQ1p+PCUDUHemDm/MXU17M4qI=",
+    "QLBZPbMZjgqyD2czsrCwC1keZ13fPmS4VNZP0Cotw8Q=",
+    "RCOp9oAV07/zuvNfvjOD4R8NrNgqaqOh7OD+0Ilyfd0="
   ]
 }

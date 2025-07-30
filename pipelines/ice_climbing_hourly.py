@@ -3,24 +3,16 @@ import logging
 from dotenv import load_dotenv
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo 
-import pandas as pd
 import pyarrow as pa
 import dlt
 from dlt.sources.helpers import requests
 from dlt.pipeline.exceptions import PipelineNeverRan
 from dlt.destinations.exceptions import DatabaseUndefinedRelation
 
-# Optional imports for performance optimization
-try:
-    import connectorx as cx
-    CONNECTORX_AVAILABLE = True
-except ImportError:
-    CONNECTORX_AVAILABLE = False
-    cx = None
 import os
 import time as tyme
 from project_path import get_project_paths, set_dlt_env_vars
-import concurrent.futures
+# import concurrent.futures
 import math
 from typing import Dict, List, Tuple, Optional, Any
 from dataclasses import dataclass
@@ -87,7 +79,7 @@ API_HOURLY_MEASURES = [
     "shortwave_radiation", "precipitation", "cloudcover", "wind_gusts_10m"
 ]
 
-start_dt = datetime(2019, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+start_dt = datetime(2016, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
 end_dt = datetime.now(timezone.utc) - timedelta(days=END_DT_LAG_DAYS)
 
 # Locations for comprehensive weather analysis - focused on snow/ice environments
@@ -96,14 +88,7 @@ WEATHER_LOCATIONS = [
     {"name": "Island Gully", "country": "NZ", "lat": -42.133076, "lon": 172.755765, "timezone": "Pacific/Auckland", "venue_type": "ice_climbing"},
     {"name": "Milford Sound", "country": "NZ", "lat": -44.770974, "lon": 168.036796, "timezone": "Pacific/Auckland", "venue_type": "ice_climbing"},
     {"name": "Bush Stream", "country": "NZ", "lat": -43.8487, "lon": 170.0439, "timezone": "Pacific/Auckland", "venue_type": "ice_climbing"},
-    {"name": "Shrimpton Ice", "country": "NZ", "lat": -44.222395, "lon": 169.307676, "timezone": "Pacific/Auckland", "venue_type": "ice_climbing"},
-    {"name": "SE Face Mount Ward", "country": "NZ", "lat": -43.867239, "lon": 169.833754, "timezone": "Pacific/Auckland", "venue_type": "ice_climbing"},
-    # Add ski field locations for broader analysis
-    # {"name": "Remarkables", "country": "NZ", "lat": -45.0661, "lon": 168.8196, "timezone": "Pacific/Auckland", "venue_type": "ski_field"},
-    # {"name": "Cardrona", "country": "NZ", "lat": -44.8746, "lon": 168.9481, "timezone": "Pacific/Auckland", "venue_type": "ski_field"},
-    # {"name": "Treble Cone", "country": "NZ", "lat": -44.6301, "lon": 168.8806, "timezone": "Pacific/Auckland", "venue_type": "ski_field"},
-    # {"name": "Mount Hutt", "country": "NZ", "lat": -43.4707, "lon": 171.5306, "timezone": "Pacific/Auckland", "venue_type": "ski_field"},
-    # {"name": "Coronet Peak", "country": "NZ", "lat": -44.9206, "lon": 168.7349, "timezone": "Pacific/Auckland", "venue_type": "ski_field"},
+    {"name": "Shrimpton Ice", "country": "NZ", "lat": -44.222395, "lon": 169.307676, "timezone": "Pacific/Auckland", "venue_type": "ice_climbing"}
 ]
 
 # Elevation and terrain analysis functions (adapted from Spectral_Analysis.py pattern)
@@ -259,131 +244,6 @@ def get_site_elevation_and_slope(lat: float, lon: float, epsilon: float = 0.0001
         raise DataProcessingError(f"Failed to calculate elevation and slope for {lat}, {lon}") from e
 
 
-def check_table_status_fast(logger: logging.Logger, pipeline: Any, schema: str, table: str) -> Tuple[bool, bool, bool]:
-    """
-    Check table status using ConnectorX for ultra-fast database queries (if available).
-
-    Args:
-        logger: Logger instance
-        pipeline: DLT pipeline instance
-        schema: Database schema name
-        table: Table name
-
-    Returns:
-        Tuple of (table_exists, table_empty, table_missing)
-    """
-    if CONNECTORX_AVAILABLE and config.USE_CONNECTORX and cx is not None:
-        try:
-            # Get connection string from DLT pipeline
-            destination_config = pipeline._get_destination_client_initial_config()
-
-            # Construct ConnectorX compatible connection string
-            # This example is for MotherDuck/DuckDB - adjust for your database
-            if "motherduck" in str(destination_config):
-                connection_string = f"duckdb:///{destination_config.get('database', 'local.db')}"
-
-                # Use ConnectorX for ultra-fast count query
-                count_query = f"SELECT COUNT(*) as row_count FROM {schema}.{table}"
-                df = cx.read_sql(connection_string, count_query)
-
-                row_count = df['row_count'].iloc[0]
-                table_empty = (row_count == 0)
-                logger.info(f"Table {schema}.{table} exists with {row_count} rows (ConnectorX)")
-                return True, table_empty, False
-
-        except Exception as e:
-            logger.warning(f"ConnectorX query failed, falling back to standard method: {e}")
-
-    # Fallback to standard method
-    return check_table_status(logger, pipeline.sql_client(), schema, table)
-
-
-def get_missing_datetime_ranges_fast(
-    logger: logging.Logger, 
-    locations: List[Dict[str, Any]], 
-    start_dt: datetime, 
-    end_dt: datetime, 
-    pipeline: Any
-) -> Tuple[Dict[str, List[Dict[str, Any]]], bool, bool, bool]:
-    """
-    Enhanced missing datetime analysis using ConnectorX for faster queries.
-    """
-    if CONNECTORX_AVAILABLE and config.USE_CONNECTORX and cx is not None:
-        try:
-            logger.info("Using ConnectorX for enhanced missing datetime analysis")
-            # For complex analytics queries, ConnectorX can be 10-100x faster than standard SQL
-
-            # Get connection details
-            destination_config = pipeline._get_destination_client_initial_config()
-            connection_string = f"duckdb:///{destination_config.get('database', 'local.db')}"
-
-            # Build optimized query for ConnectorX
-            location_names = [loc["name"] for loc in locations]
-            locations_list = "', '".join(location_names)
-
-            optimized_query = f"""
-            WITH location_stats AS (
-                SELECT 
-                    location,
-                    MIN(datetime) as first_record,
-                    MAX(datetime) as last_record,
-                    COUNT(*) as total_records
-                FROM weather_analysis.weather_hourly_enriched 
-                WHERE location IN ('{locations_list}')
-                GROUP BY location
-            ),
-            expected_hours AS (
-                SELECT 
-                    location,
-                    CAST((EXTRACT(EPOCH FROM TIMESTAMP '{end_dt.strftime("%Y-%m-%d %H:00:00")}') - 
-                          EXTRACT(EPOCH FROM TIMESTAMP '{start_dt.strftime("%Y-%m-%d %H:00:00")}')) / 3600 AS INTEGER) as expected_count
-                FROM (SELECT UNNEST(['{locations_list}']) as location)
-            )
-            SELECT 
-                ls.location,
-                ls.first_record,
-                ls.last_record,
-                ls.total_records,
-                eh.expected_count,
-                (eh.expected_count - ls.total_records) as missing_count,
-                CASE 
-                    WHEN ls.total_records = 0 THEN 'empty'
-                    WHEN ls.total_records < eh.expected_count * 0.95 THEN 'incomplete'
-                    ELSE 'complete'
-                END as data_status
-            FROM location_stats ls
-            FULL OUTER JOIN expected_hours eh ON ls.location = eh.location
-            """
-
-            # Execute with ConnectorX for maximum speed
-            result_df = cx.read_sql(connection_string, optimized_query)
-
-            # Process results
-            issues_by_location = {loc["name"]: [] for loc in locations}
-            table_exists = len(result_df) > 0
-            table_empty = result_df['total_records'].sum() == 0 if table_exists else True
-            table_missing = not table_exists
-
-            for _, row in result_df.iterrows():
-                location = row['location']
-                if row['data_status'] in ['empty', 'incomplete']:
-                    issues_by_location[location].append({
-                        "type": "missing_data",
-                        "start": start_dt,
-                        "end": end_dt,
-                        "count": int(row['missing_count']),
-                        "missing_columns": False
-                    })
-
-            logger.info(f"ConnectorX analysis completed for {len(result_df)} locations")
-            return issues_by_location, table_exists, table_empty, table_missing
-
-        except Exception as e:
-            logger.warning(f"ConnectorX enhanced analysis failed, falling back: {e}")
-
-    # Fallback to standard SQL method
-    return get_missing_datetime_ranges_sql(logger, locations, start_dt, end_dt, pipeline)
-
 
 def check_table_status(logger: logging.Logger, client: Any, schema: str, table: str) -> Tuple[bool, bool, bool]:
     """
@@ -495,8 +355,8 @@ def get_missing_datetime_ranges_sql(
         actual_data_range AS (
             SELECT 
                 location AS name,
-                MIN(datetime) AS min_utc,
-                MAX(datetime) AS max_utc
+                CAST(MIN(datetime) AS TIMESTAMP) AS min_utc,
+                CAST(MAX(datetime) AS TIMESTAMP) AS max_utc
             FROM weather_analysis.weather_hourly_enriched
             GROUP BY location
         ),
@@ -670,7 +530,7 @@ def fetch_hourly_data(
         retry_delay = config.RETRY_DELAY
 
     # Validate inputs
-    required_location_fields = ["name", "lat", "lon", "timezone", "venue_type"]
+    required_location_fields = ["name", "lat", "lon", "timezone"]
     missing_fields = [field for field in required_location_fields if field not in location]
     if missing_fields:
         raise ValueError(f"Location missing required fields {missing_fields}: {location}")
@@ -772,47 +632,30 @@ def process_weather_data_pyarrow(data: Dict[str, Any], location: Dict[str, Any])
         # Create PyArrow arrays directly from API data for better performance
         arrays = {}
 
-        # Parse timestamps - use pandas for timestamp parsing, then convert to PyArrow
-        timestamps = pd.to_datetime(h["time"])
-        datetime_array = pa.array(timestamps)
-        arrays["datetime"] = datetime_array
+        arrays["datetime"] = pa.array(h["time"], type=pa.string())
 
         # Add all API columns efficiently
-        for col in API_HOURLY_MEASURES:
+        for col in API_HOURLY_MEASURES: 
             if col in h and h[col] is not None:
-                # Handle different data types appropriately
                 if col in ["weather_code", "is_day"]:  # Integer columns
                     arrays[col] = pa.array(h[col], type=pa.int32())
-                else:  # Float columns (most weather data)
-                    arrays[col] = pa.array(h[col], type=pa.float32())
+                elif col in ["precip_type", "location", "country", "timezone"]:  # String columns
+                    arrays[col] = pa.array(h[col], type=pa.string())
+                else:  # DOUBLE columns
+                    arrays[col] = pa.array(h[col], type=pa.float64())
 
         # Add metadata columns
         num_rows = len(h["time"])
         arrays["location"] = pa.array([location["name"]] * num_rows)
         arrays["country"] = pa.array([location["country"]] * num_rows)
         arrays["timezone"] = pa.array([location["timezone"]] * num_rows)
-        arrays["venue_type"] = pa.array([location["venue_type"]] * num_rows)
-
-        # Add date column efficiently
-        dates = timestamps.date
-        arrays["date"] = pa.array(dates)
-
-        # Add time-based enrichments using vectorized operations
-        arrays["hour"] = pa.array(timestamps.hour)
-        arrays["day_of_year"] = pa.array(timestamps.dayofyear)
-        arrays["month"] = pa.array(timestamps.month)
-        arrays["year"] = pa.array(timestamps.year)
-
-        # Southern hemisphere winter (June-September = months 6-9)
-        is_winter = timestamps.month.isin([6, 7, 8, 9])
-        arrays["is_winter"] = pa.array(is_winter)
 
         # Temperature enrichments (if temperature data exists)
         if "temperature_2m" in arrays:
             temp_values = h["temperature_2m"]
-            arrays["temp_celsius"] = pa.array(temp_values, type=pa.float32())
-            arrays["temp_freezing"] = pa.array([t <= 0 if t is not None else None for t in temp_values])
-            arrays["temp_below_minus5"] = pa.array([t <= -5 if t is not None else None for t in temp_values])
+            arrays["temp_celsius"] = pa.array(temp_values, type=pa.float64())
+            arrays["temp_freezing"] = pa.array([t <= 0 if t is not None else None for t in temp_values], type=pa.bool_())
+            arrays["temp_below_minus5"] = pa.array([t <= -5 if t is not None else None for t in temp_values], type=pa.bool_())
 
         # Precipitation enrichments
         if "rain" in h and "snowfall" in h:
@@ -820,7 +663,7 @@ def process_weather_data_pyarrow(data: Dict[str, Any], location: Dict[str, Any])
             snow_vals = [s if s is not None else 0.0 for s in h["snowfall"]]
 
             total_precip = [r + s for r, s in zip(rain_vals, snow_vals)]
-            arrays["total_precipitation"] = pa.array(total_precip, type=pa.float32())
+            arrays["total_precipitation"] = pa.array(total_precip, type=pa.float64())
 
             # Create precipitation type categorization
             precip_types = []
@@ -834,7 +677,7 @@ def process_weather_data_pyarrow(data: Dict[str, Any], location: Dict[str, Any])
                 else:
                     precip_types.append("none")
 
-            arrays["precip_type"] = pa.array(precip_types)
+            arrays["precip_type"] = pa.array(precip_types, type=pa.string())
 
         # Wind component calculations (vectorized)
         if "wind_speed_10m" in h and "wind_direction_10m" in h:
@@ -853,8 +696,8 @@ def process_weather_data_pyarrow(data: Dict[str, Any], location: Dict[str, Any])
                     wind_u.append(None)
                     wind_v.append(None)
 
-            arrays["wind_u"] = pa.array(wind_u, type=pa.float32())
-            arrays["wind_v"] = pa.array(wind_v, type=pa.float32())
+            arrays["wind_u"] = pa.array(wind_u, type=pa.float64())
+            arrays["wind_v"] = pa.array(wind_v, type=pa.float64())
 
         # Create PyArrow table
         table = pa.table(arrays)
@@ -867,6 +710,19 @@ def process_weather_data_pyarrow(data: Dict[str, Any], location: Dict[str, Any])
         raise DataProcessingError(f"Failed to process weather data with PyArrow: {e}") from e
 
 
+def split_into_yearly_ranges(start_dt: datetime, end_dt: datetime) -> List[Tuple[datetime, datetime]]:
+    """Split a datetime range into a list of (start, end) tuples, each covering up to one year."""
+    ranges = []
+    current = start_dt
+    while current < end_dt:
+        next_year = min(
+            datetime(current.year + 1, 1, 1, tzinfo=current.tzinfo),
+            end_dt
+        )
+        ranges.append((current, next_year))
+        current = next_year
+    return ranges
+
 @dlt.source
 def comprehensive_weather_source(logger: logging.Logger):
     @dlt.resource(write_disposition="merge", name="weather_hourly_enriched", primary_key=["location", "datetime"])
@@ -878,15 +734,9 @@ def comprehensive_weather_source(logger: logging.Logger):
         })
         processed = 0
 
-        # Use enhanced missing datetimes analysis for better performance
-        if CONNECTORX_AVAILABLE and config.USE_CONNECTORX and cx is not None:
-            missing_ranges_by_loc, table_exists, table_empty, table_missing = get_missing_datetime_ranges_fast(
-                logger, WEATHER_LOCATIONS, start_dt, end_dt, dlt.current.pipeline()
-            )
-        else:
-            missing_ranges_by_loc, table_exists, table_empty, table_missing = get_missing_datetime_ranges_sql(
-                logger, WEATHER_LOCATIONS, start_dt, end_dt, dlt.current.pipeline()
-            )
+        missing_ranges_by_loc, table_exists, table_empty, table_missing = get_missing_datetime_ranges_sql(
+            logger, WEATHER_LOCATIONS, start_dt, end_dt, dlt.current.pipeline()
+        )
 
         locations_to_fetch = []
 
@@ -934,12 +784,18 @@ def comprehensive_weather_source(logger: logging.Logger):
                     # Fix timezone if missing
                     try:
                         tz = ZoneInfo(location["timezone"])
-                        fetch_start = fetch_start.replace(tzinfo=tz) if fetch_start.tzinfo is None else fetch_start
-                        fetch_end = fetch_end.replace(tzinfo=tz) if fetch_end.tzinfo is None else fetch_end
+                        if fetch_start.tzinfo is None:
+                            fetch_start = fetch_start.replace(tzinfo=tz)
+                        else:
+                            fetch_start = fetch_start.astimezone(tz)
+                        if fetch_end.tzinfo is None:
+                            fetch_end = fetch_end.replace(tzinfo=tz)
+                        else:
+                            fetch_end = fetch_end.astimezone(tz)
                     except Exception as e:
                         logger.warning(f"Error with timezone {location['timezone']}, using UTC: {e}")
-                        fetch_start = fetch_start.replace(tzinfo=timezone.utc) if fetch_start.tzinfo is None else fetch_start
-                        fetch_end = fetch_end.replace(tzinfo=timezone.utc) if fetch_end.tzinfo is None else fetch_end
+                        fetch_start = fetch_start.astimezone(timezone.utc)
+                        fetch_end = fetch_end.astimezone(timezone.utc)
 
                     if fetch_start > fetch_end:
                         logger.warning(f"Invalid date range {fetch_start} > {fetch_end} for {location_name}, skipping.")
@@ -952,74 +808,47 @@ def comprehensive_weather_source(logger: logging.Logger):
 
 
         if locations_to_fetch:
-            logger.info(f"Fetching data for {len(locations_to_fetch)} locations in parallel")
-            location_results = {}
+            logger.info(f"Fetching data for {len(locations_to_fetch)} locations year by year")
 
-            with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
-                future_to_location = {
-                    executor.submit(
-                        fetch_hourly_data,
-                        loc,
-                        loc["fetch_start"],
-                        loc["fetch_end"]
-                    ): loc for loc in locations_to_fetch
-                }
-
-                for future in concurrent.futures.as_completed(future_to_location):
-                    location = future_to_location[future]
-                    location_name = location["name"]
+            for location in locations_to_fetch:
+                location_name = location["name"]
+                yearly_ranges = split_into_yearly_ranges(location["fetch_start"], location["fetch_end"])
+                for yr_start, yr_end in yearly_ranges:
                     try:
-                        data = future.result()
-                        location_results[location_name] = {"data": data, "location": location}
-                        logger.info(f"Successfully fetched data for {location_name}")
+                        data = fetch_hourly_data(location, yr_start, yr_end)
+                        if not data or "hourly" not in data or not data["hourly"].get("time"):
+                            logger.warning(f"No data returned for {location_name} {yr_start.year}, skipping.")
+                            continue
+
+                        table = process_weather_data_pyarrow(data, location)
+                        logger.info(f"Processed {table.num_rows} records for {location_name} {yr_start.year}")
+
+                        if table.num_rows == 0:
+                            logger.info(f"No new data to process for {location_name} {yr_start.year}, skipping.")
+                            continue
+
+                        CHUNK_THRESHOLD = config.CHUNK_THRESHOLD
+                        chunk_size = config.CHUNK_SIZE if table.num_rows > CHUNK_THRESHOLD else table.num_rows
+
+                        for batch in table.to_batches(max_chunksize=chunk_size):
+                            yield batch  # Yield PyArrow RecordBatch directly
+
+                        processed += 1
+                        logger.info(f"Processed and yielded data for {location_name} {yr_start.year}.")
+
+                    except APIError as e:
+                        logger.error(f"API error for {location_name} {yr_start.year}: {e}")
+                        logger.error("Aborting further fetches for this location due to API error.")
+                        break
                     except Exception as e:
-                        logger.error(f"Failed to fetch data for {location_name}: {e}")
-                        location_results[location_name] = {"data": None, "location": location}
+                        logger.error(f"Unexpected error for {location_name} {yr_start.year}: {e}")
+                        logger.error("Aborting further fetches for this location due to unexpected error.")
+                        break
 
-            # Process the results
-            for location_name, result in location_results.items():
-                data = result["data"]
-                location = result["location"]
-
-                if not data or "hourly" not in data or not data["hourly"].get("time"):
-                    logger.warning(f"No data returned for {location_name}, skipping.")
-                    continue
-
-                # Process the data using PyArrow directly
-                processed_data = process_weather_data_pyarrow(data, location)
-
-                # Convert to records for DLT processing
-                # PyArrow table - convert to pandas for chunking (DLT handles PyArrow tables)
-                df = processed_data.to_pandas()
-
-                logger.info(f"Processed {len(df)} records for {location_name} with {len(df.columns)} fields using PyArrow")
-
-                if df.empty:
-                    logger.info(f"No new data to process for {location_name}, skipping.")
-                    continue
-
-                # Efficient chunking strategy
-                CHUNK_THRESHOLD = config.CHUNK_THRESHOLD
-                chunk_size = config.CHUNK_SIZE if len(df) > CHUNK_THRESHOLD else len(df)
-
-                for i in range(0, len(df), chunk_size):
-                    chunk = df.iloc[i:i+chunk_size].to_dict("records")
-                    for j in range(0, len(chunk), config.BATCH_SIZE):
-                        yield chunk[j:j+config.BATCH_SIZE]
-
-                processed += 1
-                logger.info(f"Processed and yielded raw data for {location_name}.")
-            state["Processed_Ranges"] = {
-                loc["name"]: {
-                    "start": loc["fetch_start"].isoformat(),
-                    "end": loc["fetch_end"].isoformat()
-                } for loc in locations_to_fetch
-            }
+            logger.info(f"Raw hourly data resource finished. {processed} location-year(s) processed.")
 
         else:
             logger.info("No locations need data fetching.")
-
-        logger.info(f"Raw hourly data resource finished. {processed} location(s) processed.")
 
     return hourly_weather_data
 
@@ -1131,14 +960,9 @@ if __name__ == "__main__":
         # Configure DLT for optimal performance with PyArrow
         logger.info("Using PyArrow optimizations for data processing")
 
-        # Set table format for better performance (if using MotherDuck/DuckDB)
-        destination_config = {
-            "table_format": "delta"  # Always use delta format with PyArrow
-        }
-
         # Check existing pipeline state
         try:
-            existing_tables = pipeline.dataset().table_names if hasattr(pipeline.dataset(), 'table_names') else []
+            existing_tables = pipeline.dataset().table_names
             logger.info(f"Existing tables in dataset: {existing_tables}")
         except (PipelineNeverRan, DatabaseUndefinedRelation, ValueError, KeyError) as e:
             logger.warning(f"No previous runs or table found: {e}. Assuming first run or empty DB.")
@@ -1178,11 +1002,8 @@ if __name__ == "__main__":
         try:
             with pipeline.sql_client() as client:
                 indexes_to_create = [
-                    ("idx_weather_enriched_location_date", "weather_analysis.weather_hourly_enriched(location, date)"),
-                    ("idx_weather_enriched_date", "weather_analysis.weather_hourly_enriched(date)"),
+                    ("idx_weather_enriched_datetime", "weather_analysis.weather_hourly_enriched(datetime)"),
                     ("idx_weather_enriched_location_datetime", "weather_analysis.weather_hourly_enriched(location, datetime)"),
-                    ("idx_weather_enriched_winter", "weather_analysis.weather_hourly_enriched(is_winter)"),
-                    ("idx_weather_enriched_temp_freezing", "weather_analysis.weather_hourly_enriched(temp_freezing)")
                 ]
 
                 created_indexes = 0

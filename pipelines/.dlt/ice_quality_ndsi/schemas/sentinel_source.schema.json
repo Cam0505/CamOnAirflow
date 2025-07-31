@@ -1,6 +1,6 @@
 {
-  "version": 3,
-  "version_hash": "qyUHwmPYenS7Nh1iL34UV40+GCTFL15m2uKgL7tTL8E=",
+  "version": 2,
+  "version_hash": "HvB+qwVibPRDK9Nl0bCDbuhSFGcvX8HwdrCjJATyOZE=",
   "engine_version": 11,
   "name": "sentinel_source",
   "tables": {
@@ -80,71 +80,44 @@
         "date": {
           "name": "date",
           "nullable": false,
-          "primary_key": true,
-          "data_type": "timestamp"
-        },
-        "ndsi": {
-          "name": "ndsi",
-          "data_type": "double",
-          "nullable": true
-        },
-        "ndwi": {
-          "name": "ndwi",
-          "data_type": "double",
-          "nullable": true
-        },
-        "ndii": {
-          "name": "ndii",
-          "data_type": "double",
-          "nullable": true
+          "data_type": "date",
+          "primary_key": true
         },
         "location": {
           "name": "location",
           "nullable": false,
-          "primary_key": true,
-          "data_type": "text"
+          "data_type": "text",
+          "primary_key": true
+        },
+        "ndsi": {
+          "name": "ndsi",
+          "nullable": true,
+          "data_type": "double"
         },
         "ndsi_smooth": {
           "name": "ndsi_smooth",
-          "data_type": "double",
-          "nullable": true
+          "nullable": true,
+          "data_type": "double"
+        },
+        "ndwi": {
+          "name": "ndwi",
+          "nullable": true,
+          "data_type": "double"
         },
         "ndwi_smooth": {
           "name": "ndwi_smooth",
-          "data_type": "double",
-          "nullable": true
+          "nullable": true,
+          "data_type": "double"
+        },
+        "ndii": {
+          "name": "ndii",
+          "nullable": true,
+          "data_type": "double"
         },
         "ndii_smooth": {
           "name": "ndii_smooth",
-          "data_type": "double",
-          "nullable": true
-        },
-        "label": {
-          "name": "label",
-          "data_type": "text",
-          "nullable": true
-        },
-        "_dlt_load_id": {
-          "name": "_dlt_load_id",
-          "data_type": "text",
-          "nullable": false
-        },
-        "_dlt_id": {
-          "name": "_dlt_id",
-          "data_type": "text",
-          "nullable": false,
-          "unique": true,
-          "row_key": true
-        },
-        "elevation": {
-          "name": "elevation",
-          "data_type": "double",
-          "nullable": true
-        },
-        "slope": {
-          "name": "slope",
-          "data_type": "double",
-          "nullable": true
+          "nullable": true,
+          "data_type": "double"
         }
       },
       "write_disposition": "merge",
@@ -250,8 +223,7 @@
     }
   },
   "previous_hashes": [
-    "qsGJuzPqhWn3/AGqPmJhjvMvrOZ4zFgT4JNJVoWXlCA=",
-    "jM79j4/VJcrHAub3A1WloujmVDC+TepcKeHvdB6Ew+E=",
-    "HzuV5XScoWJiYs10LZHTILIMQ+jaTp2Drnfkg2Ahsmg="
+    "BSUpBH2wYTNQt3xivN4Eh8JS10qIsbI2JpJ4E2R6MKs=",
+    "fFcC8s2i3Awtvin+5xTFyCrl0XCUKdUVSpOlifHJNfs="
   ]
 }

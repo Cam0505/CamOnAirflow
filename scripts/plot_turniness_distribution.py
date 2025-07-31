@@ -5,7 +5,6 @@ from dotenv import load_dotenv
 import itertools
 import matplotlib.pyplot as plt
 import matplotlib
-import pandas as pd
 from project_path import get_project_paths, set_dlt_env_vars
 from adjustText import adjust_text
 

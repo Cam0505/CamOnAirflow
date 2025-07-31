@@ -8,8 +8,9 @@ from datetime import datetime, timedelta, date
 from zoneinfo import ZoneInfo
 from os import getenv
 import json
-import math
-import pandas as pd
+import time
+import pyarrow as pa
+import numpy as np
 from project_path import get_project_paths, set_dlt_env_vars
 
 # Load environment variables and set DLT config
@@ -24,6 +25,7 @@ load_dotenv(dotenv_path=ENV_FILE)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logging.getLogger("dlt").setLevel(logging.INFO)
 
 SENTINEL_CLIENT_ID = getenv("SENTINEL_CLIENT_ID")
 if not SENTINEL_CLIENT_ID:
@@ -35,17 +37,22 @@ if not SENTINEL_CLIENT_SECRET:
 
 LOCATIONS = [
     {"name": "Wye Creek", "lat": -45.087551, "lon": 168.810442},
-    {"name": "SE Face Mount Ward", "lat": -43.867239, "lon": 169.833754},
     {"name": "Island Gully", "lat": -42.133076, "lon": 172.755765},
+    {"name": "Milford Sound", "lat": -44.770974, "lon": 168.036796},
+    {"name": "Bush Stream", "lat": -43.8487, "lon": 170.0439},
     {"name": "Shrimpton Ice", "lat": -44.222395, "lon": 169.307676}
 ]
 # 12m buffer around each point
 EPSILON = 0.00018
 
-START_DATE = date(2021, 1, 1)
+START_DATE = date(2015, 1, 1)
 BUFFER_DAYS = 7  # configurable number of days to reprocess to handle late arrivals
-TODAY = datetime.now(ZoneInfo("Australia/Sydney")).date()
+TODAY = datetime.now(ZoneInfo("Pacific/Auckland")).date()
 END_DATE = TODAY - timedelta(days=2)
+
+MAX_RETRIES = 3
+RETRY_DELAY = 6  # seconds
+API_TIMEOUT = 60  # seconds
 
 def json_converter(o):
     if isinstance(o, date):
@@ -64,58 +71,6 @@ def get_access_token():
     return response.json()["access_token"]
 
 
-def get_elevation(lat, lon):
-    url = "https://api.open-elevation.com/api/v1/lookup"
-    params = {"locations": f"{lat},{lon}"}
-    try:
-        resp = requests.get(url, params=params)
-        resp.raise_for_status()
-        return resp.json()["results"][0]["elevation"]
-    except Exception as e:
-        logging.warning(f"Failed to fetch elevation for {lat}, {lon}: {e}")
-        return None
-
-def get_site_elevation_and_slope(lat, lon, epsilon=0.00018):
-    """
-    Fetches the elevation at the center, N, S, E, W, and calculates mean elevation and local slope (max difference / distance).
-    """
-    # Define sample points
-    center = (lat, lon)
-    north = (lat + epsilon, lon)
-    south = (lat - epsilon, lon)
-    east = (lat, lon + epsilon)
-    west = (lat, lon - epsilon)
-    points = [center, north, south, east, west]
-    elevations = []
-    for pt in points:
-        elevations.append(get_elevation(pt[0], pt[1]))
-    # Remove any Nones (failed lookups)
-    elevations = [e for e in elevations if e is not None]
-    if not elevations:
-        return None, None
-    mean_elev = sum(elevations) / len(elevations)
-    # Slope: max diff between center and other points, divided by distance (in meters)
-    center_elev = elevations[0]
-    max_slope = 0
-    for pt, elev in zip(points[1:], elevations[1:]):
-        # Approximate distance in meters
-        dist = haversine_distance(center, pt)
-        if dist > 0:
-            slope = abs(center_elev - elev) / dist
-            max_slope = max(max_slope, slope)
-    return mean_elev, max_slope
-
-def haversine_distance(coord1, coord2):
-    # Returns distance in meters between two (lat, lon) points
-    R = 6371000  # radius of Earth in meters
-    phi1, phi2 = math.radians(coord1[0]), math.radians(coord2[0])
-    d_phi = math.radians(coord2[0] - coord1[0])
-    d_lambda = math.radians(coord2[1] - coord1[1])
-    a = math.sin(d_phi/2)**2 + math.cos(phi1)*math.cos(phi2)*math.sin(d_lambda/2)**2
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    return R * c
-
-
 def fetch_stats_ndsi(access_token, bbox, start_date, end_date, logger):
     url = "https://services.sentinel-hub.com/api/v1/statistics"
     headers = {
@@ -125,28 +80,28 @@ def fetch_stats_ndsi(access_token, bbox, start_date, end_date, logger):
     }
 
     evalscript = """//VERSION=3
-function setup() {
-  return {
-    input: [{bands: ["B03", "B08", "B11", "dataMask"]}],
-    output: [
-            { id: "ndsi", bands: 1, sampleType: "FLOAT32" },
-            { id: "ndwi", bands: 1, sampleType: "FLOAT32" },
-            { id: "ndii", bands: 1, sampleType: "FLOAT32" },
-            { id: "dataMask", bands: 1 }
-            ]
-  };
-}
-function evaluatePixel(sample) {
-    let ndsi = (sample.B03 + sample.B11) === 0 ? 0 : (sample.B03 - sample.B11) / (sample.B03 + sample.B11);
-    let ndwi = (sample.B03 + sample.B08) === 0 ? 0 : (sample.B03 - sample.B08) / (sample.B03 + sample.B08);
-    let ndii = (sample.B08 + sample.B11) === 0 ? 0 : (sample.B08 - sample.B11) / (sample.B08 + sample.B11);
+    function setup() {
     return {
-        ndsi: [ndsi],
-        ndwi: [ndwi],
-        ndii: [ndii],
-        dataMask: [sample.dataMask]
+        input: [{bands: ["B03", "B08", "B11", "dataMask"]}],
+        output: [
+                { id: "ndsi", bands: 1, sampleType: "FLOAT32" },
+                { id: "ndwi", bands: 1, sampleType: "FLOAT32" },
+                { id: "ndii", bands: 1, sampleType: "FLOAT32" },
+                { id: "dataMask", bands: 1 }
+                ]
     };
-}"""
+    }
+    function evaluatePixel(sample) {
+        let ndsi = (sample.B03 + sample.B11) === 0 ? 0 : (sample.B03 - sample.B11) / (sample.B03 + sample.B11);
+        let ndwi = (sample.B03 + sample.B08) === 0 ? 0 : (sample.B03 - sample.B08) / (sample.B03 + sample.B08);
+        let ndii = (sample.B08 + sample.B11) === 0 ? 0 : (sample.B08 - sample.B11) / (sample.B08 + sample.B11);
+        return {
+            ndsi: [ndsi],
+            ndwi: [ndwi],
+            ndii: [ndii],
+            dataMask: [sample.dataMask]
+        };
+    }"""
 
     stats_request = {
         "input": {
@@ -205,20 +160,23 @@ function evaluatePixel(sample) {
     }
 
 
-    try:
-        response = requests.post(url, headers=headers, json=stats_request)
-        response.raise_for_status()
-        # print("✅ Raw response:")
-        # print(json.dumps(response.json(), indent=2))
-        return response.json()
-    except requests.RequestException as err:
-        logger.error(f"❌ HTTP Error: {err}")
-        logger.error(f"❌ Response content: {err.response}")
-        raise
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            response = requests.post(url, headers=headers, json=stats_request, timeout=API_TIMEOUT)
+            response.raise_for_status()
+            return response.json()
+        except requests.Timeout:
+            logger.warning(f"Timeout fetching Sentinel data (attempt {attempt}/{MAX_RETRIES})")
+        except requests.RequestException as err:
+            logger.warning(f"HTTP error fetching Sentinel data: {err} (attempt {attempt}/{MAX_RETRIES})")
+        if attempt < MAX_RETRIES:
+            time.sleep(RETRY_DELAY * attempt)
+    logger.error(f"All {MAX_RETRIES} attempts failed for Sentinel API fetch.")
+    return None
 
 
 
-def process_and_store(data, location, elev, slope):
+def process_and_store(data, location):
     rows = []
     for t in data["data"]:
         d = t["interval"]["from"][:10]
@@ -231,16 +189,60 @@ def process_and_store(data, location, elev, slope):
             continue
         rows.append({"date": d, "ndsi": ndsi, "ndwi": ndwi, "ndii": ndii})
 
-    df = pd.DataFrame(rows)
-    df["date"] = pd.to_datetime(df["date"])
-    df["location"] = location
-    df["ndsi_smooth"] = df["ndsi"].rolling(window=5, center=True, min_periods=1).mean()
-    df["ndwi_smooth"] = df["ndwi"].rolling(window=5, center=True, min_periods=1).mean()
-    df["ndii_smooth"] = df["ndii"].rolling(window=5, center=True, min_periods=1).mean()
-    df["Elevation"] = elev
-    df["Slope"] = slope
-    
-    return df.to_dict(orient="records") 
+    if not rows:
+        return
+
+    # Convert date strings to datetime.date objects with error handling
+    date_objs = []
+    for idx, r in enumerate(rows):
+        try:
+            date_obj = datetime.strptime(r["date"], "%Y-%m-%d").date()
+            date_objs.append(date_obj)
+        except Exception as e:
+            print(f"[ERROR] Failed to convert date '{r['date']}' at row {idx} for location '{location}': {e}")
+            continue
+
+    if len(date_objs) != len(rows):
+        print(f"[WARNING] Some dates could not be converted for location '{location}'. {len(rows) - len(date_objs)} rows skipped.")
+
+    # Only keep rows with valid dates
+    valid_rows = [r for i, r in enumerate(rows) if i < len(date_objs)]
+
+    if not date_objs or not valid_rows:
+        print(f"[ERROR] No valid dates to store for location '{location}'.")
+        return
+
+    # Prepare arrays for smoothing
+    ndsi_arr = np.array([r["ndsi"] for r in valid_rows], dtype=np.float32)
+    ndwi_arr = np.array([r["ndwi"] for r in valid_rows], dtype=np.float32)
+    ndii_arr = np.array([r["ndii"] for r in valid_rows], dtype=np.float32)
+
+    def rolling_avg(arr, window=5):
+        out = []
+        for i in range(len(arr)):
+            start = max(0, i - window // 2)
+            end = min(len(arr), i + window // 2 + 1)
+            vals = arr[start:end]
+            vals = vals[~np.isnan(vals)]
+            out.append(float(np.mean(vals)) if len(vals) else None)
+        return out
+
+    ndsi_smooth = rolling_avg(ndsi_arr)
+    ndwi_smooth = rolling_avg(ndwi_arr)
+    ndii_smooth = rolling_avg(ndii_arr)
+
+    table = pa.table({
+        "date": pa.array(date_objs, pa.date32()),
+        "location": pa.array([location] * len(date_objs), pa.string()),
+        "ndsi": pa.array([r["ndsi"] for r in valid_rows], pa.float32()),
+        "ndsi_smooth": pa.array(ndsi_smooth, pa.float32()),
+        "ndwi": pa.array([r["ndwi"] for r in valid_rows], pa.float32()),
+        "ndwi_smooth": pa.array(ndwi_smooth, pa.float32()),
+        "ndii": pa.array([r["ndii"] for r in valid_rows], pa.float32()),
+        "ndii_smooth": pa.array(ndii_smooth, pa.float32())
+    })
+
+    return table
 
 
 def compute_fetch_ranges(
@@ -290,8 +292,7 @@ def sentinel_source(logger: logging.Logger, token: str, locations_with_data: set
         state = dlt.current.source_state().setdefault("ice_indices", {
             "location_dates": {},
             "location_status": {},
-            "run_dates": {},
-            "slope&elevations": {}
+            "run_dates": {}
         })
 
         for loc in LOCATIONS:
@@ -306,18 +307,6 @@ def sentinel_source(logger: logging.Logger, token: str, locations_with_data: set
             state_min = state_dates.get("start_date")
             state_max = state_dates.get("end_date")
 
-            if loc_name not in state["slope&elevations"]:
-                logger.info(f"Fetching elevation and slope for {loc_name}")
-                elev, slope = get_site_elevation_and_slope(loc["lat"], loc["lon"], EPSILON)
-                # Set elevation and slope in state
-                state["slope&elevations"][loc_name] = {
-                    "elevation": elev,
-                    "slope": slope
-                }
-            else:
-                logger.info(f"Using cached elevation and slope for {loc_name}")
-                elev = state["slope&elevations"][loc_name]["elevation"]
-                slope = state["slope&elevations"][loc_name]["slope"]
 
             BBOX = [loc["lon"] - EPSILON, loc["lat"] - EPSILON, loc["lon"] + EPSILON, loc["lat"] + EPSILON]
 
@@ -355,10 +344,17 @@ def sentinel_source(logger: logging.Logger, token: str, locations_with_data: set
                         logger.info(f"Fetching {loc_name} from {fetch_start} to {fetch_end}")
                         try:
                             raw = fetch_stats_ndsi(token, BBOX, fetch_start, fetch_end, logger)
-                            records = process_and_store(raw, loc_name, elev, slope)
-                            if records:
-                                fetched_any = True
-                                yield from records
+                            records = process_and_store(raw, loc_name)
+
+                            if records is None:
+                                logger.warning(f"No data returned for {loc_name} range {fetch_start} to {fetch_end}")
+                                continue
+
+                            CHUNK_THRESHOLD = 50000
+                            chunk_size = 10000 if records.num_rows > CHUNK_THRESHOLD else records.num_rows
+
+                            for batch in records.to_batches(max_chunksize=chunk_size):
+                                yield batch  # Yield PyArrow RecordBatch directly
                         except Exception as e:
                             logger.error(f"❌ Failed fetching {loc_name} range {fetch_start} to {fetch_end}: {e}")
                 else:
@@ -377,7 +373,7 @@ def sentinel_source(logger: logging.Logger, token: str, locations_with_data: set
                 logger.error(f"❌ Unexpected failure for {loc_name}: {e}")
                 state["run_dates"][loc_name] = []
                 state["location_status"][loc_name] = "failed"
-            
+
     return ice_indices_resource
 
 
@@ -413,7 +409,7 @@ if __name__ == "__main__":
     try:
         load_info = pipeline.run(source)
         outcome_data = source.state.get('ice_indices', {})
-        logger.info("Weather State Metadata:\n" +
+        logger.info("Weather State Metadata:\n" + 
                     json.dumps(outcome_data, indent=2, default=json_converter))
         logger.info(f"✅ Pipeline run completed: {load_info}")
     except Exception as e:

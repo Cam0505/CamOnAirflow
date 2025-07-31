@@ -42,9 +42,9 @@ df = con.execute("""
 # NZ-optimized classifier
 def classify_ice_point(ndsi, ndwi, ndii):
     if ndsi > 0.40:
-        if ndii < 0.60 and ndwi < 0.25:
+        if ndii < 0.65 and ndwi < 0.25:
             return "Good Ice Conditions"
-        elif ndii >= 0.60 or ndwi >= 0.25:
+        elif ndii >= 0.65 or ndwi >= 0.25:
             return "Wet/Thawing Ice"
         elif ndii < 0.30:
             return "Dry/Brittle Ice"
@@ -59,7 +59,7 @@ def classify_ice_point(ndsi, ndwi, ndii):
         return "Bare Rock or Error"
 
 # Only plot one location (e.g. Wye Creek)
-df = df[df["location"] == "Island Gully"]
+df = df[df["location"] == "Wye Creek"]
 df["date"] = pd.to_datetime(df["date"])
 df = df.reset_index(drop=True)
 df["label"] = df.apply(

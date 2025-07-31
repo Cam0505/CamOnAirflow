@@ -16,6 +16,12 @@ DLT_PIPELINE_DIR = paths["DLT_PIPELINE_DIR"]
 ENV_FILE = paths["ENV_FILE"]
 load_dotenv(dotenv_path=ENV_FILE)
 
+
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+if not GOOGLE_API_KEY:
+    raise ValueError("Missing GOOGLE_API_KEY in environment.")
+
+
 AVERAGE_LIFT_SPEEDS = {
     "chair_lift": 2.5,
     "gondola": 5.0,
@@ -79,7 +85,10 @@ def get_elevations_batch(coords_list):
     for i in range(0, len(coords_list), BATCH_SIZE):
         batch = coords_list[i:i+BATCH_SIZE]
         locations = "|".join(f"{lat},{lon}" for lat, lon in batch)
-        url = f"https://api.open-elevation.com/api/v1/lookup?locations={locations}"
+        url = (
+            f"https://maps.googleapis.com/maps/api/elevation/json"
+            f"?locations={locations}&key={GOOGLE_API_KEY}"
+        )
         try:
             r = requests.get(url, timeout=10)
             r.raise_for_status()
@@ -92,10 +101,10 @@ def get_elevations_batch(coords_list):
         results.extend(elevations)
     return results
 
-def smooth_steep_gradients(elevs, dists, threshold=0.25, window=5):
+def smooth_steep_gradients(elevs, dists, threshold=0.80, window=7):
     elevs = np.array(elevs, dtype=float)
     dists = np.array(dists, dtype=float)
-    if len(elevs) < 3:
+    if len(elevs) < 4:
         return elevs.tolist(), [0.0] * len(elevs)
     grads = np.gradient(elevs, dists, edge_order=2)
     smoothed = elevs.copy()
@@ -108,7 +117,7 @@ def smooth_steep_gradients(elevs, dists, threshold=0.25, window=5):
     return smoothed.tolist(), smoothed_grads.tolist()
 
 def trim_to_downhill(coords, elevations):
-    if len(elevations) < 2:
+    if len(elevations) < 4:
         return coords, elevations
     max_elev = max(elevations)
     min_elev = min(elevations)
@@ -119,7 +128,7 @@ def trim_to_downhill(coords, elevations):
     return coords[start_idx:end_idx+1], elevations[start_idx:end_idx+1]
 
 def compute_turniness(coords):
-    if len(coords) < 3:
+    if len(coords) < 4:
         return 0.0
     headings = []
     for i in range(1, len(coords)):
@@ -158,16 +167,17 @@ def ski_source(known_locations: set):
         for run in elements:
             tags = run.get("tags", {})
             geometry = run.get("geometry", [])
+            coords = [(pt["lat"], pt["lon"]) for pt in geometry] if geometry else []
             if "piste:type" in tags:
-                if "geometry" not in run or not run["geometry"]:
+                if not coords:
                     continue
                 ski_runs_data.append({
                     "osm_id": run["id"],
                     "resort": field["name"],
                     "country_code": field["country"],
                     "region": field["region"],
-                    "tags": run.get("tags", {}),
-                    "geometry": geometry,
+                    "tags": tags,
+                    "coords": coords,  # store coords directly
                 })
             elif "aerialway" in tags:
                 ski_lifts.append({
@@ -180,15 +190,15 @@ def ski_source(known_locations: set):
                     "duration": tags.get("duration"),
                     "capacity": tags.get("aerialway:capacity"),
                     "occupancy": tags.get("aerialway:occupancy"),
-                    "geometry": geometry,
+                    "coords": coords,  # store coords directly
                 })
 
     @dlt.resource(write_disposition="merge", table_name="ski_runs", primary_key=["osm_id"])
     def ski_runs():
         for run in ski_runs_data:
             tags = run.get("tags", {})
-            coords = [(pt["lat"], pt["lon"]) for pt in run["geometry"]]
-            if len(coords) < 2:
+            coords = run.get("coords", [])
+            if len(coords) < 3:
                 continue
 
             run_length = sum(
@@ -216,21 +226,36 @@ def ski_source(known_locations: set):
     def ski_run_points():
         for run in ski_runs_data:
             tags = run.get("tags", {})
-            coords = [(pt["lat"], pt["lon"]) for pt in run["geometry"]]
-            if len(coords) < 2:
+            coords = run.get("coords", [])
+            if len(coords) < 4:
                 continue
             elevations = get_elevations_batch(coords)
             coords, elevations = trim_to_downhill(coords, elevations)
-            if len(coords) < 2:
+            # --- Solution 1: Filter out if not enough points after trimming ---
+            if len(coords) < 4:
+                logger.warning(f"Skipping run {tags.get('name', '')} ({run['osm_id']}) after trim_to_downhill: only {len(coords)} points left.")
                 continue
+            # Ensure top-to-bottom order
+            if elevations[0] < elevations[-1]:
+                coords = coords[::-1]
+                elevations = elevations[::-1]
+
             cum_distances = [0.0]
+            steep_count = 0
             for i in range(1, len(coords)):
-                cum_distances.append(
-                    cum_distances[-1] + geodesic(coords[i - 1], coords[i]).meters
-                )
+                dist = geodesic(coords[i - 1], coords[i]).meters
+                cum_distances.append(cum_distances[-1] + dist)
+                if dist > 0:
+                    gradient = abs((elevations[i] - elevations[i - 1]) / dist)
+                    if gradient > 2:  # 200% gradient threshold
+                        steep_count += 1
+            if steep_count > 3:
+                logger.warning(f"Skipping run {tags.get('name', '')} ({run['osm_id']}) due to steep segments: count={steep_count}")
+                continue
+
             if len(elevations) >= 3:
                 elevations_smooth, gradients_smooth = smooth_steep_gradients(
-                    elevations, cum_distances, threshold=0.25, window=5
+                    elevations, cum_distances, threshold=0.80, window=7
                 )
             else:
                 elevations_smooth = elevations
@@ -256,14 +281,14 @@ def ski_source(known_locations: set):
     @dlt.resource(write_disposition="merge", table_name="ski_lifts", primary_key=["osm_id"])
     def ski_lifts_resource():
         for lift in ski_lifts:
-            coords = [(pt["lat"], pt["lon"]) for pt in lift.get("geometry", [])]
+            coords = lift.get("coords", [])
             if len(coords) < 2:
-                lift_length = None
-            else:
-                lift_length = sum(
-                    geodesic(coords[i], coords[i + 1]).meters
-                    for i in range(len(coords) - 1)
-                )
+                continue
+
+            lift_length = sum(
+                geodesic(coords[i], coords[i + 1]).meters
+                for i in range(len(coords) - 1)
+            )
 
             lift_type = lift.get("lift_type")
             average_speed = AVERAGE_LIFT_SPEEDS.get(lift_type)

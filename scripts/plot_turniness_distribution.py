@@ -54,7 +54,7 @@ colors = [colormap(i % 20) for i in range(num_resorts)]
 
 fig, ax = plt.subplots(figsize=(14, 10))  # Increased overall chart size
 for idx, (resort, group) in enumerate(df.groupby("resort")):
-    vals = np.sort(group["turniness_per_meter"])
+    vals = np.sort(group["turniness_score"])
     pct = np.linspace(0, 100, len(vals))
     marker = next(markers)
     color = colors[idx % len(colors)]
@@ -73,16 +73,15 @@ resort_color_map = {resort: colors[idx % len(colors)] for idx, resort in enumera
 plt.figure(figsize=(14, 10))
 untitled_counter = 1
 
-# Get the overall top 6 runs for turniness_per_meter and run_length_m (across all resorts, after filtering)
-top6_turniness = df.nlargest(6, "turniness_per_meter")
-top6_length = df.nlargest(6, "run_length_m")
-outliers = pd.concat([top6_turniness, top6_length]).drop_duplicates(subset=["run_name", "resort"])
+# Label runs with run_length >= 1500 or turniness_score >= 35
+label_mask = (df["run_length_m"] >= 1500) | (df["turniness_score"] >= 35)
+outliers = df[label_mask].drop_duplicates(subset=["run_name", "resort"])
 
 texts = []
 for resort, group in df.groupby("resort"):
     color = resort_color_map[resort]
     plt.scatter(
-        group["run_length_m"], group["turniness_per_meter"],
+        group["run_length_m"], group["turniness_score"],
         label=resort, alpha=0.7, s=60, color=color
     )
 
@@ -94,7 +93,7 @@ for _, row in outliers.iterrows():
     color = resort_color_map.get(row["resort"], "black")
     texts.append(
         plt.text(
-            row["run_length_m"], row["turniness_per_meter"], run_name,
+            row["run_length_m"], row["turniness_score"], run_name,
             fontsize=13, color=color
         )
     )
@@ -110,8 +109,8 @@ adjust_text(
 )
 
 plt.xlabel("Run Length (m)", fontsize=16)
-plt.ylabel("Turniness per meter", fontsize=16)
-plt.title("Run Length vs Turniness per Meter (NZ Resorts)", fontsize=20)
+plt.ylabel("Turniness", fontsize=16)
+plt.title("Run Length vs Turniness (NZ Resorts)", fontsize=20)
 plt.xticks(fontsize=13)
 plt.yticks(fontsize=13)
 plt.legend(fontsize=12, loc='upper left', bbox_to_anchor=(1.02, 1), markerscale=2)

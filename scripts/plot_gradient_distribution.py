@@ -42,7 +42,7 @@ query = """
 SELECT
     resort,
     gradient_bin,
-    gradient_bin_center,
+    gradient_bin_center_deg,
     cumulative_pct_runs
 FROM camonairflow.public_staging.staging_ski_gradient_distribution
 WHERE resort in {resorts}
@@ -66,7 +66,7 @@ for region, resorts in REGIONS.items():
         marker = next(markers)
         color = colors[idx % len(colors)]
         ax.plot(
-            df_resort['gradient_bin_center'],
+            df_resort['gradient_bin_center_deg'],
             df_resort['cumulative_pct_runs'] * 100,
             label=resort,
             linewidth=2,
@@ -76,9 +76,9 @@ for region, resorts in REGIONS.items():
             color=color
         )
 
-    ax.set_title(f"% of Runs by Gradient - {region}", fontsize=20, fontweight="bold")
-    ax.set_xlabel("Gradient (%)", fontsize=14)
-    ax.set_ylabel("% of Runs ≤ Gradient", fontsize=14)
+    ax.set_title(f"% of Runs by Gradient (°) - {region}", fontsize=20, fontweight="bold")
+    ax.set_xlabel("Gradient (°)", fontsize=14)
+    ax.set_ylabel("% of Runs ≤ Gradient (°)", fontsize=14)
     ax.set_xlim(5, 50)
     ax.set_ylim(0, 105)
     ax.grid(True, linestyle='--', alpha=0.6)

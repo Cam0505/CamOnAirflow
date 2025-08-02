@@ -167,5 +167,5 @@ p_cum += theme(
 
 # Save
 out_path = "/workspaces/CamOnAirFlow/charts/cumulative_daily_snowfall.png"
-p_cum.save(out_path, width=12, height=12, dpi=180, limitsize=False)
+p_cum.save(out_path, width=12, height=14, dpi=240, limitsize=False)
 print("✅ Saved chart: cumulative_daily_snowfall.png")

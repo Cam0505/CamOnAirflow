@@ -139,6 +139,31 @@ def compute_turniness(coords):
     turniness = sum(abs(headings[i] - headings[i-1]) for i in range(1, len(headings)))
     return float(turniness)
 
+# Add this function after the existing helper functions
+
+def get_top_bottom_coordinates(coords, elevations=None):
+    """Get top and bottom coordinates for a run or lift."""
+    if not coords or len(coords) < 2:
+        return None, None, None, None, None, None
+
+    if elevations and len(elevations) == len(coords):
+        # For ski runs, use elevation-based top/bottom
+        max_idx = elevations.index(max(elevations))
+        min_idx = elevations.index(min(elevations))
+        top_coords = coords[max_idx]
+        bottom_coords = coords[min_idx]
+        top_elevation = elevations[max_idx]
+        bottom_elevation = elevations[min_idx]
+    else:
+        # For lifts or when no elevation data, use first/last points
+        top_coords = coords[0]
+        bottom_coords = coords[-1]
+        top_elevation = None
+        bottom_elevation = None
+
+    return (top_coords[0], top_coords[1], top_elevation, 
+            bottom_coords[0], bottom_coords[1], bottom_elevation)
+
 @dlt.source
 def ski_source(known_locations: set):
     ski_runs_data = []
@@ -207,6 +232,10 @@ def ski_source(known_locations: set):
             )
             turniness_score = compute_turniness(coords)
 
+            # Get elevations for top/bottom calculation
+            elevations = get_elevations_batch(coords)
+            top_lat, top_lon, top_elev, bottom_lat, bottom_lon, bottom_elev = get_top_bottom_coordinates(coords, elevations)
+
             yield {
                 "osm_id": run["osm_id"],
                 "resort": run["resort"],
@@ -220,6 +249,12 @@ def ski_source(known_locations: set):
                 "run_length_m": run_length,
                 "n_points": len(coords),
                 "turniness_score": turniness_score,
+                "top_lat": top_lat,
+                "top_lon": top_lon,
+                "top_elevation_m": top_elev,
+                "bottom_lat": bottom_lat,
+                "bottom_lon": bottom_lon,
+                "bottom_elevation_m": bottom_elev,
             }
 
     @dlt.resource(write_disposition="merge", table_name="ski_run_points", primary_key=["osm_id", "point_index"])
@@ -300,6 +335,9 @@ def ski_source(known_locations: set):
 
             lift_speed = lift_length / duration_sec if lift_length and duration_sec and duration_sec > 0 else None
 
+            # Get top/bottom coordinates (for lifts, first point is typically bottom, last is top)
+            bottom_lat, bottom_lon, bottom_elev, top_lat, top_lon, top_elev = get_top_bottom_coordinates(coords)
+
             yield {
                 "osm_id": lift["osm_id"],
                 "resort": lift["resort"],
@@ -311,7 +349,13 @@ def ski_source(known_locations: set):
                 "capacity": lift.get("capacity"),
                 "occupancy": lift.get("occupancy"),
                 "lift_length_m": lift_length,
-                "lift_speed_mps": lift_speed 
+                "lift_speed_mps": lift_speed,
+                "top_lat": top_lat,
+                "top_lon": top_lon,
+                "top_elevation_m": top_elev,
+                "bottom_lat": bottom_lat,
+                "bottom_lon": bottom_lon,
+                "bottom_elevation_m": bottom_elev,
             }
 
     return [ski_runs, ski_run_points, ski_lifts_resource]

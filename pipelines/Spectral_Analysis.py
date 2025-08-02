@@ -24,7 +24,9 @@ DBT_DIR = paths["DBT_DIR"]
 load_dotenv(dotenv_path=ENV_FILE)
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+)
 logging.getLogger("dlt").setLevel(logging.INFO)
 
 SENTINEL_CLIENT_ID = getenv("SENTINEL_CLIENT_ID")
@@ -36,11 +38,12 @@ if not SENTINEL_CLIENT_SECRET:
     raise ValueError("Missing SENTINEL_CLIENT_SECRET in environment.")
 
 LOCATIONS = [
-    {"name": "Wye Creek", "lat": -45.087551, "lon": 168.810442},
+    {"name": "Wye Creek Ice Curtain", "lat": -45.0863, "lon": 168.8125},
+    {"name": "Wye Creek", "lat": -45.087152, "lon": 168.811421},
     {"name": "Island Gully", "lat": -42.133076, "lon": 172.755765},
     {"name": "Milford Sound", "lat": -44.770974, "lon": 168.036796},
     {"name": "Bush Stream", "lat": -43.8487, "lon": 170.0439},
-    {"name": "Shrimpton Ice", "lat": -44.222395, "lon": 169.307676}
+    {"name": "Shrimpton Ice", "lat": -44.222395, "lon": 169.307676},
 ]
 # 12m buffer around each point
 EPSILON = 0.00018
@@ -54,10 +57,12 @@ MAX_RETRIES = 3
 RETRY_DELAY = 6  # seconds
 API_TIMEOUT = 60  # seconds
 
+
 def json_converter(o):
     if isinstance(o, date):
         return o.isoformat()
     return str(o)
+
 
 def get_access_token():
     url = "https://services.sentinel-hub.com/oauth/token"
@@ -76,7 +81,7 @@ def fetch_stats_ndsi(access_token, bbox, start_date, end_date, logger):
     headers = {
         "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json",
-        "Accept": "application/json"
+        "Accept": "application/json",
     }
 
     evalscript = """//VERSION=3
@@ -107,73 +112,59 @@ def fetch_stats_ndsi(access_token, bbox, start_date, end_date, logger):
         "input": {
             "bounds": {
                 "bbox": bbox,
-                "properties": {
-                    "crs": "http://www.opengis.net/def/crs/EPSG/0/4326"
-                }
+                "properties": {"crs": "http://www.opengis.net/def/crs/EPSG/0/4326"},
             },
-            "data": [{
-                "type": "sentinel-2-l2a",
-                "dataFilter": {
-                    "timeRange": {
-                        "from": f"{start_date}T00:00:00Z",
-                        "to": f"{end_date}T23:59:59Z"
+            "data": [
+                {
+                    "type": "sentinel-2-l2a",
+                    "dataFilter": {
+                        "timeRange": {
+                            "from": f"{start_date}T00:00:00Z",
+                            "to": f"{end_date}T23:59:59Z",
+                        },
+                        "maxCloudCoverage": 75,
+                        "mosaickingOrder": "leastCC",
                     },
-                    "maxCloudCoverage": 75,
-                    "mosaickingOrder": "leastCC"
                 }
-            }]
+            ],
         },
         "aggregation": {
             "timeRange": {
                 "from": f"{start_date}T00:00:00Z",
-                "to": f"{end_date}T23:59:59Z"
+                "to": f"{end_date}T23:59:59Z",
             },
             "aggregationInterval": {"of": "P1D"},
             "evalscript": evalscript,
             "resx": 10,
             "resy": 10,
-            "meta": True
+            "meta": True,
         },
         "calculations": {
-            "ndsi": {
-                "statistics": {
-                    "B0": {
-                        "stats": ["mean"]
-                    }
-                }
-            },
-            "ndwi": {
-                "statistics": {
-                    "B0": {
-                        "stats": ["mean"]
-                    }
-                }
-            },
-            "ndii": {
-                "statistics": {
-                    "B0": {
-                        "stats": ["mean"]
-                    }
-                }
-            }
-        }
+            "ndsi": {"statistics": {"B0": {"stats": ["mean"]}}},
+            "ndwi": {"statistics": {"B0": {"stats": ["mean"]}}},
+            "ndii": {"statistics": {"B0": {"stats": ["mean"]}}},
+        },
     }
-
 
     for attempt in range(1, MAX_RETRIES + 1):
         try:
-            response = requests.post(url, headers=headers, json=stats_request, timeout=API_TIMEOUT)
+            response = requests.post(
+                url, headers=headers, json=stats_request, timeout=API_TIMEOUT
+            )
             response.raise_for_status()
             return response.json()
         except requests.Timeout:
-            logger.warning(f"Timeout fetching Sentinel data (attempt {attempt}/{MAX_RETRIES})")
+            logger.warning(
+                f"Timeout fetching Sentinel data (attempt {attempt}/{MAX_RETRIES})"
+            )
         except requests.RequestException as err:
-            logger.warning(f"HTTP error fetching Sentinel data: {err} (attempt {attempt}/{MAX_RETRIES})")
+            logger.warning(
+                f"HTTP error fetching Sentinel data: {err} (attempt {attempt}/{MAX_RETRIES})"
+            )
         if attempt < MAX_RETRIES:
             time.sleep(RETRY_DELAY * attempt)
     logger.error(f"All {MAX_RETRIES} attempts failed for Sentinel API fetch.")
     return None
-
 
 
 def process_and_store(data, location):
@@ -199,11 +190,15 @@ def process_and_store(data, location):
             date_obj = datetime.strptime(r["date"], "%Y-%m-%d").date()
             date_objs.append(date_obj)
         except Exception as e:
-            print(f"[ERROR] Failed to convert date '{r['date']}' at row {idx} for location '{location}': {e}")
+            print(
+                f"[ERROR] Failed to convert date '{r['date']}' at row {idx} for location '{location}': {e}"
+            )
             continue
 
     if len(date_objs) != len(rows):
-        print(f"[WARNING] Some dates could not be converted for location '{location}'. {len(rows) - len(date_objs)} rows skipped.")
+        print(
+            f"[WARNING] Some dates could not be converted for location '{location}'. {len(rows) - len(date_objs)} rows skipped."
+        )
 
     # Only keep rows with valid dates
     valid_rows = [r for i, r in enumerate(rows) if i < len(date_objs)]
@@ -231,16 +226,18 @@ def process_and_store(data, location):
     ndwi_smooth = rolling_avg(ndwi_arr)
     ndii_smooth = rolling_avg(ndii_arr)
 
-    table = pa.table({
-        "date": pa.array(date_objs, pa.date32()),
-        "location": pa.array([location] * len(date_objs), pa.string()),
-        "ndsi": pa.array([r["ndsi"] for r in valid_rows], pa.float32()),
-        "ndsi_smooth": pa.array(ndsi_smooth, pa.float32()),
-        "ndwi": pa.array([r["ndwi"] for r in valid_rows], pa.float32()),
-        "ndwi_smooth": pa.array(ndwi_smooth, pa.float32()),
-        "ndii": pa.array([r["ndii"] for r in valid_rows], pa.float32()),
-        "ndii_smooth": pa.array(ndii_smooth, pa.float32())
-    })
+    table = pa.table(
+        {
+            "date": pa.array(date_objs, pa.date32()),
+            "location": pa.array([location] * len(date_objs), pa.string()),
+            "ndsi": pa.array([r["ndsi"] for r in valid_rows], pa.float32()),
+            "ndsi_smooth": pa.array(ndsi_smooth, pa.float32()),
+            "ndwi": pa.array([r["ndwi"] for r in valid_rows], pa.float32()),
+            "ndwi_smooth": pa.array(ndwi_smooth, pa.float32()),
+            "ndii": pa.array([r["ndii"] for r in valid_rows], pa.float32()),
+            "ndii_smooth": pa.array(ndii_smooth, pa.float32()),
+        }
+    )
 
     return table
 
@@ -251,7 +248,7 @@ def compute_fetch_ranges(
     state_min: date | None,
     state_max: date | None,
     buffer_days: int = 7,
-    truncation: bool = False
+    truncation: bool = False,
 ) -> list[tuple[date, date]]:
     """
     Returns a list of (fetch_start, fetch_end) tuples for needed fetches.
@@ -286,14 +283,14 @@ def compute_fetch_ranges(
 
 @dlt.source
 def sentinel_source(logger: logging.Logger, token: str, locations_with_data: set):
-    @dlt.resource(write_disposition="merge", name="ice_indices", 
-                  primary_key=["location", "date"])
+    @dlt.resource(
+        write_disposition="merge", name="ice_indices", primary_key=["location", "date"]
+    )
     def ice_indices_resource():
-        state = dlt.current.source_state().setdefault("ice_indices", {
-            "location_dates": {},
-            "location_status": {},
-            "run_dates": {}
-        })
+        state = dlt.current.source_state().setdefault(
+            "ice_indices",
+            {"location_dates": {}, "location_status": {}, "run_dates": {}},
+        )
 
         for loc in LOCATIONS:
             loc_name = loc["name"]
@@ -307,9 +304,12 @@ def sentinel_source(logger: logging.Logger, token: str, locations_with_data: set
             state_min = state_dates.get("start_date")
             state_max = state_dates.get("end_date")
 
-
-            BBOX = [loc["lon"] - EPSILON, loc["lat"] - EPSILON, loc["lon"] + EPSILON, loc["lat"] + EPSILON]
-
+            BBOX = [
+                loc["lon"] - EPSILON,
+                loc["lat"] - EPSILON,
+                loc["lon"] + EPSILON,
+                loc["lat"] + EPSILON,
+            ]
 
             ranges = compute_fetch_ranges(
                 global_min=START_DATE,
@@ -317,7 +317,7 @@ def sentinel_source(logger: logging.Logger, token: str, locations_with_data: set
                 state_min=state_min,
                 state_max=state_max,
                 buffer_days=BUFFER_DAYS,
-                truncation=truncation
+                truncation=truncation,
             )
 
             try:
@@ -332,31 +332,45 @@ def sentinel_source(logger: logging.Logger, token: str, locations_with_data: set
                     run_end = max(fetch_end for _, fetch_end in ranges)
 
                     # Combine with previous state if present
-                    new_start = min([d for d in [state_min, run_start] if d is not None])
+                    new_start = min(
+                        [d for d in [state_min, run_start] if d is not None]
+                    )
                     new_end = max([d for d in [state_max, run_end] if d is not None])
 
                     state["location_dates"][loc_name] = {
                         "start_date": new_start,
-                        "end_date": new_end
+                        "end_date": new_end,
                     }
 
                     for fetch_start, fetch_end in ranges:
-                        logger.info(f"Fetching {loc_name} from {fetch_start} to {fetch_end}")
+                        logger.info(
+                            f"Fetching {loc_name} from {fetch_start} to {fetch_end}"
+                        )
                         try:
-                            raw = fetch_stats_ndsi(token, BBOX, fetch_start, fetch_end, logger)
+                            raw = fetch_stats_ndsi(
+                                token, BBOX, fetch_start, fetch_end, logger
+                            )
                             records = process_and_store(raw, loc_name)
 
                             if records is None:
-                                logger.warning(f"No data returned for {loc_name} range {fetch_start} to {fetch_end}")
+                                logger.warning(
+                                    f"No data returned for {loc_name} range {fetch_start} to {fetch_end}"
+                                )
                                 continue
 
                             CHUNK_THRESHOLD = 50000
-                            chunk_size = 10000 if records.num_rows > CHUNK_THRESHOLD else records.num_rows
+                            chunk_size = (
+                                10000
+                                if records.num_rows > CHUNK_THRESHOLD
+                                else records.num_rows
+                            )
 
                             for batch in records.to_batches(max_chunksize=chunk_size):
                                 yield batch  # Yield PyArrow RecordBatch directly
                         except Exception as e:
-                            logger.error(f"❌ Failed fetching {loc_name} range {fetch_start} to {fetch_end}: {e}")
+                            logger.error(
+                                f"❌ Failed fetching {loc_name} range {fetch_start} to {fetch_end}: {e}"
+                            )
                 else:
                     logger.info(f"{loc_name} is up-to-date")
                     state["run_dates"][loc_name] = []
@@ -386,7 +400,7 @@ if __name__ == "__main__":
         destination="motherduck",
         dataset_name="main",
         pipelines_dir=str(DLT_PIPELINE_DIR),
-        dev_mode=False
+        dev_mode=False,
     )
 
     locations_with_data = set()
@@ -397,20 +411,21 @@ if __name__ == "__main__":
             locations_with_data = set(str(loc) for loc in non_empty_locations)
     except PipelineNeverRan:
         logger.warning(
-            "⚠️ No previous runs found for this pipeline. Assuming first run.")
+            "⚠️ No previous runs found for this pipeline. Assuming first run."
+        )
     except DatabaseUndefinedRelation:
-        logger.warning(
-            "⚠️ Table Doesn't Exist. Assuming truncation.")
+        logger.warning("⚠️ Table Doesn't Exist. Assuming truncation.")
     except ValueError as ve:
-        logger.warning(
-            f"⚠️ ValueError: {ve}. Assuming first run or empty dataset.")
+        logger.warning(f"⚠️ ValueError: {ve}. Assuming first run or empty dataset.")
 
     source = sentinel_source(logger, token, locations_with_data)
     try:
         load_info = pipeline.run(source)
-        outcome_data = source.state.get('ice_indices', {})
-        logger.info("Weather State Metadata:\n" + 
-                    json.dumps(outcome_data, indent=2, default=json_converter))
+        outcome_data = source.state.get("ice_indices", {})
+        logger.info(
+            "Weather State Metadata:\n"
+            + json.dumps(outcome_data, indent=2, default=json_converter)
+        )
         logger.info(f"✅ Pipeline run completed: {load_info}")
     except Exception as e:
         logger.error(f"❌ Pipeline run failed: {e}")

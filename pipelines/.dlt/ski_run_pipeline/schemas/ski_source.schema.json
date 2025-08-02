@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "version_hash": "In2yJ/AGKz6nJhYRhUNsw6CdR/1U+Vu6FZwtiwScKT8=",
+  "version_hash": "XU94ojf+jV7mFsIV5GbOWTnSFiKLSgL+IBRN79HcTcA=",
   "engine_version": 11,
   "name": "ski_source",
   "tables": {
@@ -125,6 +125,36 @@
         },
         "turniness_score": {
           "name": "turniness_score",
+          "data_type": "double",
+          "nullable": true
+        },
+        "top_lat": {
+          "name": "top_lat",
+          "data_type": "double",
+          "nullable": true
+        },
+        "top_lon": {
+          "name": "top_lon",
+          "data_type": "double",
+          "nullable": true
+        },
+        "top_elevation_m": {
+          "name": "top_elevation_m",
+          "data_type": "double",
+          "nullable": true
+        },
+        "bottom_lat": {
+          "name": "bottom_lat",
+          "data_type": "double",
+          "nullable": true
+        },
+        "bottom_lon": {
+          "name": "bottom_lon",
+          "data_type": "double",
+          "nullable": true
+        },
+        "bottom_elevation_m": {
+          "name": "bottom_elevation_m",
           "data_type": "double",
           "nullable": true
         },
@@ -270,6 +300,11 @@
           "data_type": "text",
           "nullable": true
         },
+        "duration": {
+          "name": "duration",
+          "data_type": "double",
+          "nullable": true
+        },
         "lift_length_m": {
           "name": "lift_length_m",
           "data_type": "double",
@@ -279,6 +314,40 @@
           "name": "lift_speed_mps",
           "data_type": "double",
           "nullable": true
+        },
+        "top_lat": {
+          "name": "top_lat",
+          "data_type": "double",
+          "nullable": true
+        },
+        "top_lon": {
+          "name": "top_lon",
+          "data_type": "double",
+          "nullable": true
+        },
+        "top_elevation_m": {
+          "name": "top_elevation_m",
+          "nullable": true,
+          "x-normalizer": {
+            "seen-null-first": true
+          }
+        },
+        "bottom_lat": {
+          "name": "bottom_lat",
+          "data_type": "double",
+          "nullable": true
+        },
+        "bottom_lon": {
+          "name": "bottom_lon",
+          "data_type": "double",
+          "nullable": true
+        },
+        "bottom_elevation_m": {
+          "name": "bottom_elevation_m",
+          "nullable": true,
+          "x-normalizer": {
+            "seen-null-first": true
+          }
         },
         "_dlt_load_id": {
           "name": "_dlt_load_id",
@@ -299,11 +368,6 @@
         },
         "capacity": {
           "name": "capacity",
-          "nullable": true,
-          "data_type": "text"
-        },
-        "duration": {
-          "name": "duration",
           "nullable": true,
           "data_type": "text"
         }

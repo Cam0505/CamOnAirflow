@@ -1,5 +1,6 @@
 SELECT
     resort,
+    osm_id,
     run_name,
     piste_type,
     difficulty,

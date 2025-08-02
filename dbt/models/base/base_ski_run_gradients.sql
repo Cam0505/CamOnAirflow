@@ -7,7 +7,8 @@ WITH points AS (
         p.distance_along_run_m,
         p.elevation_m,
         p.elevation_smoothed_m,
-        p.point_index
+        p.point_index,
+        r.difficulty
     FROM {{ source('ski_runs', 'ski_run_points') }} AS p
     INNER JOIN {{ ref('base_filtered_ski_runs') }} AS r ON p.osm_id = r.osm_id
     where r.n_points > 3
@@ -39,6 +40,13 @@ WITH points AS (
 
 ,segments AS (
     SELECT
+        case when curr.difficulty = 'novice' then 30
+            when curr.difficulty = 'easy' then 35
+            when curr.difficulty = 'intermediate' then 65
+            when curr.difficulty = 'advanced' then 90
+            when curr.difficulty = 'freeride' then 90
+            else 90
+        end as steepest_gradient_threshold,
         curr.osm_id,
         curr.resort,
         curr.distance_along_run_m AS seg_start_dist,
@@ -69,7 +77,7 @@ WITH points AS (
     SELECT *
     FROM segments
     WHERE segment_length >= 30 -- filter out very short segments
-      AND ABS(final_segment_gradient) < 90 -- filter out extreme gradients
+      AND ABS(final_segment_gradient) < steepest_gradient_threshold -- filter out extreme gradients
 )
 
 ,steepest_segment AS (

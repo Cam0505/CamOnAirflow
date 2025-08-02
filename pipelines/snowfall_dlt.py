@@ -66,11 +66,12 @@ START_DATE = date(1978, 1, 1)
 BATCH_SIZE = 500  # Number of rows to yield at once
 FORCE_SNOW_DEPTH_RELOAD = False  # <-- Set to False after one-off load
 
-def get_all_missing_date_ranges_by_season(logger, locations, start_date, end_date, dataset):
+def get_all_missing_date_ranges_by_season(logger, locations, start_date, end_date, dataset, daily_default=False):
     """
     Returns:
-      missing_ranges: dict of location_name -> dict of season_year -> (min_date, max_date)
+      missing_ranges_by_location: dict of location_name -> dict of season_year -> (min_date, max_date)
       table_truncated: bool, True if the table is empty (truncated)
+      default_applied: dict of location_name -> bool, True if the 14-day default was applied or covered by a missing range
     Only includes June-November dates.
     """
     try:
@@ -79,6 +80,13 @@ def get_all_missing_date_ranges_by_season(logger, locations, start_date, end_dat
         table_truncated = dataset is None or dataset.empty
 
         missing_ranges = {}
+        default_applied = False
+        # Always define last_14_start and last_14_end before use
+
+        last_14_start = end_date - timedelta(days=13)
+        last_14_end = end_date
+        last_14_set = set(pd.date_range(last_14_start, last_14_end).date)
+
         for loc in locations:
             name = loc["name"]
             if table_truncated or name not in dataset["location"].unique():
@@ -96,9 +104,36 @@ def get_all_missing_date_ranges_by_season(logger, locations, start_date, end_dat
             season_ranges = {
                 year: (min(ds), max(ds)) for year, ds in seasons.items()
             }
-            missing_ranges[name] = season_ranges
 
-        return missing_ranges, table_truncated
+            # --- 14-day default logic, per location ---
+            applied = False
+            expanded = False
+
+            # logger.info(f"Daily default for {name}: {daily_default}, last 14 days: {last_14_start} to {last_14_end}")
+
+            if daily_default:
+                for season, (rng_start, rng_end) in list(season_ranges.items()):
+                    rng_set = set(pd.date_range(rng_start, rng_end).date)
+                    if last_14_set.issubset(rng_set):
+                        applied = True
+                        break
+                    elif last_14_set & rng_set:
+                        new_start = min(rng_start, last_14_start)
+                        new_end = max(rng_end, last_14_end)
+                        del season_ranges[season]
+                        season_ranges["default_14d"] = (new_start, new_end)
+                        applied = True
+                        expanded = True
+                        break
+                if not applied and not expanded:
+                    season_ranges["default_14d"] = (last_14_start, last_14_end)
+                    applied = True
+
+            missing_ranges[name] = season_ranges
+            if applied:
+                default_applied = True  # Set to True if applied for any location
+
+        return missing_ranges, table_truncated, default_applied
     except Exception as e:
         logger.error(f"Failed to retrieve missing date ranges from dataset: {e}")
         # fallback: all winter dates for all locations, grouped by year
@@ -111,7 +146,7 @@ def get_all_missing_date_ranges_by_season(logger, locations, start_date, end_dat
                 year: (min(ds), max(ds)) for year, ds in seasons.items()
             }
             missing_ranges[loc["name"]] = season_ranges
-        return missing_ranges, False
+        return missing_ranges, False, {loc["name"]: False for loc in locations}
 
 def fetch_snowfall_data(location, start_date, end_date):
     """Fetch historical snowfall and snow depth data for a specific location."""
@@ -170,19 +205,24 @@ def snowfall_source(logger: logging.Logger, dataset):
             "Daily_Requests": {},
             "Processed_Ranges": {},
             "Known_Locations": [],
+            "Daily_default": {},
         })
 
         today = date.today()
         today_str = str(today)
         end_date = today - timedelta(days=2)
-        state["Daily_Requests"] = {today_str: state["Daily_Requests"].get(today_str, 0)}
+        state["Daily_Requests"] = {today_str: state.get("Daily_Requests", {}).get(today_str, 0)}
+
+        # Reset Daily_default to only today
+        state["Daily_default"] = {today_str: state["Daily_default"].get(today_str, True)}
 
         Known_Locations = set(state.setdefault("Known_Locations", []))
         state["Known_Locations"] = list(Known_Locations)
         new_locations = set()
 
-        missing_ranges_by_location, table_truncated = get_all_missing_date_ranges_by_season(
-            logger, SKI_FIELDS, START_DATE, end_date, dataset
+        # Pass the boolean for today to the missing range function
+        missing_ranges_by_location, table_truncated, default_applied = get_all_missing_date_ranges_by_season(
+            logger, SKI_FIELDS, START_DATE, end_date, dataset, daily_default=state["Daily_default"][today_str]
         )
 
         if table_truncated:
@@ -246,13 +286,16 @@ def snowfall_source(logger: logging.Logger, dataset):
                     for i in range(0, len(merged), BATCH_SIZE):
                         yield merged.iloc[i:i+BATCH_SIZE].to_dict(orient="records")
 
-
                 except Exception as e:
                     logger.error(f"Error processing {start_date} to {end_date} for {location_name}: {e}")
                 tyme.sleep(1)
 
         if new_locations:
             state["Known_Locations"] = list(Known_Locations.union(new_locations))
+
+        # If the default was applied, set it to False for today so it doesn't run again
+        if default_applied:
+            state["Daily_default"][today_str] = False
 
         logger.info("Completed snowfall data collection for all ski fields")
 

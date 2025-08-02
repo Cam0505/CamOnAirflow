@@ -1,6 +1,4 @@
 import pandas as pd
-import numpy as np
-from typing import Dict, List, Tuple, Set
 
 def model(dbt, session):
     """
@@ -38,16 +36,19 @@ def model(dbt, session):
     try:
         lift_run_mapping = dbt.ref("base_lift_run_mapping").df()
     except Exception as e:
+        print(f"Error loading lift_run_mapping: {e}")
         lift_run_mapping = pd.DataFrame()
 
     try:
         ski_times = dbt.ref("staging_ski_time_estimate").df()
     except Exception as e:
+        print(f"Error loading ski_times: {e}")
         ski_times = pd.DataFrame()
 
     try:
         lift_times = dbt.ref("base_ski_lift_times").df()
     except Exception as e:
+        print(f"Error loading lift_times: {e}")
         lift_times = pd.DataFrame()
 
     results = []

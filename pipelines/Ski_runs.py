@@ -193,6 +193,13 @@ def ski_source(known_locations: set):
             tags = run.get("tags", {})
             geometry = run.get("geometry", [])
             coords = [(pt["lat"], pt["lon"]) for pt in geometry] if geometry else []
+            element_length = sum(
+                geodesic(coords[i], coords[i + 1]).meters
+                for i in range(len(coords) - 1)
+            )
+            if element_length < 100:
+                logger.info(f"Skipping {run['id']} - length < 100m")
+                continue
             if "piste:type" in tags:
                 if not coords:
                     continue
@@ -203,8 +210,21 @@ def ski_source(known_locations: set):
                     "region": field["region"],
                     "tags": tags,
                     "coords": coords,  # store coords directly
+                    "length_m": element_length,
                 })
             elif "aerialway" in tags:
+                # Filter out magic carpets and platter lifts
+                aerialway_type = tags.get("aerialway", "").lower()
+                name = tags.get("name", "unnamed").lower()
+                if aerialway_type in ["magic_carpet", "platter", "station", "goods"]:
+                    logger.info(f"Filtering out {aerialway_type} lift: {name} at {field['name']}")
+                    continue
+
+                if "learner" in name or "beginner" in name:
+                    logger.info(f"Filtering out learner lift: {name} at {field['name']}")
+                    continue
+
+
                 ski_lifts.append({
                     "osm_id": run["id"],
                     "resort": field["name"],
@@ -216,6 +236,7 @@ def ski_source(known_locations: set):
                     "capacity": tags.get("aerialway:capacity"),
                     "occupancy": tags.get("aerialway:occupancy"),
                     "coords": coords,  # store coords directly
+                    "length_m": element_length,
                 })
 
     @dlt.resource(write_disposition="merge", table_name="ski_runs", primary_key=["osm_id"])
@@ -226,10 +247,6 @@ def ski_source(known_locations: set):
             if len(coords) < 3:
                 continue
 
-            run_length = sum(
-                geodesic(coords[i], coords[i + 1]).meters
-                for i in range(len(coords) - 1)
-            )
             turniness_score = compute_turniness(coords)
 
             # Get elevations for top/bottom calculation
@@ -246,7 +263,7 @@ def ski_source(known_locations: set):
                 "piste_type": tags.get("piste:type"),
                 "grooming": tags.get("piste:grooming"),
                 "lit": tags.get("piste:lit"),
-                "run_length_m": run_length,
+                "run_length_m": run.get("length_m", 0),
                 "n_points": len(coords),
                 "turniness_score": turniness_score,
                 "top_lat": top_lat,
@@ -320,10 +337,7 @@ def ski_source(known_locations: set):
             if len(coords) < 2:
                 continue
 
-            lift_length = sum(
-                geodesic(coords[i], coords[i + 1]).meters
-                for i in range(len(coords) - 1)
-            )
+            lift_length = lift.get("length_m", 0)
 
             lift_type = lift.get("lift_type")
             average_speed = AVERAGE_LIFT_SPEEDS.get(lift_type)

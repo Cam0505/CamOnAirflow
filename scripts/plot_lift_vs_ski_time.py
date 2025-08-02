@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import duckdb
 from dotenv import load_dotenv
 import matplotlib.pyplot as plt

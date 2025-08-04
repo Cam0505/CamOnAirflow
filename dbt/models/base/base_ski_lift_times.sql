@@ -68,5 +68,5 @@ SELECT
         ELSE 'fallback_default'
     END AS time_calculation_method
 
-FROM {{ source('ski_runs', 'ski_lifts') }}
+FROM {{ ref('base_filtered_ski_lifts') }}
 WHERE osm_id IS NOT NULL

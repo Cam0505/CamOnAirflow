@@ -77,7 +77,7 @@ for region, resorts in REGIONS.items():
         # Load Data
         points = con.execute(f"""
             SELECT osm_id, resort, distance_along_run_m, elevation_m
-            FROM camonairflow.ski_runs.ski_run_points
+            FROM camonairflow.public_base.base_filtered_ski_points
             WHERE resort in {tuple(resorts)}
         """).df()
 
@@ -89,6 +89,7 @@ for region, resorts in REGIONS.items():
                 run_length_m
             FROM camonairflow.public_base.base_filtered_ski_runs
             WHERE resort in {tuple(resorts)}
+            and run_length_m > 200
         """).df()
 
         gradient_stats = con.execute(f"""

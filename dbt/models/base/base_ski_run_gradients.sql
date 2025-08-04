@@ -9,7 +9,7 @@ WITH points AS (
         p.elevation_smoothed_m,
         p.point_index,
         r.difficulty
-    FROM {{ source('ski_runs', 'ski_run_points') }} AS p
+    FROM {{ ref('base_filtered_ski_points') }} AS p
     INNER JOIN {{ ref('base_filtered_ski_runs') }} AS r ON p.osm_id = r.osm_id
     where r.n_points > 3
 )

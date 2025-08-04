@@ -197,9 +197,8 @@ def ski_source(known_locations: set):
                 geodesic(coords[i], coords[i + 1]).meters
                 for i in range(len(coords) - 1)
             )
-            if element_length < 100:
-                logger.info(f"Skipping {run['id']} - length < 100m")
-                continue
+
+
             if "piste:type" in tags:
                 if not coords:
                     continue
@@ -216,13 +215,13 @@ def ski_source(known_locations: set):
                 # Filter out magic carpets and platter lifts
                 aerialway_type = tags.get("aerialway", "").lower()
                 name = tags.get("name", "unnamed").lower()
-                if aerialway_type in ["magic_carpet", "platter", "station", "goods"]:
+                if aerialway_type in ["station", "goods"]:
                     logger.info(f"Filtering out {aerialway_type} lift: {name} at {field['name']}")
                     continue
 
-                if "learner" in name or "beginner" in name:
-                    logger.info(f"Filtering out learner lift: {name} at {field['name']}")
-                    continue
+                # if "learner" in name or "beginner" in name:
+                #     logger.info(f"Filtering out learner lift: {name} at {field['name']}")
+                #     continue
 
 
                 ski_lifts.append({
@@ -230,8 +229,8 @@ def ski_source(known_locations: set):
                     "resort": field["name"],
                     "country_code": field["country"],
                     "region": field["region"],
-                    "lift_type": tags.get("aerialway"),
-                    "name": tags.get("name"),
+                    "lift_type": aerialway_type,
+                    "name": name,
                     "duration": tags.get("duration"),
                     "capacity": tags.get("aerialway:capacity"),
                     "occupancy": tags.get("aerialway:occupancy"),
@@ -338,6 +337,9 @@ def ski_source(known_locations: set):
                 continue
 
             lift_length = lift.get("length_m", 0)
+            if lift_length < 100:
+                logger.info(f"Skipping {lift['name']} - length < 100m")
+                continue
 
             lift_type = lift.get("lift_type")
             average_speed = AVERAGE_LIFT_SPEEDS.get(lift_type)

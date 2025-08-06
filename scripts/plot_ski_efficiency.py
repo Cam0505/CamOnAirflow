@@ -3,7 +3,6 @@ import duckdb
 from dotenv import load_dotenv
 import matplotlib.pyplot as plt
 import matplotlib
-import pandas as pd
 from project_path import get_project_paths, set_dlt_env_vars
 
 # --- ENV, DuckDB connection ---
@@ -175,7 +174,7 @@ if not df_paths.empty:
     for _, row in top_efficient_paths.iterrows():
         resort = row["resort"]
         color = resort_color_map.get(resort, 'gray')
-        
+
         path_label = f"{resort[:12]}\n{row['starting_lift_name'][:15]}\n{row['run_count']}R cycle"
 
         ax2.annotate(

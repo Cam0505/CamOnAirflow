@@ -225,7 +225,7 @@ for i, (_, row) in enumerate(df_path_longest.iterrows(), 1):
           f"Runs: {row['run_count']:2.0f} | Drop: {row['vertical_drop_m']:.0f}m | "
           f"Grad: {row['avg_gradient']:.1f}% | Diff: {row.get('hardest_difficulty', 'unknown')}")
 
-print(f"\nNZ Longest Path Stats:")
+print("\nNZ Longest Path Stats:")
 print(f"Average path length: {df_paths['path_length_km'].mean():.1f}km")
 print(f"Average runs per path: {df_paths['run_count'].mean():.1f}")
 print(f"Average vertical drop: {df_paths['vertical_drop_m'].mean():.0f}m")

@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 from typing import Dict, List, Set
 import networkx as nx
 
@@ -8,48 +7,6 @@ def model(dbt, session):
     Analyze ski path efficiency using lift-run mappings and run-to-run connections.
     Creates complete paths from lift tops to lift bases using the new connection logic.
     """
-
-    try:
-        import networkx as nx
-    except ImportError:
-        # Return error if NetworkX not available
-        results = [{
-            'country_code': 'ERROR',
-            'resort': 'NO_NETWORKX',
-            'path_id': 'error',
-            'starting_lift_name': 'NetworkX not installed',
-            'starting_lift_osm_id': 0,
-            'ending_point_type': 'unknown',
-            'ending_point_name': 'unknown',
-            'ending_point_osm_id': 0,
-            'run_path_array': [],
-            'run_path_names': '',
-            'run_count': 0,
-            'total_path_length_m': 0,
-            'total_vertical_drop_m': 0,
-            'avg_gradient': 0,
-            'total_turniness_score': 0,
-            'path_ski_time_slow_sec': 0,
-            'path_ski_time_intermediate_sec': 0,
-            'path_ski_time_fast_sec': 0,
-            'starting_lift_time_sec': 0,
-            'lift_to_path_ratio_slow': 0,
-            'lift_to_path_ratio_intermediate': 0,
-            'lift_to_path_ratio_fast': 0,
-            'total_experience_time_slow_sec': 0,
-            'total_experience_time_intermediate_sec': 0,
-            'total_experience_time_fast_sec': 0,
-            'ski_time_percentage_slow': 0,
-            'ski_time_percentage_intermediate': 0,
-            'ski_time_percentage_fast': 0,
-            'difficulty_mix': 'unknown',
-            'hardest_difficulty': 'unknown',
-            'efficiency_rating_slow': 'unknown',
-            'efficiency_rating_intermediate': 'unknown',
-            'efficiency_rating_fast': 'unknown',
-            'error_message': 'NetworkX not installed. Run: pip3 install networkx'
-        }]
-        return pd.DataFrame(results)
 
     # Load data with error handling
     try:
@@ -441,8 +398,6 @@ def calculate_comprehensive_path_metrics(path_data: Dict, G: 'nx.DiGraph',
     for i, node in enumerate(full_path):
         if not node.startswith('run_'):
             continue
-
-        run_osm_id = G.nodes[node]['osm_id']
 
         # Get run details from graph
         run_data = G.nodes[node]

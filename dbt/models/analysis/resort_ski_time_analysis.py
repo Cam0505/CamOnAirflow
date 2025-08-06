@@ -1,40 +1,10 @@
 import pandas as pd
-import numpy as np
 import networkx as nx
 
 def model(dbt, session):
     """
     Analyze ski resort connectivity using new lift-run mappings and run-to-run connections.
     """
-    try:
-        import networkx as nx
-    except ImportError:
-        results = [{
-            'resort': 'ERROR',
-            'total_lifts': 0,
-            'total_runs': 0,
-            'total_connections': 0,
-            'total_lift_time_sec': 0,
-            'total_run_time_slow_sec': 0,
-            'total_run_time_intermediate_sec': 0,
-            'total_run_time_fast_sec': 0,
-            'lift_to_ski_ratio_slow': 0,
-            'lift_to_ski_ratio_intermediate': 0,
-            'lift_to_ski_ratio_fast': 0,
-            'avg_lift_time_sec': 0,
-            'avg_run_time_slow_sec': 0,
-            'avg_run_time_intermediate_sec': 0,
-            'avg_run_time_fast_sec': 0,
-            'longest_ski_path_time_sec': 0,
-            'total_ski_area_time_slow_sec': 0,
-            'total_ski_area_time_intermediate_sec': 0,
-            'total_ski_area_time_fast_sec': 0,
-            'run_to_run_connections': 0,
-            'avg_path_length_m': 0,
-            'total_network_length_m': 0,
-            'error_message': 'NetworkX not installed. Run: pip3 install networkx'
-        }]
-        return pd.DataFrame(results)
 
     # Load data with error handling
     try:
@@ -133,7 +103,8 @@ def model(dbt, session):
             try:
                 # Find longest single run as approximation
                 longest_path_time = max(G.nodes[run].get('ski_time_slow', 0) for run in run_nodes)
-            except:
+            except Exception as e:
+                print(f"Error finding longest path time: {e}")
                 longest_path_time = 0
 
         # Calculate average path length

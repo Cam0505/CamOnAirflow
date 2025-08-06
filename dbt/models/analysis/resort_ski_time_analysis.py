@@ -1,13 +1,14 @@
 import pandas as pd
+import numpy as np
+import networkx as nx
 
 def model(dbt, session):
     """
-    Analyze ski resort connectivity and calculate total ski vs lift times.
+    Analyze ski resort connectivity using new lift-run mappings and run-to-run connections.
     """
     try:
         import networkx as nx
     except ImportError:
-        # Fallback if networkx is not available
         results = [{
             'resort': 'ERROR',
             'total_lifts': 0,
@@ -28,6 +29,9 @@ def model(dbt, session):
             'total_ski_area_time_slow_sec': 0,
             'total_ski_area_time_intermediate_sec': 0,
             'total_ski_area_time_fast_sec': 0,
+            'run_to_run_connections': 0,
+            'avg_path_length_m': 0,
+            'total_network_length_m': 0,
             'error_message': 'NetworkX not installed. Run: pip3 install networkx'
         }]
         return pd.DataFrame(results)
@@ -40,10 +44,16 @@ def model(dbt, session):
         lift_run_mapping = pd.DataFrame()
 
     try:
-        ski_times = dbt.ref("staging_ski_time_estimate").df()
+        run_to_run_connections = dbt.ref("base_run_to_run_connections").df()
     except Exception as e:
-        print(f"Error loading ski_times: {e}")
-        ski_times = pd.DataFrame()
+        print(f"Error loading run_to_run_connections: {e}")
+        run_to_run_connections = pd.DataFrame()
+
+    try:
+        ski_runs = dbt.ref("base_filtered_ski_runs").df()
+    except Exception as e:
+        print(f"Error loading ski_runs: {e}")
+        ski_runs = pd.DataFrame()
 
     try:
         lift_times = dbt.ref("base_ski_lift_times").df()
@@ -53,7 +63,7 @@ def model(dbt, session):
 
     results = []
 
-    # Check if we have any data
+    # Check if we have required data
     if lift_run_mapping.empty:
         results.append({
             'resort': 'NO_DATA',
@@ -75,125 +85,59 @@ def model(dbt, session):
             'total_ski_area_time_slow_sec': 0,
             'total_ski_area_time_intermediate_sec': 0,
             'total_ski_area_time_fast_sec': 0,
+            'run_to_run_connections': 0,
+            'avg_path_length_m': 0,
+            'total_network_length_m': 0,
             'error_message': 'No lift-run mapping data available'
         })
         return pd.DataFrame(results)
 
     # Process each resort
     for resort in lift_run_mapping['resort'].unique():
-        resort_mapping = lift_run_mapping[lift_run_mapping['resort'] == resort]
-        resort_ski_times = ski_times[ski_times['resort'] == resort] if not ski_times.empty else pd.DataFrame()
+        resort_lift_run = lift_run_mapping[lift_run_mapping['resort'] == resort]
+        resort_run_connections = run_to_run_connections[run_to_run_connections['resort'] == resort] if not run_to_run_connections.empty else pd.DataFrame()
+        resort_runs = ski_runs[ski_runs['resort'] == resort] if not ski_runs.empty else pd.DataFrame()
         resort_lift_times = lift_times[lift_times['resort'] == resort] if not lift_times.empty else pd.DataFrame()
 
-        # Build graph for this resort
-        G = nx.DiGraph()
+        # Build comprehensive network
+        G = build_resort_network_analysis(resort_lift_run, resort_run_connections, resort_runs, resort_lift_times)
 
-        # Add lift nodes and run nodes
-        lifts = {}
-        runs = {}
+        # Calculate basic metrics
+        lift_nodes = [n for n in G.nodes() if G.nodes[n]['node_type'] == 'lift']
+        run_nodes = [n for n in G.nodes() if G.nodes[n]['node_type'] == 'run']
 
-        for _, row in resort_mapping.iterrows():
-            lift_id = f"lift_{row['lift_osm_id']}"
-            run_id = f"run_{row['run_osm_id']}"
-
-            # Add lift info - ONLY use length-proportional calculations
-            if lift_id not in lifts:
-                # Get lift time from the base_ski_lift_times model
-                matching_lifts = resort_lift_times[resort_lift_times['osm_id'] == row['lift_osm_id']] if not resort_lift_times.empty else pd.DataFrame()
-
-                if len(matching_lifts) > 0:
-                    lift_time = matching_lifts['lift_time_sec'].iloc[0]
-                    # Only use the lift time if it's not null/nan
-                    if pd.isna(lift_time) or lift_time is None or lift_time <= 0:
-                        # Calculate proportional time if we have length and type
-                        lift_length = row.get('lift_length_m', 0)
-                        lift_type = row.get('lift_type', '').lower()
-                        if lift_length > 0 and lift_type:
-                            lift_time = calculate_proportional_lift_time(lift_length, lift_type)
-                        else:
-                            # Skip this lift if we can't calculate proportional time
-                            continue
-                else:
-                    # Calculate proportional time if we have length and type
-                    lift_length = row.get('lift_length_m', 0)
-                    lift_type = row.get('lift_type', '').lower()
-                    if lift_length > 0 and lift_type:
-                        lift_time = calculate_proportional_lift_time(lift_length, lift_type)
-                    else:
-                        # Skip this lift if we can't calculate proportional time
-                        continue
-
-                lifts[lift_id] = {
-                    'osm_id': row['lift_osm_id'],
-                    'name': row.get('lift_name', 'Unknown Lift'),
-                    'type': row.get('lift_type', 'unknown'),
-                    'time_sec': lift_time,
-                    'length_m': row.get('lift_length_m', 0)
-                }
-                G.add_node(lift_id, **lifts[lift_id], node_type='lift')
-
-            # Add run info
-            if run_id not in runs:
-                # Safe lookup for run times
-                matching_runs = resort_ski_times[resort_ski_times['osm_id'] == row['run_osm_id']] if not resort_ski_times.empty else pd.DataFrame()
-                if len(matching_runs) > 0:
-                    run_time_slow = matching_runs['ski_time_slow_sec'].iloc[0] if not pd.isna(matching_runs['ski_time_slow_sec'].iloc[0]) else None
-                    run_time_intermediate = matching_runs['ski_time_intermediate_sec'].iloc[0] if not pd.isna(matching_runs['ski_time_intermediate_sec'].iloc[0]) else None
-                    run_time_fast = matching_runs['ski_time_fast_sec'].iloc[0] if not pd.isna(matching_runs['ski_time_fast_sec'].iloc[0]) else None
-                else:
-                    run_time_slow = None
-                    run_time_intermediate = None
-                    run_time_fast = None
-
-                # Only use runs that have valid ski times
-                if run_time_slow is None or run_time_intermediate is None or run_time_fast is None:
-                    continue
-
-                runs[run_id] = {
-                    'osm_id': row['run_osm_id'],
-                    'name': row.get('run_name', 'Unknown Run'),
-                    'difficulty': row.get('difficulty', 'unknown'),
-                    'time_slow_sec': run_time_slow,
-                    'time_intermediate_sec': run_time_intermediate,
-                    'time_fast_sec': run_time_fast,
-                    'length_m': row.get('run_length_m', 0)
-                }
-                G.add_node(run_id, **runs[run_id], node_type='run')
-
-            # Add edges based on connection type
-            if row.get('connection_type') == 'lift_services_run' and lift_id in lifts and run_id in runs:
-                # Lift top connects to run top
-                G.add_edge(lift_id, run_id, connection_type='lift_to_run', 
-                          distance_m=row.get('min_connection_distance_m', 0))
-            elif row.get('connection_type') == 'run_feeds_lift' and run_id in runs and lift_id in lifts:
-                # Run bottom connects to lift bottom
-                G.add_edge(run_id, lift_id, connection_type='run_to_lift', 
-                          distance_m=row.get('min_connection_distance_m', 0))
-
-        # Calculate metrics for this resort
-        total_lifts = len([n for n in G.nodes() if G.nodes[n].get('node_type') == 'lift'])
-        total_runs = len([n for n in G.nodes() if G.nodes[n].get('node_type') == 'run'])
+        total_lifts = len(lift_nodes)
+        total_runs = len(run_nodes)
         total_connections = G.number_of_edges()
 
-        # Calculate total ski time vs lift time for different abilities
-        total_lift_time = sum(lifts[lift_id]['time_sec'] for lift_id in lifts.keys())
-        total_run_time_slow = sum(runs[run_id]['time_slow_sec'] for run_id in runs.keys())
-        total_run_time_intermediate = sum(runs[run_id]['time_intermediate_sec'] for run_id in runs.keys())
-        total_run_time_fast = sum(runs[run_id]['time_fast_sec'] for run_id in runs.keys())
+        # Calculate total times
+        total_lift_time = sum(G.nodes[lift]['lift_time'] for lift in lift_nodes if 'lift_time' in G.nodes[lift])
+        total_run_time_slow = sum(G.nodes[run]['ski_time_slow'] for run in run_nodes if 'ski_time_slow' in G.nodes[run])
+        total_run_time_intermediate = sum(G.nodes[run]['ski_time_intermediate'] for run in run_nodes if 'ski_time_intermediate' in G.nodes[run])
+        total_run_time_fast = sum(G.nodes[run]['ski_time_fast'] for run in run_nodes if 'ski_time_fast' in G.nodes[run])
 
-        # Calculate run-to-lift ratios
+        # Calculate ratios
         lift_to_ski_ratio_slow = total_lift_time / total_run_time_slow if total_run_time_slow > 0 else 0
         lift_to_ski_ratio_intermediate = total_lift_time / total_run_time_intermediate if total_run_time_intermediate > 0 else 0
         lift_to_ski_ratio_fast = total_lift_time / total_run_time_fast if total_run_time_fast > 0 else 0
 
-        # Find longest possible runs (paths through the graph) - simplified to avoid timeouts
+        # Calculate network metrics
+        run_to_run_connection_count = len(resort_run_connections) if not resort_run_connections.empty else 0
+
+        # Calculate path metrics using simplified approach
+        total_network_length = sum(G.nodes[run].get('length_m', 0) for run in run_nodes)
+
+        # Find longest path (simplified to avoid performance issues)
         longest_path_time = 0
-        try:
-            if len(lifts) > 0 and len(runs) > 0:
-                # Just find the longest single run time as a proxy
-                longest_path_time = max([runs[run_id]['time_slow_sec'] for run_id in runs.keys()]) if runs else 0
-        except Exception:
-            longest_path_time = 0
+        if total_runs > 0:
+            try:
+                # Find longest single run as approximation
+                longest_path_time = max(G.nodes[run].get('ski_time_slow', 0) for run in run_nodes)
+            except:
+                longest_path_time = 0
+
+        # Calculate average path length
+        avg_path_length = total_network_length / total_runs if total_runs > 0 else 0
 
         results.append({
             'resort': resort,
@@ -215,17 +159,101 @@ def model(dbt, session):
             'total_ski_area_time_slow_sec': total_lift_time + total_run_time_slow,
             'total_ski_area_time_intermediate_sec': total_lift_time + total_run_time_intermediate,
             'total_ski_area_time_fast_sec': total_lift_time + total_run_time_fast,
+            'run_to_run_connections': run_to_run_connection_count,
+            'avg_path_length_m': avg_path_length,
+            'total_network_length_m': total_network_length,
         })
 
     return pd.DataFrame(results)
 
-def calculate_proportional_lift_time(length_m: float, lift_type: str) -> float:
-    """Calculate lift time based on length and type (proportional only)."""
-    # Speed mapping in m/s based on lift type
+def build_resort_network_analysis(lift_run_mapping: pd.DataFrame, run_connections: pd.DataFrame, 
+                                 ski_runs: pd.DataFrame, lift_times: pd.DataFrame) -> 'nx.DiGraph':
+    """Build network for analysis - same as ski_path_efficiency_analysis but separated for clarity."""
+
+    G = nx.DiGraph()
+
+    # Add lift nodes
+    lifts_added = set()
+    for _, row in lift_run_mapping.iterrows():
+        lift_osm_id = row['lift_osm_id']
+        lift_id = f"lift_{lift_osm_id}"
+
+        if lift_id not in lifts_added:
+            # Get lift time
+            lift_time = None
+            if not lift_times.empty:
+                matching_lifts = lift_times[lift_times['osm_id'] == lift_osm_id]
+                if not matching_lifts.empty:
+                    lift_time = matching_lifts['lift_time_sec'].iloc[0]
+                    if pd.isna(lift_time) or lift_time <= 0:
+                        lift_time = None
+
+            if lift_time is None:
+                lift_length = row.get('lift_length_m', 0)
+                lift_type = row.get('lift_type', '').lower()
+                if lift_length > 0 and lift_type:
+                    lift_time = calculate_proportional_lift_time_analysis(lift_length, lift_type)
+                else:
+                    continue
+
+            G.add_node(lift_id, 
+                      node_type='lift', 
+                      osm_id=lift_osm_id,
+                      name=row.get('lift_name', 'Unknown Lift'),
+                      lift_time=lift_time)
+            lifts_added.add(lift_id)
+
+    # Add run nodes
+    runs_added = set()
+    for _, row in ski_runs.iterrows():
+        run_osm_id = row['osm_id']
+        run_id = f"run_{run_osm_id}"
+
+        if run_id not in runs_added:
+            if (pd.notna(row.get('ski_time_slow_sec')) and 
+                pd.notna(row.get('ski_time_medium_sec')) and 
+                pd.notna(row.get('ski_time_fast_sec')) and
+                    row.get('ski_time_slow_sec', 0) > 0):
+
+                G.add_node(run_id,
+                          node_type='run',
+                          osm_id=run_osm_id,
+                          name=row.get('run_name', 'Unknown Run'),
+                          difficulty=row.get('difficulty', 'unknown'),
+                          length_m=row.get('run_length_m', 0),
+                          ski_time_slow=row.get('ski_time_slow_sec', 0),
+                          ski_time_intermediate=row.get('ski_time_medium_sec', 0),
+                          ski_time_fast=row.get('ski_time_fast_sec', 0))
+                runs_added.add(run_id)
+
+    # Add lift-run connections
+    for _, row in lift_run_mapping.iterrows():
+        lift_id = f"lift_{row['lift_osm_id']}"
+        run_id = f"run_{row['run_osm_id']}"
+
+        if lift_id in G and run_id in G:
+            if row['connection_type'] == 'lift_services_run':
+                G.add_edge(lift_id, run_id, connection_type='lift_to_run')
+            elif row['connection_type'] == 'run_feeds_lift':
+                G.add_edge(run_id, lift_id, connection_type='run_to_lift')
+
+    # Add run-to-run connections
+    if not run_connections.empty:
+        for _, row in run_connections.iterrows():
+            from_run_id = f"run_{row['from_run_osm_id']}"
+            to_run_id = f"run_{row['to_run_osm_id']}"
+
+            if from_run_id in G and to_run_id in G:
+                G.add_edge(from_run_id, to_run_id, connection_type=row['connection_type'])
+
+    return G
+
+def calculate_proportional_lift_time_analysis(length_m: float, lift_type: str) -> float:
+    """Calculate lift time for analysis."""
     speed_mapping = {
         'gondola': 5.0,
         'chair_lift': 2.5,
-        'yes': 2.5,  # Generic lift, assume chairlift
+        'yes': 2.5,
         'j-bar': 3.0,
         'drag_lift': 3.0,
         'platter': 3.0,
@@ -237,5 +265,5 @@ def calculate_proportional_lift_time(length_m: float, lift_type: str) -> float:
         'goods': 4.0
     }
 
-    speed = speed_mapping.get(lift_type, 2.5)  # Default to chairlift speed
+    speed = speed_mapping.get(lift_type, 2.5)
     return length_m / speed

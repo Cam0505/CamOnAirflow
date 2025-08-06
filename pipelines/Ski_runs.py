@@ -116,16 +116,6 @@ def smooth_steep_gradients(elevs, dists, threshold=0.80, window=7):
     smoothed_grads = np.gradient(smoothed, dists, edge_order=2)
     return smoothed.tolist(), smoothed_grads.tolist()
 
-def trim_to_downhill(coords, elevations):
-    if len(elevations) < 4:
-        return coords, elevations
-    max_elev = max(elevations)
-    min_elev = min(elevations)
-    start_idx = next(i for i, e in enumerate(elevations) if e == max_elev)
-    end_idx = len(elevations) - 1 - next(i for i, e in enumerate(reversed(elevations)) if e == min_elev)
-    if end_idx < start_idx:
-        return coords, elevations
-    return coords[start_idx:end_idx+1], elevations[start_idx:end_idx+1]
 
 def compute_turniness(coords):
     if len(coords) < 4:
@@ -197,7 +187,8 @@ def ski_source(known_locations: set):
                 geodesic(coords[i], coords[i + 1]).meters
                 for i in range(len(coords) - 1)
             )
-
+            if len(coords) < 2:
+                continue
 
             if "piste:type" in tags:
                 if not coords:
@@ -243,8 +234,6 @@ def ski_source(known_locations: set):
         for run in ski_runs_data:
             tags = run.get("tags", {})
             coords = run.get("coords", [])
-            if len(coords) < 3:
-                continue
 
             turniness_score = compute_turniness(coords)
 
@@ -278,18 +267,16 @@ def ski_source(known_locations: set):
         for run in ski_runs_data:
             tags = run.get("tags", {})
             coords = run.get("coords", [])
-            if len(coords) < 4:
-                continue
+
             elevations = get_elevations_batch(coords)
-            coords, elevations = trim_to_downhill(coords, elevations)
             # --- Solution 1: Filter out if not enough points after trimming ---
-            if len(coords) < 4:
-                logger.warning(f"Skipping run {tags.get('name', '')} ({run['osm_id']}) after trim_to_downhill: only {len(coords)} points left.")
+            if len(coords) < 2:
+                logger.warning(f"Skipping run {tags.get('name', '')} ({run['osm_id']}): only {len(coords)} points left.")
                 continue
             # Ensure top-to-bottom order
-            if elevations[0] < elevations[-1]:
-                coords = coords[::-1]
-                elevations = elevations[::-1]
+            # if elevations[0] < elevations[-1]:
+            #     coords = coords[::-1]
+            #     elevations = elevations[::-1]
 
             cum_distances = [0.0]
             steep_count = 0
@@ -333,8 +320,6 @@ def ski_source(known_locations: set):
     def ski_lifts_resource():
         for lift in ski_lifts:
             coords = lift.get("coords", [])
-            if len(coords) < 2:
-                continue
 
             lift_length = lift.get("length_m", 0)
             if lift_length < 100:

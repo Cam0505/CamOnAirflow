@@ -90,6 +90,7 @@ for region, resorts in REGIONS.items():
             FROM camonairflow.public_base.base_filtered_ski_runs
             WHERE resort in {tuple(resorts)}
             and run_length_m > 200
+            and n_points > 4
         """).df()
 
         gradient_stats = con.execute(f"""

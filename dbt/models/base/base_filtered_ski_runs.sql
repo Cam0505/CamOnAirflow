@@ -26,7 +26,7 @@ WITH deduplicated_runs AS (
         run_length_m / 10.0 AS ski_time_fast_sec,
         -- Only deduplicate non-null names
         CASE 
-            WHEN run_name IS NOT NULL THEN
+            WHEN run_name IS NOT NULL and run_name <> '' THEN
                 ROW_NUMBER() OVER (
                     PARTITION BY resort, run_name
                     ORDER BY run_length_m DESC, osm_id

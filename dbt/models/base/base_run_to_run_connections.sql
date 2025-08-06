@@ -4,7 +4,10 @@ WITH run_details AS (
         resort,
         COALESCE(run_name, 'Unnamed Run') as run_name,
         COALESCE(difficulty, 'unknown') as difficulty,
-        run_length_m
+        run_length_m,
+        top_elevation_m,
+        bottom_elevation_m,
+        (top_elevation_m - bottom_elevation_m) as total_vertical_drop_m
     FROM {{ ref('base_filtered_ski_runs') }}
 ),
 run_points AS (
@@ -13,6 +16,7 @@ run_points AS (
         resort,
         lat,
         lon,
+        distance_along_run_m,
         point_index as point_order,
         -- Calculate max point order for each run using window function
         MAX(point_index) OVER (PARTITION BY osm_id) as max_point_order
@@ -26,6 +30,7 @@ run_points_with_position AS (
         lon,
         point_order,
         max_point_order,
+        distance_along_run_m
         -- Calculate position based on actual point numbers (not percentages)
         CASE 
             WHEN point_order <= 0 THEN 'start'  -- First point is "start"
@@ -53,16 +58,28 @@ potential_intersections AS (
         r2_pts.lon as to_lon,
         r1_pts.point_position as from_point_position,
         r2_pts.point_position as to_point_position,
-        r2_pts.progress_through_run as merge_point_progress,
+        
+        -- CRITICAL: Track progress on BOTH runs
+        r1_pts.progress_through_run as from_run_exit_progress,  -- Where we EXIT the first run
+        r2_pts.progress_through_run as to_run_entry_progress,   -- Where we ENTER the second run
+        
         -- Distance between the points
         SQRT(
             POW(69.1 * (r1_pts.lat - r2_pts.lat), 2) + 
             POW(69.1 * (r1_pts.lon - r2_pts.lon) * COS(r2_pts.lat / 57.3), 2)
         ) * 1609.34 AS connection_distance_m,
-        -- Calculate remaining distance on "to" run from merge point to end
-        r2_details.run_length_m * (1.0 - r2_pts.progress_through_run) as remaining_run_distance_m,
+        
+        -- Calculate SKIED distance on "from" run (from start to exit point)
+        r1_details.run_length_m * r1_pts.progress_through_run as skied_distance_from_run_m,
+        r1_details.total_vertical_drop_m * r1_pts.progress_through_run as skied_elevation_from_run_m,
+        
+        -- Calculate remaining distance on "to" run from entry point to end
+        r2_details.run_length_m * (1.0 - r2_pts.progress_through_run) as remaining_distance_to_run_m,
+        r2_details.total_vertical_drop_m * (1.0 - r2_pts.progress_through_run) as remaining_elevation_to_run_m,
+        
         -- Elevation difference (positive means from_run is higher - going downhill)
         (r1_pts.lat - r2_pts.lat) * 111000 as elevation_difference_m,
+        
         -- Add row number to pick the closest connection between each pair of runs
         ROW_NUMBER() OVER (
             PARTITION BY r1_pts.run_osm_id, r2_pts.run_osm_id, r1_pts.point_position
@@ -132,8 +149,12 @@ merge_connections AS (
         connection_distance_m,
         elevation_difference_m,
         to_point_position as connection_point_type,
-        remaining_run_distance_m,  -- NEW: Distance remaining on the "to" run
-        merge_point_progress,      -- NEW: How far through the "to" run the merge happens
+        skied_distance_from_run_m,           -- How much we ski of the FROM run
+        skied_elevation_from_run_m,          -- Elevation drop on the FROM run
+        remaining_distance_to_run_m,         -- Distance remaining on the "to" run
+        remaining_elevation_to_run_m,        -- Elevation drop remaining on the "to" run
+        from_run_exit_progress,              -- Where we exit the FROM run (0-1)
+        to_run_entry_progress,               -- Where we enter the TO run (0-1)
         ROW_NUMBER() OVER (
             PARTITION BY from_run_osm_id 
             ORDER BY connection_distance_m ASC
@@ -153,8 +174,12 @@ split_connections AS (
         connection_distance_m,
         elevation_difference_m,
         from_point_position as connection_point_type,
-        remaining_run_distance_m,  -- NEW: Full distance of the "to" run (since it starts at beginning)
-        merge_point_progress       -- NEW: Should be 0 for splits since connecting to start
+        skied_distance_from_run_m,           -- How much we ski of the FROM run
+        skied_elevation_from_run_m,          -- Elevation drop on the FROM run
+        remaining_distance_to_run_m,         -- Full distance of the "to" run (since it starts at beginning)
+        remaining_elevation_to_run_m,        -- Full elevation drop of the "to" run (since it starts at beginning)
+        from_run_exit_progress,              -- Where we exit the FROM run (0-1)
+        to_run_entry_progress                -- Where we enter the TO run (0-1)
     FROM deduplicated_intersections
     WHERE from_point_position = 'middle'  -- From run splits at middle
         AND to_point_position = 'start'    -- To run starts at this point
@@ -171,15 +196,20 @@ final_connections AS (
         connection_distance_m,
         elevation_difference_m,
         connection_point_type,
-        remaining_run_distance_m,
-        merge_point_progress
+        skied_distance_from_run_m,           -- How much of the FROM run we actually ski
+        skied_elevation_from_run_m,          -- How much elevation we drop on the FROM run
+        remaining_distance_to_run_m,         -- How much of the TO run is left after entry
+        remaining_elevation_to_run_m,        -- How much elevation is left on the TO run
+        from_run_exit_progress,              -- Where we exit the FROM run (0-1)
+        to_run_entry_progress               -- Where we enter the TO run (0-1)
     FROM merge_connections
-    WHERE connection_rank = 1  -- Only one merge per run end
-        AND remaining_run_distance_m > 0  -- Filter out connections with no remaining distance
+    WHERE connection_rank = 1
+        AND remaining_distance_to_run_m > 0
+        AND remaining_elevation_to_run_m >= 0
     
     UNION ALL
     
-    -- Split connections (multiple allowed - runs can split into many)
+    -- Split connections (multiple allowed)
     SELECT
         from_run_osm_id,
         from_run_name,
@@ -190,10 +220,15 @@ final_connections AS (
         connection_distance_m,
         elevation_difference_m,
         connection_point_type,
-        remaining_run_distance_m,
-        merge_point_progress
+        skied_distance_from_run_m,
+        skied_elevation_from_run_m,
+        remaining_distance_to_run_m,
+        remaining_elevation_to_run_m,
+        from_run_exit_progress,
+        to_run_entry_progress
     FROM split_connections
-    WHERE remaining_run_distance_m > 0  -- Filter out connections with no remaining distance
+    WHERE remaining_distance_to_run_m > 0
+        AND remaining_elevation_to_run_m >= 0
 )
 
 SELECT * FROM final_connections

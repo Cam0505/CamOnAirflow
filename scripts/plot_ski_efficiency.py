@@ -32,140 +32,151 @@ SELECT
     resort,
     total_lifts,
     total_runs,
+    total_connections,
     total_lift_time_sec,
     total_run_time_intermediate_sec,
     lift_to_ski_ratio_intermediate,
-    total_ski_area_time_intermediate_sec
+    total_ski_area_time_intermediate_sec,
+    run_to_run_connections,
+    avg_path_length_m,
+    total_network_length_m
 FROM camonairflow.public_analysis.resort_ski_time_analysis
 WHERE total_lift_time_sec > 0 
     AND total_run_time_intermediate_sec > 0
-    AND resort NOT IN ('ERROR', 'NO_DATA')
+    AND resort NOT IN ('ERROR', 'NO_DATA', 'NO_NETWORKX')
     AND resort IN {}
 ORDER BY total_runs DESC
 """.format(tuple(NZ_RESORTS))
 
-# --- Query for ski path data (NZ only) ---
+# --- Query for ski path data (NZ only) - NOW LIFT TOP TO SAME LIFT BOTTOM ---
 path_query = """
 SELECT
     resort,
     path_id,
     starting_lift_name,
-    run_path_names as run_names,
+    run_path_names,
+    run_count,
+    total_path_length_m,
+    total_vertical_drop_m,
     path_ski_time_intermediate_sec,
     starting_lift_time_sec,
     total_experience_time_intermediate_sec,
     ski_time_percentage_intermediate,
     lift_to_path_ratio_intermediate,
-    run_count
+    efficiency_rating_intermediate,
+    difficulty_mix,
+    hardest_difficulty,
+    ending_point_type,
+    ending_point_name,
+    starting_lift_osm_id,
+    ending_point_osm_id
 FROM camonairflow.public_analysis.ski_path_efficiency_analysis
 WHERE starting_lift_time_sec > 0 
     AND path_ski_time_intermediate_sec > 0
-    AND resort NOT IN ('ERROR', 'NO_DATA')
+    AND resort NOT IN ('ERROR', 'NO_DATA', 'NO_NETWORKX')
     AND resort IN {}
+    AND efficiency_rating_intermediate NOT IN ('unknown')
+    AND ending_point_type = 'lift'
+    AND starting_lift_osm_id = ending_point_osm_id  -- SAME LIFT!
 ORDER BY total_experience_time_intermediate_sec DESC
 LIMIT 200
 """.format(tuple(NZ_RESORTS))
 
-df_resorts = con.execute(resort_query).df()
-df_paths = con.execute(path_query).df()
-
-if df_resorts.empty:
-    print("No NZ resort data available for plotting")
+# --- Load data ---
+try:
+    df_resorts = con.execute(resort_query).df()
+    df_paths = con.execute(path_query).df()
+except Exception as e:
+    print(f"Error loading data: {e}")
     exit()
 
-print(f"Loaded {len(df_resorts)} NZ resorts and {len(df_paths)} NZ paths")
+if df_resorts.empty:
+    print("No NZ resort data available")
+    exit()
 
-# Process resort data
-df_resorts['total_ski_area_time_hours'] = df_resorts['total_ski_area_time_intermediate_sec'] / 3600
+print(f"Loaded {len(df_resorts)} NZ resorts and {len(df_paths)} NZ efficiency paths")
+
+# Process data
 df_resorts['ski_to_lift_ratio'] = 1 / df_resorts['lift_to_ski_ratio_intermediate']
 
-# Process path data if available
 if not df_paths.empty:
     df_paths['total_experience_time_hours'] = df_paths['total_experience_time_intermediate_sec'] / 3600
     df_paths['ski_to_lift_ratio'] = 1 / df_paths['lift_to_path_ratio_intermediate']
+    df_paths['path_length_km'] = df_paths['total_path_length_m'] / 1000
 
-# Create color map for resorts
+# Create consistent color map
+all_resorts = set(df_resorts['resort'].unique())
+if not df_paths.empty:
+    all_resorts.update(df_paths['resort'].unique())
+all_resorts = sorted(list(all_resorts))
+
 colormap = matplotlib.colormaps['tab20']
-resort_color_map = {resort: colormap(idx % 20) for idx, resort in enumerate(sorted(df_resorts['resort'].unique()))}
+resort_color_map = {resort: colormap(idx % 20) for idx, resort in enumerate(all_resorts)}
 
 # Create plots
-if df_paths.empty:
-    fig, ax1 = plt.subplots(1, 1, figsize=(16, 10))
-    ax2 = None
-else:
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(24, 10))
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(24, 10))
 
-# --- PLOT 1: Resort Size vs Efficiency (using number of runs) ---
+# --- PLOT 1: Resort Size vs Efficiency ---
 for _, row in df_resorts.iterrows():
     resort = row["resort"]
     color = resort_color_map[resort]
-
-    # Size points based on total lifts (different from x-axis which is runs)
-    point_size = min(200, max(30, row["total_lifts"] * 15))
+    total_connectivity = row["total_connections"] + row["run_to_run_connections"]
+    point_size = min(300, max(30, total_connectivity * 3))
 
     ax1.scatter(
         row["total_runs"], row["ski_to_lift_ratio"],
         alpha=0.7, s=point_size, color=color, edgecolors='black', linewidth=0.5
     )
 
-    # Simple text placement without adjustment (to avoid memory issues)
+    connectivity_info = f"({row['run_to_run_connections']} R2R)"
     ax1.annotate(
-        resort, 
+        f"{resort}\n{connectivity_info}", 
         (row["total_runs"], row["ski_to_lift_ratio"]),
         xytext=(5, 5), textcoords='offset points',
-        fontsize=8, color=color, weight='bold', alpha=0.8
+        fontsize=7, color=color, weight='bold', alpha=0.8
     )
 
-# Add efficiency reference lines
+# Add anomaly labels
+max_efficiency_idx = df_resorts['ski_to_lift_ratio'].idxmax()
+max_efficiency_row = df_resorts.loc[max_efficiency_idx]
+ax1.annotate(
+    f"HIGHEST EFFICIENCY\n{max_efficiency_row['resort'][:20]}\n{max_efficiency_row['ski_to_lift_ratio']:.2f}:1", 
+    (max_efficiency_row["total_runs"], max_efficiency_row["ski_to_lift_ratio"]),
+    xytext=(20, 20), textcoords='offset points',
+    fontsize=9, color='darkgreen', weight='bold', alpha=0.9,
+    bbox=dict(boxstyle='round,pad=0.3', facecolor='lightgreen', alpha=0.7),
+    arrowprops=dict(arrowstyle='->', color='darkgreen', lw=2)
+)
+
 ax1.axhline(y=2, color='blue', linestyle='--', alpha=0.6, linewidth=2, label='2:1 Ratio (Good)')
 ax1.axhline(y=1, color='green', linestyle='--', alpha=0.6, linewidth=2, label='1:1 Ratio (Break-even)')
 ax1.axhline(y=0.5, color='orange', linestyle='--', alpha=0.6, linewidth=2, label='1:2 Ratio (Poor)')
 
 ax1.set_xlabel("Number of Ski Runs", fontsize=14)
 ax1.set_ylabel("Ski:Lift Efficiency Ratio (higher = better)", fontsize=14)
-ax1.set_title("New Zealand Resort Size vs Skiing Efficiency", fontsize=16)
+ax1.set_title("NZ Resort Efficiency (Same Lift Cycles)", fontsize=16)
 ax1.grid(True, alpha=0.3)
 ax1.legend(fontsize=11, loc='upper right')
 
-# Add text box with explanation
-textstr1 = '''Point size = number of lifts
-Higher on Y-axis = more efficient
-(more ski time per lift time)
-All NZ resorts labeled'''
-props = dict(boxstyle='round', facecolor='lightblue', alpha=0.8)
-ax1.text(0.02, 0.98, textstr1, transform=ax1.transAxes, fontsize=10,
-         verticalalignment='top', bbox=props)
-
-# --- PLOT 2: Ski Path Efficiency (label paths above 1.5:1) ---
-if not df_paths.empty and ax2 is not None:
-    # Sort by efficiency and only label those above 1.5:1
-    label_mask = df_paths['ski_to_lift_ratio'] > 1.5
-    paths_to_label = df_paths[label_mask]
-
+# --- PLOT 2: Ski Path Efficiency (same lift cycles) ---
+if not df_paths.empty:
     for _, row in df_paths.iterrows():
         resort = row["resort"]
         color = resort_color_map.get(resort, 'gray')
-        point_size = min(100, max(15, row["run_count"] * 5))
+        point_size = min(150, max(15, row["path_length_km"] * 20))
+
         ax2.scatter(
             row["total_experience_time_hours"], row["ski_to_lift_ratio"],
-            alpha=0.5, s=point_size, color=color, edgecolors='black', linewidth=0.2
+            alpha=0.6, s=point_size, color=color, edgecolors='black', linewidth=0.3
         )
 
-    # Label paths above 1.5:1 with run names instead of lift names
-    for _, row in paths_to_label.iterrows():
+    # Label top efficient same-lift cycles
+    top_efficient_paths = df_paths.nlargest(5, 'ski_to_lift_ratio')
+    for _, row in top_efficient_paths.iterrows():
         resort = row["resort"]
         color = resort_color_map.get(resort, 'gray')
-
-        # Use run names instead of lift name
-        run_names = row.get('run_names', 'Unknown Runs')
-        if pd.isna(run_names) or not run_names:
-            run_names = 'Unknown Runs'
-
-        # Truncate long run names lists
-        if len(run_names) > 30:
-            run_names = run_names[:27] + "..."
-
-        path_label = f"{resort[:12]}\n{run_names}"
+        
+        path_label = f"{resort[:12]}\n{row['starting_lift_name'][:15]}\n{row['run_count']}R cycle"
 
         ax2.annotate(
             path_label,
@@ -174,43 +185,24 @@ if not df_paths.empty and ax2 is not None:
             fontsize=7, color=color, weight='bold', alpha=0.9
         )
 
-    # Add efficiency reference lines
     ax2.axhline(y=2, color='blue', linestyle='--', alpha=0.6, linewidth=2, label='2:1 Ratio (Good)')
     ax2.axhline(y=1, color='green', linestyle='--', alpha=0.6, linewidth=2, label='1:1 Ratio (Break-even)')
     ax2.axhline(y=0.5, color='orange', linestyle='--', alpha=0.6, linewidth=2, label='1:2 Ratio (Poor)')
 
-    ax2.set_xlabel("Total Path Experience Time (hours)", fontsize=14)
+    ax2.set_xlabel("Total Experience Time (hours)", fontsize=14)
     ax2.set_ylabel("Ski:Lift Efficiency Ratio (higher = better)", fontsize=14)
-    ax2.set_title("NZ Ski Path Efficiency", fontsize=16)
+    ax2.set_title("NZ Same-Lift Cycle Efficiency", fontsize=16)
     ax2.grid(True, alpha=0.3)
     ax2.legend(fontsize=11, loc='upper right')
 
-    # Add text box with explanation
-    textstr2 = '''Point size = number of runs in path
-Labels: paths above 1.5:1 ratio
-Shows ski run names'''
-    props = dict(boxstyle='round', facecolor='lightgreen', alpha=0.8)
-    ax2.text(0.02, 0.98, textstr2, transform=ax2.transAxes, fontsize=10,
-             verticalalignment='top', bbox=props)
-
 plt.tight_layout()
-plt.savefig("charts/nz_resort_and_path_efficiency.png", dpi=250, bbox_inches='tight')
+plt.savefig("charts/nz_ski_efficiency_same_lift.png", dpi=250, bbox_inches='tight')
 plt.show()
 
-# Print efficiency rankings
-print("\n=== NZ RESORTS BY EFFICIENCY (Ski:Lift Ratio) ===")
-df_efficient = df_resorts.sort_values('ski_to_lift_ratio', ascending=False)
-for i, (_, row) in enumerate(df_efficient.iterrows(), 1):
-    print(f"{i:2d}. {row['resort'][:35]:35} | Ratio: {row['ski_to_lift_ratio']:.2f}:1 | "
-          f"Runs: {row['total_runs']:3.0f} | Lifts: {row['total_lifts']:2.0f}")
-
+print("\n=== NZ SAME-LIFT EFFICIENCY ANALYSIS ===")
 if not df_paths.empty:
-    print("\n=== TOP 10 MOST EFFICIENT NZ SKI PATHS ===")
-    df_path_efficient = df_paths.nlargest(10, 'ski_to_lift_ratio')
-    for i, (_, row) in enumerate(df_path_efficient.iterrows(), 1):
-        print(f"{i:2d}. {row['resort'][:20]:20} | {row['starting_lift_name'][:25]:25} | "
-              f"Ratio: {row['ski_to_lift_ratio']:.2f}:1 | Runs: {row['run_count']:2.0f}")
-
-print(f"\nAverage NZ resort efficiency: {df_resorts['ski_to_lift_ratio'].mean():.2f}:1")
-if not df_paths.empty:
-    print(f"Average NZ path efficiency: {df_paths['ski_to_lift_ratio'].mean():.2f}:1")
+    print(f"Found {len(df_paths)} same-lift cycle paths")
+    print(f"Average same-lift cycle efficiency: {df_paths['ski_to_lift_ratio'].mean():.2f}:1")
+    print(f"Best same-lift cycle efficiency: {df_paths['ski_to_lift_ratio'].max():.2f}:1")
+else:
+    print("No same-lift cycle paths found - check network connectivity")

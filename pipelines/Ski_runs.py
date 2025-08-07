@@ -155,13 +155,10 @@ def get_top_bottom_coordinates(coords, elevations=None):
             bottom_coords[0], bottom_coords[1], bottom_elevation)
 
 @dlt.source
-def ski_source(known_locations: set):
+def ski_source(known_osm: set):
     ski_runs_data = []
     ski_lifts = []
     for field in SKI_FIELDS:
-        if field["name"] in known_locations:
-            logger.info(f"Skipping {field['name']} - already in database")
-            continue
 
         query = f'''
         [out:json][timeout:60];
@@ -170,7 +167,7 @@ def ski_source(known_locations: set):
           way["piste:type"~"^(downhill|nordic|skitour|snow_park|sled|connection)$"](area.a);
           way["aerialway"](area.a);
         );
-        out tags geom;
+        out tags geom nodes;
         '''
 
         logger.info(f"Fetching ski runs for {field['name']} ...")
@@ -179,9 +176,15 @@ def ski_source(known_locations: set):
             logger.error(f"Overpass API error for {field['name']}: {response.status_code} {response.text}")
             continue
         elements = response.json().get("elements", [])
+
         for run in elements:
+            run_id = run.get("id")
+            if run_id in known_osm:
+                logger.info(f"Skipping OSM ID {run_id} - already in database")
+                continue
             tags = run.get("tags", {})
             geometry = run.get("geometry", [])
+            nodes = run.get("nodes", [])
             coords = [(pt["lat"], pt["lon"]) for pt in geometry] if geometry else []
             element_length = sum(
                 geodesic(coords[i], coords[i + 1]).meters
@@ -194,29 +197,24 @@ def ski_source(known_locations: set):
                 if not coords:
                     continue
                 ski_runs_data.append({
-                    "osm_id": run["id"],
+                    "osm_id": run_id,
                     "resort": field["name"],
                     "country_code": field["country"],
                     "region": field["region"],
                     "tags": tags,
                     "coords": coords,  # store coords directly
+                    "node_ids": nodes,  # store node ids
                     "length_m": element_length,
                 })
             elif "aerialway" in tags:
-                # Filter out magic carpets and platter lifts
                 aerialway_type = tags.get("aerialway", "").lower()
                 name = tags.get("name", "unnamed").lower()
                 if aerialway_type in ["station", "goods"]:
                     logger.info(f"Filtering out {aerialway_type} lift: {name} at {field['name']}")
                     continue
 
-                # if "learner" in name or "beginner" in name:
-                #     logger.info(f"Filtering out learner lift: {name} at {field['name']}")
-                #     continue
-
-
                 ski_lifts.append({
-                    "osm_id": run["id"],
+                    "osm_id": run_id,
                     "resort": field["name"],
                     "country_code": field["country"],
                     "region": field["region"],
@@ -226,6 +224,7 @@ def ski_source(known_locations: set):
                     "capacity": tags.get("aerialway:capacity"),
                     "occupancy": tags.get("aerialway:occupancy"),
                     "coords": coords,  # store coords directly
+                    "node_ids": nodes,  # store node ids
                     "length_m": element_length,
                 })
 
@@ -234,10 +233,9 @@ def ski_source(known_locations: set):
         for run in ski_runs_data:
             tags = run.get("tags", {})
             coords = run.get("coords", [])
+            node_ids = run.get("node_ids", [])
 
             turniness_score = compute_turniness(coords)
-
-            # Get elevations for top/bottom calculation
             elevations = get_elevations_batch(coords)
             top_lat, top_lon, top_elev, bottom_lat, bottom_lon, bottom_elev = get_top_bottom_coordinates(coords, elevations)
 
@@ -260,6 +258,7 @@ def ski_source(known_locations: set):
                 "bottom_lat": bottom_lat,
                 "bottom_lon": bottom_lon,
                 "bottom_elevation_m": bottom_elev,
+                "node_ids": node_ids,  # add node_ids to table
             }
 
     @dlt.resource(write_disposition="merge", table_name="ski_run_points", primary_key=["osm_id", "point_index"])
@@ -267,16 +266,11 @@ def ski_source(known_locations: set):
         for run in ski_runs_data:
             tags = run.get("tags", {})
             coords = run.get("coords", [])
-
+            node_ids = run.get("node_ids", [])
             elevations = get_elevations_batch(coords)
-            # --- Solution 1: Filter out if not enough points after trimming ---
             if len(coords) < 2:
                 logger.warning(f"Skipping run {tags.get('name', '')} ({run['osm_id']}): only {len(coords)} points left.")
                 continue
-            # Ensure top-to-bottom order
-            # if elevations[0] < elevations[-1]:
-            #     coords = coords[::-1]
-            #     elevations = elevations[::-1]
 
             cum_distances = [0.0]
             steep_count = 0
@@ -285,7 +279,7 @@ def ski_source(known_locations: set):
                 cum_distances.append(cum_distances[-1] + dist)
                 if dist > 0:
                     gradient = abs((elevations[i] - elevations[i - 1]) / dist)
-                    if gradient > 2:  # 200% gradient threshold
+                    if gradient > 2:
                         steep_count += 1
             if steep_count > 3:
                 logger.warning(f"Skipping run {tags.get('name', '')} ({run['osm_id']}) due to steep segments: count={steep_count}")
@@ -302,6 +296,7 @@ def ski_source(known_locations: set):
             for idx, ((lat, lon), dist, elev, elev_sm, grad_sm) in enumerate(
                 zip(coords, cum_distances, elevations, elevations_smooth, gradients_smooth)
             ):
+                node_id = node_ids[idx] if idx < len(node_ids) else None
                 yield {
                     "osm_id": run["osm_id"],
                     "resort": run["resort"],
@@ -313,14 +308,15 @@ def ski_source(known_locations: set):
                     "distance_along_run_m": dist,
                     "elevation_m": elev,
                     "elevation_smoothed_m": float(elev_sm) if elev_sm is not None else None,
-                    "gradient_smoothed": float(grad_sm) if grad_sm is not None else None
+                    "gradient_smoothed": float(grad_sm) if grad_sm is not None else None,
+                    "node_id": node_id  # add node_id for each point
                 }
 
     @dlt.resource(write_disposition="merge", table_name="ski_lifts", primary_key=["osm_id"])
     def ski_lifts_resource():
         for lift in ski_lifts:
             coords = lift.get("coords", [])
-
+            node_ids = lift.get("node_ids", [])
             lift_length = lift.get("length_m", 0)
             if lift_length < 100:
                 logger.info(f"Skipping {lift['name']} - length < 100m")
@@ -336,7 +332,6 @@ def ski_source(known_locations: set):
 
             lift_speed = lift_length / duration_sec if lift_length and duration_sec and duration_sec > 0 else None
 
-            # Get top/bottom coordinates (for lifts, first point is typically bottom, last is top)
             bottom_lat, bottom_lon, bottom_elev, top_lat, top_lon, top_elev = get_top_bottom_coordinates(coords)
 
             yield {
@@ -357,6 +352,7 @@ def ski_source(known_locations: set):
                 "bottom_lat": bottom_lat,
                 "bottom_lon": bottom_lon,
                 "bottom_elevation_m": bottom_elev,
+                "node_ids": node_ids  # add node_ids to table
             }
 
     return [ski_runs, ski_run_points, ski_lifts_resource]
@@ -371,24 +367,24 @@ def run_pipeline(logger):
         dev_mode=False
     )
     dataset = None
-    known_locations = set()
+    known_osm = set()
 
     try:
         logger.info("Trying to access table: ski_runs")
         dataset = pipeline.dataset()["ski_runs"].df()
         if dataset is not None and not dataset.empty:
-            known_locations = set(dataset["resort"].unique())
-            logger.info(f"Found {len(known_locations)} known locations: {known_locations}")
+            known_osm = set(dataset["osm_id"].unique())
+            logger.info(f"Found {len(known_osm)} known locations: {known_osm}")
     except (ValueError, KeyError, DatabaseUndefinedRelation) as e:
         logger.info(f"Table ski_runs not found: {e}")
     except Exception as e:
         logger.warning(f"Error accessing table ski_runs: {e}")
 
-    if not known_locations:
+    if not known_osm:
         logger.info("No existing ski runs data found, treating as first run")
 
     try:
-        pipeline.run(ski_source(known_locations))
+        pipeline.run(ski_source(known_osm))
     except Exception as e:
         logger.error(f"❌ Pipeline run failed: {e}")
         return False

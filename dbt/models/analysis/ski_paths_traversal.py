@@ -10,7 +10,6 @@ def model(dbt, session):
     Build a tree of all possible ski paths from lift tops to endpoints.
     Uses actual distance calculation based on entry and exit points.
     """
-
     # Load data
     lift_run_mapping = dbt.ref("base_lift_run_mapping").df()
     ski_runs = dbt.ref("base_filtered_ski_runs").df()
@@ -27,26 +26,47 @@ def model(dbt, session):
         resort_runs = ski_runs[ski_runs['resort'] == resort]
         resort_points = ski_points[ski_points['resort'] == resort]
 
+        print("Checking resort_lifts:", type(resort_lifts), resort_lifts.shape)
+        print("Checking resort_runs:", type(resort_runs), resort_runs.shape)
+        print("Checking resort_points:", type(resort_points), resort_points.shape)
+
+        # Debug: print first few rows
+        print("resort_lifts head:\n", resort_lifts.head())
+        print("resort_runs head:\n", resort_runs.head())
+
         if len(resort_lifts) == 0 or len(resort_runs) == 0:
             print(f"Skipping {resort}: No lifts or runs")
             continue
 
         # Build the network
+        print("Building network...")
         G = build_resort_network(resort_lifts, resort_runs, resort_points)
 
+        print("Network nodes:", G.number_of_nodes())
         if G.number_of_nodes() == 0:
             print(f"Skipping {resort}: Empty network")
             continue
 
         # Find all paths
+        print("Finding all paths...")
         resort_paths = find_all_paths(G, resort, resort_runs, resort_points)
 
         print(f"Found {len(resort_paths)} paths for {resort}")
         all_paths.extend(resort_paths)
 
     # Convert to DataFrame
-    paths_df = pd.DataFrame(all_paths)
+    print("Converting all_paths to DataFrame...")
+    if not all_paths:
+        paths_df = pd.DataFrame(columns=[
+            'resort', 'country_code', 'path_id', 'starting_lift_name', 'starting_lift_osm_id',
+            'ending_point_type', 'ending_point_name', 'ending_point_osm_id', 'run_path_array',
+            'run_path_names', 'run_count', 'total_path_length_m', 'total_vertical_drop_m',
+            'avg_gradient', 'total_turniness_score', 'difficulty_mix', 'hardest_difficulty'
+        ])
+    else:
+        paths_df = pd.DataFrame(all_paths)
 
+    print("Returning paths_df with shape:", paths_df.shape)
     return paths_df
 
 def build_resort_network(lift_run_mapping: pd.DataFrame, 
@@ -122,8 +142,9 @@ def build_resort_network(lift_run_mapping: pd.DataFrame,
 
 def find_run_connections(G: nx.DiGraph, ski_runs: pd.DataFrame, ski_points: pd.DataFrame):
     """Find connections between runs by comparing points"""
-    # Get all runs
-    # run_nodes = [n for n in G.nodes() if n.startswith('run_')]
+    # Use KDTree for efficient spatial queries
+    from scipy.spatial import cKDTree
+    import numpy as np
 
     # Group points by resort for faster processing
     points_by_resort = {}
@@ -132,125 +153,88 @@ def find_run_connections(G: nx.DiGraph, ski_runs: pd.DataFrame, ski_points: pd.D
             points_by_resort[row['resort']] = []
         points_by_resort[row['resort']].append(row)
 
-    # For each resort, find connections
     for resort, resort_points in points_by_resort.items():
-        # Create spatial index for faster proximity search
-        # Simple approach: bin points by lat/lon grid
-        grid_size = 0.0001  # Roughly 10m at equator
-        grid = {}
+        # Prepare arrays for KDTree
+        coords = np.array([[p['lat'], p['lon']] for p in resort_points])
+        kdtree = cKDTree(coords)
 
-        for point in resort_points:
-            grid_key = (int(point['lat'] / grid_size), int(point['lon'] / grid_size))
-            if grid_key not in grid:
-                grid[grid_key] = []
-            grid[grid_key].append(point)
+        # Map index to point
+        idx_to_point = {i: p for i, p in enumerate(resort_points)}
 
-        # Check for potential connections
-        for point in resort_points:
-            # Only consider middle and end points as exit points
+        # For each point, find nearby points within 30m
+        for i, point in enumerate(resort_points):
             point_idx = point['point_index']
             osm_id = point['osm_id']
-
             # Get max point index for this run
             run_points = [p for p in resort_points if p['osm_id'] == osm_id]
             max_idx = max([p['point_index'] for p in run_points])
-
-            # Skip if this is the start of a run (can't exit from start)
             if point_idx == 0:
                 continue
-
-            # Define point position
             if point_idx >= (max_idx - 2):
                 point_position = 'end'
             else:
                 point_position = 'middle'
-
-            # Only middle and end points can be exit points
             if point_position not in ['middle', 'end']:
                 continue
 
-            # Find nearby points from other runs
-            grid_key = (int(point['lat'] / grid_size), int(point['lon'] / grid_size))
-
-            # Check surrounding grid cells for nearby points
-            for dx in [-1, 0, 1]:
-                for dy in [-1, 0, 1]:
-                    check_key = (grid_key[0] + dx, grid_key[1] + dy)
-
-                    if check_key not in grid:
-                        continue
-
-                    for nearby in grid[check_key]:
-                        # Skip points from the same run
-                        if nearby['osm_id'] == osm_id:
+            # Query KDTree for neighbors within 30m (0.00027 deg ~ 30m at equator)
+            # But use meters for accuracy
+            latlon = np.array([point['lat'], point['lon']])
+            # Use 0.00027 as a rough degree window, but filter by meters below
+            idxs = kdtree.query_ball_point(latlon, r=0.00027)
+            for j in idxs:
+                if j == i:
+                    continue
+                nearby = idx_to_point[j]
+                if nearby['osm_id'] == osm_id:
+                    continue
+                # Calculate distance in meters
+                distance = ((point['lat'] - nearby['lat'])**2 + (point['lon'] - nearby['lon'])**2)**0.5 * 111000
+                if distance > 30:
+                    continue
+                # Get position of nearby point
+                nearby_idx = nearby['point_index']
+                nearby_osm = nearby['osm_id']
+                nearby_run_points = [p for p in resort_points if p['osm_id'] == nearby_osm]
+                nearby_max_idx = max([p['point_index'] for p in nearby_run_points])
+                if nearby_idx == 0:
+                    nearby_position = 'start'
+                elif nearby_idx >= (nearby_max_idx - 2):
+                    nearby_position = 'end'
+                else:
+                    nearby_position = 'middle'
+                if point_position == 'start' and nearby_position == 'end':
+                    continue
+                elevation_diff = point.get('elevation_m', 0) - nearby.get('elevation_m', 0)
+                if elevation_diff < -10:
+                    continue
+                from_run_id = f"run_{osm_id}"
+                to_run_id = f"run_{nearby_osm}"
+                from_run_points = [p for p in resort_points if p['osm_id'] == osm_id]
+                to_run_points = [p for p in resort_points if p['osm_id'] == nearby_osm]
+                if from_run_points and to_run_points:
+                    from_start = next((p for p in from_run_points if p['point_index'] == 0), None)
+                    to_start = next((p for p in to_run_points if p['point_index'] == 0), None)
+                    if from_start is not None and to_start is not None:
+                        start_distance = ((from_start['lat'] - to_start['lat'])**2 + (from_start['lon'] - to_start['lon'])**2)**0.5
+                        if start_distance < 0.00001:
                             continue
+                if from_run_id in G and to_run_id in G:
+                    connection_type = 'splits_to' if point_position == 'middle' else 'merge_into'
+                    G.add_edge(from_run_id, to_run_id,
+                        connection_type=connection_type,
+                        exit_point_index=point_idx,
+                        entry_point_index=nearby_idx,
+                        exit_distance_m=point['distance_along_run_m'],
+                        entry_distance_m=nearby['distance_along_run_m'],
+                        elevation_diff=elevation_diff,
+                        connection_distance_m=distance)
 
-                        # Calculate distance
-                        distance = ((point['lat'] - nearby['lat'])**2 + 
-                                   (point['lon'] - nearby['lon'])**2)**0.5 * 111000  # Rough m conversion
-
-                        # Skip if too far
-                        if distance > 30:  # 30m connection limit
-                            continue
-
-                        # Get position of nearby point
-                        nearby_idx = nearby['point_index']
-                        nearby_osm = nearby['osm_id']
-
-                        # Get max point index for nearby run
-                        nearby_run_points = [p for p in resort_points if p['osm_id'] == nearby_osm]
-                        nearby_max_idx = max([p['point_index'] for p in nearby_run_points])
-
-                        # Define nearby point position
-                        if nearby_idx == 0:
-                            nearby_position = 'start'
-                        elif nearby_idx >= (nearby_max_idx - 2):
-                            nearby_position = 'end'
-                        else:
-                            nearby_position = 'middle'
-
-                        # Skip impossible connections
-                        if point_position == 'start' and nearby_position == 'end':
-                            continue  # Can't go from start to end
-
-                        # Check for uphill connections
-                        elevation_diff = point.get('elevation_m', 0) - nearby.get('elevation_m', 0)
-
-                        # Allow slight uphill for GPS error
-                        if elevation_diff < -10:
-                            continue
-
-                        # Prevent connections between runs with same starting point
-                        from_run_id = f"run_{osm_id}"
-                        to_run_id = f"run_{nearby_osm}"
-
-                        from_run_points = [p for p in resort_points if p['osm_id'] == osm_id]
-                        to_run_points = [p for p in resort_points if p['osm_id'] == nearby_osm]
-
-                        if from_run_points and to_run_points:
-                            from_start = next((p for p in from_run_points if p['point_index'] == 0), None)
-                            to_start = next((p for p in to_run_points if p['point_index'] == 0), None)
-
-                            if from_start and to_start:
-                                start_distance = ((from_start['lat'] - to_start['lat'])**2 + 
-                                                (from_start['lon'] - to_start['lon'])**2)**0.5
-
-                                if start_distance < 0.00001:  # Practically same point
-                                    continue
-
-                        # Connection is valid - add to graph
-                        if from_run_id in G and to_run_id in G:
-                            # Calculate actual distances
-                            connection_type = 'splits_to' if point_position == 'middle' else 'merge_into'
-
-                            G.add_edge(from_run_id, to_run_id,
-                                      connection_type=connection_type,
-                                      exit_point_index=point_idx,
-                                      entry_point_index=nearby_idx,
-                                      exit_distance_m=point['distance_along_run_m'],
-                                      entry_distance_m=nearby['distance_along_run_m'],
-                                      elevation_diff=elevation_diff,
-                                      connection_distance_m=distance)
+# NOTE: For further optimization, consider precomputing and materializing features such as:
+# - Run start/end points and their spatial index
+# - Run-to-lift and run-to-run connection candidates
+# - Efficiency metrics (e.g., time from run to lift, average speed, etc.)
+# These can be stored in separate SQL or Python models for reuse in analysis.
 
 def find_all_paths(G: nx.DiGraph, resort: str, 
                   ski_runs: pd.DataFrame, ski_points: pd.DataFrame, 
@@ -266,7 +250,7 @@ def find_all_paths(G: nx.DiGraph, resort: str,
     start_nodes = [n for n in G.nodes() if (
         n.startswith('lift_') and 
         G.nodes[n].get('resort') == resort and 
-        any(G.successors(n))
+        any(list(G.successors(n)))
     )]
 
     print(f"Found {len(start_nodes)} starting lifts")

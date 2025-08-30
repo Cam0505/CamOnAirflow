@@ -9,6 +9,5 @@ select
 	lon,
 	distance_along_run_m,
 	elevation_m,
-	elevation_smoothed_m,
-	gradient_smoothed
+	elevation_smoothed_m
 FROM {{ source('ski_runs', 'ski_run_points') }}

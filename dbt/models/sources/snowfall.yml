@@ -13,9 +13,10 @@ sources:
               combination_of_columns:
                 - date
                 - location
-        freshness:
-          warn_after: {count: 6, period: day}
-          error_after: {count: 14, period: day}
+        config:
+          freshness:
+            warn_after: {count: 6, period: day}
+            error_after: {count: 14, period: day}
         loaded_at_field: CAST(date AS TIMESTAMP)
         columns:
           - name: date

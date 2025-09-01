@@ -1,8 +1,10 @@
+
 WITH deduplicated_runs AS (
     SELECT
         osm_id,
         resort,
         country_code,
+        region,
         run_name,
         piste_type,
         run_length_m,
@@ -19,8 +21,6 @@ WITH deduplicated_runs AS (
         bottom_lat,
         bottom_lon,
         bottom_elevation_m,
-        grooming,
-        lit,
         run_length_m / 4.0 AS ski_time_slow_sec,
         run_length_m / 7.0 AS ski_time_medium_sec,
         run_length_m / 10.0 AS ski_time_fast_sec,
@@ -35,7 +35,7 @@ WITH deduplicated_runs AS (
         END as name_rank
     FROM {{ source('ski_runs', 'ski_runs') }}
     WHERE
-        run_length_m >= {{ var('min_run_length', 90) }}
+        run_length_m >= {{ var('min_run_length', 40) }}
         AND n_points >= {{ var('min_n_points', 2) }}
 )
 
@@ -44,6 +44,7 @@ SELECT
     resort,
     country_code,
     run_name,
+    region,
     piste_type,
     run_length_m,
     n_points,
@@ -55,8 +56,6 @@ SELECT
     bottom_lat,
     bottom_lon,
     bottom_elevation_m,
-    grooming,
-    lit,
     ski_time_slow_sec,
     ski_time_medium_sec,
     ski_time_fast_sec

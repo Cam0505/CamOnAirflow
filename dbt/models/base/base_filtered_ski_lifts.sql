@@ -12,7 +12,7 @@ WHERE 1=1
         LOWER(COALESCE(name, '')) LIKE '%learner%' 
         OR LOWER(COALESCE(name, '')) LIKE '%beginner%'
     )
-    
+
     -- Filter out very short lifts (likely not main infrastructure)
     AND COALESCE(lift_length_m, 0) >= 100
     

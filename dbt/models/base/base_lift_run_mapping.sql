@@ -1,4 +1,4 @@
--- Map lifts to all possible first ski segments (including partial runs when they split)
+-- Map lifts to runs using only top/bottom coordinates
 
 WITH lift_positions AS (
     SELECT
@@ -14,8 +14,12 @@ WITH lift_positions AS (
         lift_length_m,
         lift_speed_mps
     FROM {{ ref('base_filtered_ski_lifts') }}
-    WHERE top_lat IS NOT NULL AND top_lon IS NOT NULL
+    WHERE top_lat IS NOT NULL 
+      AND top_lon IS NOT NULL
+      AND bottom_lat IS NOT NULL
+      AND bottom_lon IS NOT NULL
 ),
+
 run_positions AS (
     SELECT
         osm_id as run_osm_id,
@@ -31,20 +35,12 @@ run_positions AS (
         bottom_elevation_m,
         turniness_score
     FROM {{ ref('base_filtered_ski_runs') }}
-    WHERE top_lat IS NOT NULL AND top_lon IS NOT NULL
+    WHERE top_lat IS NOT NULL 
+      AND top_lon IS NOT NULL
+      AND bottom_lat IS NOT NULL
+      AND bottom_lon IS NOT NULL
 ),
-run_points AS (
-    SELECT
-        osm_id as run_osm_id,
-        resort,
-        lat,
-        lon,
-        elevation_m,
-        distance_along_run_m,
-        point_index,
-        MAX(point_index) OVER (PARTITION BY osm_id) as max_point_index
-    FROM {{ ref('base_filtered_ski_points') }}
-),
+
 -- Lifts that service runs (lift top near run top)
 lift_services_runs AS (
     SELECT
@@ -60,30 +56,26 @@ lift_services_runs AS (
         r.difficulty,
         r.run_length_m,
         'lift_services_run' as connection_type,
-        pts.point_index as run_start_point_index,
-        pts.distance_along_run_m as run_start_distance_m,
+        0 as run_start_point_index,  -- Start at the top (point index 0)
+        0 as run_start_distance_m,   -- Start at the top (distance 0)
         SQRT(
-            POW(69.1 * (l.top_lat - pts.lat), 2) + 
-            POW(69.1 * (l.top_lon - pts.lon) * COS(pts.lat / 57.3), 2)
+            POW(69.1 * (l.top_lat - r.top_lat), 2) + 
+            POW(69.1 * (l.top_lon - r.top_lon) * COS(r.top_lat / 57.3), 2)
         ) * 1609.34 AS connection_distance_m,
         ROW_NUMBER() OVER (PARTITION BY l.lift_osm_id, r.run_osm_id ORDER BY 
             SQRT(
-                POW(69.1 * (l.top_lat - pts.lat), 2) + 
-                POW(69.1 * (l.top_lon - pts.lon) * COS(pts.lat / 57.3), 2)
+                POW(69.1 * (l.top_lat - r.top_lat), 2) + 
+                POW(69.1 * (l.top_lon - r.top_lon) * COS(r.top_lat / 57.3), 2)
             ) * 1609.34 ASC
         ) as rank
     FROM lift_positions l
-    INNER JOIN run_points pts ON (
-        l.resort = pts.resort
-        -- Only connect to first few points of run (top)
-        AND pts.point_index <= 2
-    )
-    INNER JOIN run_positions r ON pts.run_osm_id = r.run_osm_id
+    JOIN run_positions r ON l.resort = r.resort
     WHERE SQRT(
-        POW(69.1 * (l.top_lat - pts.lat), 2) + 
-        POW(69.1 * (l.top_lon - pts.lon) * COS(pts.lat / 57.3), 2)
-    ) * 1609.34 <= 50  -- Within 50m
+        POW(69.1 * (l.top_lat - r.top_lat), 2) + 
+        POW(69.1 * (l.top_lon - r.top_lon) * COS(r.top_lat / 57.3), 2)
+    ) * 1609.34 <= 75  -- Within 75m (increased slightly for reliability)
 ),
+
 -- Runs that feed into lifts (run bottom near lift bottom)
 runs_feed_lifts AS (
     SELECT
@@ -99,31 +91,27 @@ runs_feed_lifts AS (
         r.difficulty,
         r.run_length_m,
         'run_feeds_lift' as connection_type,
-        pts.point_index as run_end_point_index,
-        pts.distance_along_run_m as run_end_distance_m,
+        999999 as run_end_point_index,  -- End of the run
+        r.run_length_m as run_end_distance_m,  -- End of the run
         SQRT(
-            POW(69.1 * (l.bottom_lat - pts.lat), 2) + 
-            POW(69.1 * (l.bottom_lon - pts.lon) * COS(pts.lat / 57.3), 2)
+            POW(69.1 * (l.bottom_lat - r.bottom_lat), 2) + 
+            POW(69.1 * (l.bottom_lon - r.bottom_lon) * COS(r.bottom_lat / 57.3), 2)
         ) * 1609.34 AS connection_distance_m,
         ROW_NUMBER() OVER (PARTITION BY l.lift_osm_id, r.run_osm_id ORDER BY 
             SQRT(
-                POW(69.1 * (l.bottom_lat - pts.lat), 2) + 
-                POW(69.1 * (l.bottom_lon - pts.lon) * COS(pts.lat / 57.3), 2)
+                POW(69.1 * (l.bottom_lat - r.bottom_lat), 2) + 
+                POW(69.1 * (l.bottom_lon - r.bottom_lon) * COS(r.bottom_lat / 57.3), 2)
             ) * 1609.34 ASC
         ) as rank
     FROM lift_positions l
-    INNER JOIN run_points pts ON (
-        l.resort = pts.resort
-        -- Only connect to last few points of run (bottom)
-        AND pts.point_index >= (pts.max_point_index - 3)
-    )
-    INNER JOIN run_positions r ON pts.run_osm_id = r.run_osm_id
+    JOIN run_positions r ON l.resort = r.resort
     WHERE SQRT(
-        POW(69.1 * (l.bottom_lat - pts.lat), 2) + 
-        POW(69.1 * (l.bottom_lon - pts.lon) * COS(pts.lat / 57.3), 2)
-    ) * 1609.34 <= 50  -- Within 50m
+        POW(69.1 * (l.bottom_lat - r.bottom_lat), 2) + 
+        POW(69.1 * (l.bottom_lon - r.bottom_lon) * COS(r.bottom_lat / 57.3), 2)
+    ) * 1609.34 <= 75  -- Within 75m (increased slightly for reliability)
 )
 
+-- Combine the two types of connections with consistent column names
 SELECT
     lift_osm_id,
     resort,
@@ -137,8 +125,8 @@ SELECT
     difficulty,
     run_length_m,
     connection_type,
-    run_start_point_index,
-    run_start_distance_m,
+    run_start_point_index as point_index,
+    run_start_distance_m as distance_m,
     connection_distance_m
 FROM lift_services_runs
 WHERE rank = 1  -- Only closest connection
@@ -158,8 +146,8 @@ SELECT
     difficulty,
     run_length_m,
     connection_type,
-    run_end_point_index,
-    run_end_distance_m,
+    run_end_point_index as point_index,
+    run_end_distance_m as distance_m,
     connection_distance_m
 FROM runs_feed_lifts
 WHERE rank = 1  -- Only closest connection

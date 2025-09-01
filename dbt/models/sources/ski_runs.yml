@@ -9,4 +9,4 @@ sources:
       - name: ski_runs
       - name: ski_run_points
       - name: ski_lifts
-        
+      - name: ski_run_segments

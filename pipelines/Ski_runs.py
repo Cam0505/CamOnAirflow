@@ -131,25 +131,39 @@ def compute_turniness(coords):
 
 # Add this function after the existing helper functions
 
-def get_top_bottom_coordinates(coords, elevations=None):
-    """Get top and bottom coordinates for a run or lift."""
+def get_top_bottom_coordinates(coords, elevations=None, is_lift=False):
+    """
+    Get top and bottom coordinates for a run or lift.
+    For ski runs: First point is top, last point is bottom (flow top-to-bottom)
+    For ski lifts: First point is bottom, last point (where skiers get off)
+    """
     if not coords or len(coords) < 2:
         return None, None, None, None, None, None
 
-    if elevations and len(elevations) == len(coords):
-        # For ski runs, use elevation-based top/bottom
-        max_idx = elevations.index(max(elevations))
-        min_idx = elevations.index(min(elevations))
-        top_coords = coords[max_idx]
-        bottom_coords = coords[min_idx]
-        top_elevation = elevations[max_idx]
-        bottom_elevation = elevations[min_idx]
+    if is_lift:
+        # For lifts: First point is bottom, last point is top
+        bottom_coords = coords[0]  # First point (where skiers get on)
+        top_coords = coords[-1]    # Last point (where skiers get off)
+        
+        # Get elevations if available
+        if elevations and len(elevations) == len(coords):
+            bottom_elevation = elevations[0]
+            top_elevation = elevations[-1]
+        else:
+            bottom_elevation = None
+            top_elevation = None
     else:
-        # For lifts or when no elevation data, use first/last points
-        top_coords = coords[0]
-        bottom_coords = coords[-1]
-        top_elevation = None
-        bottom_elevation = None
+        # For ski runs: First point is top, last point is bottom
+        top_coords = coords[0]     # First point (where skiing begins)
+        bottom_coords = coords[-1] # Last point (where skiing ends)
+        
+        # Get elevations if available
+        if elevations and len(elevations) == len(coords):
+            top_elevation = elevations[0]
+            bottom_elevation = elevations[-1]
+        else:
+            top_elevation = None
+            bottom_elevation = None
 
     return (top_coords[0], top_coords[1], top_elevation, 
             bottom_coords[0], bottom_coords[1], bottom_elevation)
@@ -201,9 +215,34 @@ def ski_source(known_osm: set):
             if len(coords) < 2:
                 continue
 
+            # Calculate elevations ONCE for all coords
+            elevations = get_elevations_batch(coords)
+
+            # Calculate cumulative distances once
+            cum_distances = [0.0]
+            for i in range(1, len(coords)):
+                dist = geodesic(coords[i - 1], coords[i]).meters
+                cum_distances.append(cum_distances[-1] + dist)
+
+            # Smooth elevations if needed
+            if len(elevations) >= 3:
+                elevations_smooth, gradients_smooth = smooth_steep_gradients(
+                    elevations, cum_distances, threshold=0.80, window=7
+                )
+            else:
+                elevations_smooth = elevations
+                gradients_smooth = [0.0] * len(elevations)
+
             if "piste:type" in tags:
                 if not coords:
                     continue
+
+                # Calculate top/bottom coordinates ONCE
+                top_lat, top_lon, top_elev, bottom_lat, bottom_lon, bottom_elev = get_top_bottom_coordinates(coords, elevations)
+                
+                # Calculate turniness once
+                turniness_score = compute_turniness(coords)
+
                 ski_runs_data.append({
                     "osm_id": run_id,
                     "resort": field["name"],
@@ -213,6 +252,17 @@ def ski_source(known_osm: set):
                     "coords": coords,  # store coords directly
                     "node_ids": nodes,  # store node ids
                     "length_m": element_length,
+                    "elevations": elevations,  # store all elevations
+                    "elevations_smooth": elevations_smooth,  # store smoothed elevations
+                    "gradients_smooth": gradients_smooth,  # store gradients
+                    "cum_distances": cum_distances,  # store distances
+                    "top_lat": top_lat,  # store top coordinates
+                    "top_lon": top_lon,
+                    "top_elev": top_elev,
+                    "bottom_lat": bottom_lat,  # store bottom coordinates
+                    "bottom_lon": bottom_lon,
+                    "bottom_elev": bottom_elev,
+                    "turniness_score": turniness_score  # store turniness
                 })
             elif "aerialway" in tags:
                 aerialway_type = tags.get("aerialway", "").lower()
@@ -220,6 +270,9 @@ def ski_source(known_osm: set):
                 if aerialway_type in ["station", "goods"]:
                     logger.info(f"Filtering out {aerialway_type} lift: {name} at {field['name']}")
                     continue
+
+                # Calculate top/bottom coordinates ONCE with is_lift=True
+                top_lat, top_lon, top_elev, bottom_lat, bottom_lon, bottom_elev = get_top_bottom_coordinates(coords, elevations, is_lift=True)
 
                 ski_lifts.append({
                     "osm_id": run_id,
@@ -232,21 +285,22 @@ def ski_source(known_osm: set):
                     "capacity": tags.get("aerialway:capacity"),
                     "occupancy": tags.get("aerialway:occupancy"),
                     "coords": coords,  # store coords directly
-                    "node_ids": nodes,  # store node ids
                     "length_m": element_length,
+                    "elevations": elevations,  # store elevations
+                    "top_lat": top_lat,  # store top coordinates
+                    "top_lon": top_lon,
+                    "top_elev": top_elev,
+                    "bottom_lat": bottom_lat,  # store bottom coordinates
+                    "bottom_lon": bottom_lon,
+                    "bottom_elev": bottom_elev
                 })
 
     @dlt.resource(write_disposition="merge", table_name="ski_runs", primary_key=["osm_id"])
     def ski_runs():
         for run in ski_runs_data:
             tags = run.get("tags", {})
-            coords = run.get("coords", [])
-            node_ids = run.get("node_ids", [])
-
-            turniness_score = compute_turniness(coords)
-            elevations = get_elevations_batch(coords)
-            top_lat, top_lon, top_elev, bottom_lat, bottom_lon, bottom_elev = get_top_bottom_coordinates(coords, elevations)
-
+            
+            # Use pre-calculated values
             yield {
                 "osm_id": run["osm_id"],
                 "resort": run["resort"],
@@ -255,18 +309,15 @@ def ski_source(known_osm: set):
                 "run_name": tags.get("name", ""),
                 "difficulty": tags.get("piste:difficulty"),
                 "piste_type": tags.get("piste:type"),
-                # "grooming": tags.get("piste:grooming"),
-                # "lit": tags.get("piste:lit"),
                 "run_length_m": run.get("length_m", 0),
-                "n_points": len(coords),
-                "turniness_score": turniness_score,
-                "top_lat": top_lat,
-                "top_lon": top_lon,
-                "top_elevation_m": top_elev,
-                "bottom_lat": bottom_lat,
-                "bottom_lon": bottom_lon,
-                "bottom_elevation_m": bottom_elev,
-                "node_ids": node_ids,  # add node_ids to table
+                "n_points": len(run.get("coords", [])),
+                "turniness_score": run.get("turniness_score", 0),
+                "top_lat": run["top_lat"],
+                "top_lon": run["top_lon"],
+                "top_elevation_m": run["top_elev"],
+                "bottom_lat": run["bottom_lat"],
+                "bottom_lon": run["bottom_lon"],
+                "bottom_elevation_m": run["bottom_elev"]
             }
 
     @dlt.resource(write_disposition="merge", table_name="ski_run_points", primary_key=["osm_id", "point_index"])
@@ -275,34 +326,16 @@ def ski_source(known_osm: set):
             tags = run.get("tags", {})
             coords = run.get("coords", [])
             node_ids = run.get("node_ids", [])
-            elevations = get_elevations_batch(coords)
+            
+            # Use pre-calculated values
+            elevations = run.get("elevations", [])
+            elevations_smooth = run.get("elevations_smooth", [])
+            gradients_smooth = run.get("gradients_smooth", [])
+            cum_distances = run.get("cum_distances", [])
+            
             if len(coords) < 2:
                 logger.warning(f"Skipping run {tags.get('name', '')} ({run['osm_id']}): only {len(coords)} points left.")
                 continue
-
-            cum_distances = [0.0]
-            steep_count = 0
-            for i in range(1, len(coords)):
-                dist = geodesic(coords[i - 1], coords[i]).meters
-                cum_distances.append(cum_distances[-1] + dist)
-                if dist > 0:
-                    gradient = abs((elevations[i] - elevations[i - 1]) / dist)
-                    if gradient > 2:
-                        steep_count += 1
-            if steep_count > 3:
-                logger.warning(f"Skipping run {tags.get('name', '')} ({run['osm_id']}) due to steep segments: count={steep_count}")
-                continue
-
-            if len(elevations) >= 3:
-                elevations_smooth, gradients_smooth = smooth_steep_gradients(
-                    elevations, cum_distances, threshold=0.80, window=7
-                )
-            else:
-                elevations_smooth = elevations
-                gradients_smooth = [0.0] * len(elevations)
-
-            # Store elevations for use in segments
-            run["elevations"] = elevations
 
             # Zip node_ids and coords to ensure correct mapping
             for idx, ((lat, lon), dist, elev, elev_sm, grad_sm) in enumerate(
@@ -321,14 +354,12 @@ def ski_source(known_osm: set):
                     "elevation_m": elev,
                     "elevation_smoothed_m": float(elev_sm) if elev_sm is not None else None,
                     "gradient_smoothed": float(grad_sm) if grad_sm is not None else None,
-                    "node_id": str(node_id) if node_id is not None else None  # ensure string type
+                    "node_id": str(node_id) if node_id is not None else None
                 }
 
     @dlt.resource(write_disposition="merge", table_name="ski_lifts", primary_key=["osm_id"])
     def ski_lifts_resource():
         for lift in ski_lifts:
-            coords = lift.get("coords", [])
-            node_ids = lift.get("node_ids", [])
             lift_length = lift.get("length_m", 0)
             if lift_length < 100:
                 logger.info(f"Skipping {lift['name']} - length < 100m")
@@ -344,10 +375,7 @@ def ski_source(known_osm: set):
 
             lift_speed = lift_length / duration_sec if lift_length and duration_sec and duration_sec > 0 else None
 
-            # Fetch elevations for lifts
-            elevations = get_elevations_batch(coords)
-            bottom_lat, bottom_lon, bottom_elev, top_lat, top_lon, top_elev = get_top_bottom_coordinates(coords, elevations)
-
+            # Use pre-calculated values
             yield {
                 "osm_id": lift["osm_id"],
                 "resort": lift["resort"],
@@ -356,17 +384,14 @@ def ski_source(known_osm: set):
                 "lift_type": lift_type,
                 "name": lift.get("name"),
                 "duration": duration_sec, 
-                # "capacity": lift.get("capacity"),
-                # "occupancy": lift.get("occupancy"),
                 "lift_length_m": lift_length,
                 "lift_speed_mps": lift_speed,
-                "top_lat": top_lat,
-                "top_lon": top_lon,
-                "top_elevation_m": top_elev,
-                "bottom_lat": bottom_lat,
-                "bottom_lon": bottom_lon,
-                "bottom_elevation_m": bottom_elev,
-                "node_ids": node_ids  # add node_ids to table
+                "top_lat": lift["top_lat"],
+                "top_lon": lift["top_lon"],
+                "top_elevation_m": lift["top_elev"],
+                "bottom_lat": lift["bottom_lat"],
+                "bottom_lon": lift["bottom_lon"],
+                "bottom_elevation_m": lift["bottom_elev"]
             }
 
     @dlt.resource(write_disposition="merge", table_name="ski_run_segments", primary_key=["run_osm_id", "segment_index"])
@@ -375,7 +400,8 @@ def ski_source(known_osm: set):
             coords = run.get("coords", [])
             node_ids = run.get("node_ids", [])
             tags = run.get("tags", {})
-            elevations = run.get("elevations", [None]*len(coords))
+            elevations = run.get("elevations", [])  # Use pre-calculated elevations
+            
             for idx in range(len(coords) - 1):
                 from_lat, from_lon = coords[idx]
                 to_lat, to_lon = coords[idx + 1]

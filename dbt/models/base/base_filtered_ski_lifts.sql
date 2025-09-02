@@ -21,3 +21,4 @@ WHERE 1=1
     AND top_lon IS NOT NULL
     AND bottom_lat IS NOT NULL 
     AND bottom_lon IS NOT NULL
+    AND osm_id <> 1394839385

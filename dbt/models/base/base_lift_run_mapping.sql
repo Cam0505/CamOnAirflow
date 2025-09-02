@@ -73,7 +73,7 @@ lift_services_runs AS (
     WHERE SQRT(
         POW(69.1 * (l.top_lat - r.top_lat), 2) + 
         POW(69.1 * (l.top_lon - r.top_lon) * COS(r.top_lat / 57.3), 2)
-    ) * 1609.34 <= 75  -- Within 75m (increased slightly for reliability)
+    ) * 1609.34 <= 45  -- Within 45m 
 ),
 
 -- Runs that feed into lifts (run bottom near lift bottom)
@@ -109,6 +109,27 @@ runs_feed_lifts AS (
         POW(69.1 * (l.bottom_lat - r.bottom_lat), 2) + 
         POW(69.1 * (l.bottom_lon - r.bottom_lon) * COS(r.bottom_lat / 57.3), 2)
     ) * 1609.34 <= 75  -- Within 75m (increased slightly for reliability)
+)
+
+
+-- 🔧 Manual overrides for known missing mappings
+,manual_overrides AS (
+    SELECT
+        200252642       AS lift_osm_id,                -- Whitestar Express
+        'Cardrona Alpine Resort' AS resort,
+        'whitestar express' AS lift_name,
+        'chair_lift'    AS lift_type,
+        'NZ'            AS country_code,
+        1217.5183       AS lift_length_m,
+        2.5             AS lift_speed_mps,
+        1394842466      AS run_osm_id,                 -- Over Run
+        'Over Run'      AS run_name,
+        'easy'          AS difficulty,
+        859.9009        AS run_length_m,
+        'run_feeds_lift' AS connection_type,
+        999999          AS point_index,
+        859.9009        AS distance_m,
+        0.0             AS connection_distance_m       -- force connection
 )
 
 -- Combine the two types of connections with consistent column names
@@ -151,5 +172,6 @@ SELECT
     connection_distance_m
 FROM runs_feed_lifts
 WHERE rank = 1  -- Only closest connection
-
+UNION ALL
+SELECT * FROM manual_overrides
 ORDER BY resort, lift_osm_id, run_osm_id, connection_type

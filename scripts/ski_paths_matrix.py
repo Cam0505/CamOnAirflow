@@ -17,14 +17,16 @@ con = duckdb.connect(database_string)
 
 # --- Load ski paths from mart ---
 paths_df = con.execute("""
-    SELECT *
+    SELECT * 
     FROM camonairflow.public_common.mart_nz_ski_paths
     WHERE resort NOT IN (
         'Fox Peak Ski Area', 'Mount Olympus Ski Area',
-        'Rainbow Ski Area', 'Broken River Ski Area', 'Temple Basin Ski Area'
+        'Rainbow Ski Area', 'Broken River Ski Area', 'Temple Basin Ski Area', 'Mount Lyford Alpine Resort',
+                       'Roundhill Ski Field', 'Mount Dobson Ski Field'
     )
 """).df()
 con.close()
+
 
 # ========================================
 # Helpers for Top 1 per lift
@@ -54,6 +56,7 @@ top_by_vertical = top_1_per_lift_resort(paths_df, "total_vertical_m")
 top_by_same_lift = top_1_per_lift_resort(paths_df, "total_distance_m", ending_type="same_lift")
 top_steep_long = top_1_per_lift_resort(paths_df, "avg_gradient_deg", min_length=500)
 
+
 # ========================================
 # Layout helpers
 # ========================================
@@ -79,7 +82,7 @@ def estimate_resort_units(resort: str, blocks):
     return units
 
 
-def draw_resort_block(ax, resort: str, blocks):
+def draw_resort_block(ax, resort: str, blocks, fonts):
     ax.axis("off")
     total_units = estimate_resort_units(resort, blocks)
     used = 0
@@ -87,20 +90,22 @@ def draw_resort_block(ax, resort: str, blocks):
     def y_pos():
         return 1 - (used / total_units)
 
+    # Resort header
     ax.text(
         0.0, y_pos(), resort,
-        fontsize=12, fontweight="bold",
+        fontsize=fonts["header"], fontweight="bold",
         transform=ax.transAxes, ha="left", va="top"
     )
     used += 2
 
+    # Metrics
     for df, metric_name, fmt in blocks:
         data = df[df["resort"] == resort]
         if data.empty:
             continue
         ax.text(
             0.02, y_pos(), metric_name,
-            fontsize=10, fontweight="bold",
+            fontsize=fonts["metric"], fontweight="bold",
             transform=ax.transAxes, ha="left", va="top"
         )
         used += 1
@@ -110,36 +115,48 @@ def draw_resort_block(ax, resort: str, blocks):
             first = f"- {row.starting_lift}: {p_lines[0]}" if p_lines else f"- {row.starting_lift}:"
             ax.text(
                 0.04, y_pos(), first,
-                fontsize=8, transform=ax.transAxes, ha="left", va="top"
+                fontsize=fonts["body"], transform=ax.transAxes, ha="left", va="top"
             )
             used += 1
             for ln in p_lines[1:]:
                 ax.text(
                     0.07, y_pos(), ln,
-                    fontsize=8, transform=ax.transAxes, ha="left", va="top"
+                    fontsize=fonts["body"], transform=ax.transAxes, ha="left", va="top"
                 )
                 used += 1
+            # Show avg & max gradient
             ax.text(
                 0.07, y_pos(),
                 f"• {fmt(row)} (avg {row.avg_gradient_deg:.2f}° / max {row.max_gradient_deg:.2f}°)",
-                fontsize=8, transform=ax.transAxes, ha="left", va="top"
+                fontsize=fonts["body"], transform=ax.transAxes, ha="left", va="top"
             )
             used += 1
         used += 1
 
 
 # ========================================
-# Multi-column poster matrix
+# Multi-column poster matrix (auto font scaling)
 # ========================================
 
 def plot_matrix_multicolumn(
     df_l, df_v, df_s, df_sl, resorts,
     out_path="charts/nz_top1_perlift_multicol.png",
-    ncols=3, dpi=300
+    ncols=5, dpi=300
 ):
     """
     Create a wide poster layout with multiple columns of resorts.
+    Fonts auto-scale depending on ncols.
     """
+    # Scale fonts dynamically based on number of columns
+    if ncols <= 2:
+        fonts = {"header": 16, "metric": 12, "body": 10}
+    elif ncols == 3:
+        fonts = {"header": 14, "metric": 11, "body": 9}
+    elif ncols == 4:
+        fonts = {"header": 13, "metric": 10, "body": 9}
+    else:  # 5+ cols → more compact
+        fonts = {"header": 12, "metric": 9, "body": 8}
+
     blocks = [
         (df_l, "Top Length", lambda r: f"{r.total_distance_m:.0f} m"),
         (df_v, "Top Vertical Drop", lambda r: f"{r.total_vertical_m:.0f} m"),
@@ -164,7 +181,7 @@ def plot_matrix_multicolumn(
     for idx, resort in enumerate(resorts):
         r, c = divmod(idx, ncols)
         ax = fig.add_subplot(gs[r, c])
-        draw_resort_block(ax, resort, blocks)
+        draw_resort_block(ax, resort, blocks, fonts)
 
     fig.suptitle(
         "NZ Ski Resorts — Top 1 Path per Lift (Length, Vertical, Same-Lift, Steep & Long)\n"
@@ -179,5 +196,5 @@ def plot_matrix_multicolumn(
 all_resorts = sorted(paths_df["resort"].unique())
 plot_matrix_multicolumn(
     top_by_length, top_by_vertical, top_by_same_lift, top_steep_long,
-    all_resorts, out_path="charts/nz_top1_perlift_multicol.png", ncols=4, dpi=500
+    all_resorts, out_path="charts/nz_top1_perlift_multicol.png", ncols=4, dpi=250
 )

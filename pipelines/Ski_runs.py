@@ -155,7 +155,7 @@ def get_top_bottom_coordinates(coords, elevations=None, is_lift=False):
     else:
         # For ski runs: First point is top, last point is bottom
         top_coords = coords[0]     # First point (where skiing begins)
-        bottom_coords = coords[-1] # Last point (where skiing ends)
+        bottom_coords = coords[-1]  # Last point (where skiing ends)
         
         # Get elevations if available
         if elevations and len(elevations) == len(coords):
@@ -235,6 +235,7 @@ def ski_source(known_osm: set):
 
             if "piste:type" in tags:
                 if not coords:
+                    logger.info(f"Skipping run {field['name']} ({run_id}): no coordinates")
                     continue
 
                 # Calculate top/bottom coordinates ONCE

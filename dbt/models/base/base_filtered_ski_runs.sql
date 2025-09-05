@@ -1,4 +1,3 @@
-
 WITH deduplicated_runs AS (
     SELECT
         osm_id,
@@ -23,27 +22,35 @@ WITH deduplicated_runs AS (
         bottom_elevation_m,
         run_length_m / 4.0 AS ski_time_slow_sec,
         run_length_m / 7.0 AS ski_time_medium_sec,
-        run_length_m / 10.0 AS ski_time_fast_sec--,
-        -- Only deduplicate non-null names
-        -- CASE 
-        --     WHEN run_name IS NOT NULL and run_name <> '' THEN
-        --         ROW_NUMBER() OVER (
-        --             PARTITION BY resort, run_name
-        --             ORDER BY run_length_m DESC, osm_id
-        --         )
-        --     ELSE 1  -- Always keep runs with NULL names
-        -- END as name_rank
+        run_length_m / 10.0 AS ski_time_fast_sec
     FROM {{ source('ski_runs', 'ski_runs') }}
     WHERE
-        run_length_m >= {{ var('min_run_length', 40) }}
+        run_length_m >= {{ var('min_run_length', 10) }}
         AND n_points >= {{ var('min_n_points', 2) }}
+),
+
+numbered_runs AS (
+    SELECT
+        dr.*,
+        -- Assign row numbers only to unnamed runs per resort
+        CASE 
+            WHEN dr.run_name IS NULL OR dr.run_name = '' THEN
+                ROW_NUMBER() OVER (PARTITION BY dr.resort ORDER BY dr.osm_id)
+            ELSE NULL
+        END AS unnamed_num
+    FROM deduplicated_runs dr
 )
 
 SELECT
     osm_id,
     resort,
     country_code,
-    run_name,
+    -- Replace null/empty run names with "Unnamed <resort> Run <x>"
+    CASE
+        WHEN run_name IS NULL OR run_name = ''
+            THEN 'Unnamed ' || resort || ' Run ' || unnamed_num
+        ELSE run_name
+    END AS run_name,
     region,
     piste_type,
     run_length_m,
@@ -59,6 +66,5 @@ SELECT
     ski_time_slow_sec,
     ski_time_medium_sec,
     ski_time_fast_sec
-FROM deduplicated_runs
--- WHERE name_rank = 1  -- Keep longest run for each non-null name, all runs with null names
-where osm_id <> 951853708
+FROM numbered_runs
+WHERE osm_id <> 951853708

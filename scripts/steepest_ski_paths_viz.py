@@ -2,7 +2,6 @@
 import os
 import duckdb
 import matplotlib.pyplot as plt
-import numpy as np
 import textwrap
 from dotenv import load_dotenv
 from project_path import get_project_paths, set_dlt_env_vars

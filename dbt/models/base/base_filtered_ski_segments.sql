@@ -12,6 +12,8 @@ WITH segs AS (
         -- vertical drop per segment (to_node minus from_node)
         (tp.elevation_m - fp.elevation_m) AS vertical_drop_m,
         -- gradient as % slope = (rise/run)*100
+        fp.elevation_m AS from_elev_m,  -- ✅ NEW
+        tp.elevation_m AS to_elev_m,     -- ✅ NEW
         CASE
             WHEN s.length_m IS NULL OR s.length_m = 0 THEN 0.0
             ELSE ((tp.elevation_m - fp.elevation_m) / s.length_m) * 100.0
@@ -46,6 +48,8 @@ SELECT
     NULL AS to_lon,
     0.0 AS length_m,
     0.0 AS vertical_drop_m,
+    0.0 AS from_elev_m,
+    0.0 AS to_elev_m,
     0.0 AS gradient,  -- flat connector
     'Cardrona Alpine Resort' AS resort,
     'manual_connector' AS run_name,

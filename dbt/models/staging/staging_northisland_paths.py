@@ -1,6 +1,6 @@
 """
-dbt Python model: Find all possible ski paths for South Island regions
-(using true segment lengths & gradients from base_filtered_ski_segments)
+dbt Python model: Find all possible ski paths for North Island regions
+(now includes cumulative distance & elevation arrays per path)
 """
 
 import pandas as pd
@@ -22,6 +22,8 @@ def build_segment_graph(ski_segments: pd.DataFrame) -> Dict[str, Dict]:
             "gradient": seg["gradient"],   # % slope, from base_filtered_ski_segments
             "vertical_drop": seg["vertical_drop_m"],
             "run_name": seg["run_name"],
+            "from_elev_m": seg["from_elev_m"],   # ✅ NEW
+            "to_elev_m": seg["to_elev_m"], 
             "next_segments": set(),
         }
     # connect segments forward
@@ -33,12 +35,10 @@ def build_segment_graph(ski_segments: pd.DataFrame) -> Dict[str, Dict]:
             if other_data["from_node"] == to_node:
                 if other_id == seg_id:
                     continue
-                # enforce downhill progression within run
                 if other_data["run_id"] == data["run_id"] and other_data["seg_idx"] <= data["seg_idx"]:
                     continue
                 data["next_segments"].add(other_id)
     return segment_graph
-
 
 def rolling_max_gradient(gradients: List[float], window: int = 3) -> float:
     """Compute max of absolute rolling-average gradient (default window=3)."""
@@ -52,7 +52,6 @@ def rolling_max_gradient(gradients: List[float], window: int = 3) -> float:
         max_val = max(max_val, abs(window_avg))   # ✅ take absolute
     return max_val
 
-
 def find_paths_from_run(
     segment_graph: Dict[str, Dict],
     lift_run_mapping: pd.DataFrame,
@@ -61,7 +60,7 @@ def find_paths_from_run(
     lift_name: str,
     resort: str,
 ) -> List[Dict]:
-    """DFS search with true segment lengths & gradients."""
+    """DFS search with cumulative distance & elevation arrays."""
     paths = []
 
     start_seg_id = f"{start_run_id}_0"
@@ -84,6 +83,8 @@ def find_paths_from_run(
                 "distance": seg_len,
                 "vertical": seg_vert,
                 "gradients": [seg_grad],
+                "distance_profile": [0, seg_len],  # ✅ NEW: cumulative distance list
+                "elevation_profile": [seg["from_elev_m"], seg["to_elev_m"]],
                 "starting_lift": lift_name,
                 "starting_lift_id": lift_id,
             },
@@ -111,7 +112,6 @@ def find_paths_from_run(
             else:
                 lift_ids = set(run_lift_links["lift_osm_id"].unique())
                 lift_names = set(run_lift_links["lift_name"].unique())
-
                 if state["starting_lift_id"] in lift_ids:
                     end_type = "same_lift"
                     end_name = state["starting_lift"]
@@ -145,6 +145,8 @@ def find_paths_from_run(
                 "max_gradient_pct": round(max_gradient_pct, 3),
                 "run_path": " → ".join(compressed_run_names),
                 "node_ids": state["segments"],
+                "distance_profile_m": state["distance_profile"],  # ✅ NEW
+                "elevation_profile_m": state["elevation_profile"],  # ✅ NEW
                 "ending_type": end_type,
                 "ending_name": end_name,
                 "ending_id": end_id,
@@ -169,6 +171,8 @@ def find_paths_from_run(
                 "distance": state["distance"] + seg_len,
                 "vertical": state["vertical"] + seg_vert,
                 "gradients": state["gradients"] + [seg_grad],
+                "distance_profile": state["distance_profile"] + [state["distance_profile"][-1] + seg_len],  # ✅ cumulative distance
+                "elevation_profile": state["elevation_profile"] + [next_seg["to_elev_m"]],  # ✅ cumulative elevation
                 "starting_lift": state["starting_lift"],
                 "starting_lift_id": state["starting_lift_id"],
             }
@@ -177,16 +181,13 @@ def find_paths_from_run(
     return paths
 
 
-# === dbt entrypoint ===
 def model(dbt, session) -> pd.DataFrame:
     regions = ["Manawatu-Wanganui", "Taranaki"]
 
-    # load sources
     lift_run_mapping = dbt.ref("base_lift_run_mapping").df()
     ski_runs = dbt.ref("base_filtered_ski_runs").df()
     ski_segments = dbt.ref("base_filtered_ski_segments").df()
 
-    # filter
     ski_runs = ski_runs[ski_runs["region"].isin(regions)]
     resorts = ski_runs["resort"].unique()
     lift_run_mapping = lift_run_mapping[lift_run_mapping["resort"].isin(resorts)]

@@ -130,7 +130,7 @@ for facet in df['facet_label'].unique():
         'facet_label': facet,
         'day_of_season': x_beyond,
         'cumulative_snowfall_cm': y_below,
-        'percent_label': f"{pct:.0f}% of years below"
+        'percent_label': f"{pct:.0f}th Percentile"
     })
 
 df_percent = pd.DataFrame(percentile_labels)

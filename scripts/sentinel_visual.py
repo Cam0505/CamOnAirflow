@@ -35,23 +35,39 @@ df = con.execute("""
         ndsi_smooth,
         ndwi_smooth,
         ndii_smooth
-    FROM camonairflow.spectral.ice_indices 
+    FROM camonairflow.spectral.ice_indices
     ORDER BY date ASC
 """).df()
 
+# -----------------------------
 # NZ-optimized classifier
-def classify_ice_point(ndsi, ndwi, ndii):
-    if ndsi > 0.35:
-        if ndii < 0.60 and ndwi < 0.25:
-            return "Good Ice Conditions"
-        elif ndii >= 0.65 or ndwi >= 0.25:
-            return "Wet/Thawing Ice"
-        elif ndii < 0.30:
+# -----------------------------
+# CHANGED: thresholds tuned for NZ + fixed branch ordering (no unreachable 'Dry/Brittle'),
+# CHANGED: removed the 0.50–0.60 NDII gap and tightened wetness logic,
+# CHANGED: added small Aug–Oct (NZ spring) relaxation of NDSI by 0.05.
+def classify_ice_point(ndsi, ndwi, ndii, month):  # CHANGED
+    # seasonal tweak for NZ spring (Aug–Oct)
+    ndsi_thresh_main = 0.30 - (0.05 if month in (8, 9, 10) else 0.0)  # CHANGED
+
+    if ndsi > ndsi_thresh_main:
+        # First identify very dry/brittle blue ice before "good" (ordering matters)  # CHANGED
+        if ndii < 0.30 and ndwi < 0.05:
             return "Dry/Brittle Ice"
-        else:
-            return "Uncertain Ice"
-    elif 0.20 < ndsi <= 0.35:
-        if ndii <= 0.70 and ndwi < 0.30:
+
+        # Good ice: strong snow/ice signal, very little liquid water               # CHANGED
+        if ndii < 0.45 and ndwi < 0.10:
+            return "Good Ice Conditions"
+
+        # Wet/thawing if either water index increases                              # CHANGED
+        if ndii >= 0.45 or ndwi >= 0.10:
+            return "Wet/Thawing Ice"
+
+        # Otherwise uncertain within ice-present regime
+        return "Uncertain Ice"
+
+    elif 0.15 < ndsi <= ndsi_thresh_main:  # CHANGED (was 0.20)
+        # Patchy mixed surfaces: allow modest water without calling it 'wet'       # CHANGED
+        if ndii < 0.60 and ndwi < 0.25:
             return "Patchy Ice/Snow"
         else:
             return "Patchy & Wet"
@@ -62,8 +78,12 @@ def classify_ice_point(ndsi, ndwi, ndii):
 df = df[df["location"] == "Wye Creek"]
 df["date"] = pd.to_datetime(df["date"])
 df = df.reset_index(drop=True)
+
+# CHANGED: pass 'month' into classifier to enable seasonal tweak
 df["label"] = df.apply(
-    lambda row: classify_ice_point(row["ndsi_smooth"], row["ndwi_smooth"], row["ndii_smooth"]),
+    lambda row: classify_ice_point(
+        row["ndsi_smooth"], row["ndwi_smooth"], row["ndii_smooth"], row["date"].month  # CHANGED
+    ),
     axis=1
 )
 

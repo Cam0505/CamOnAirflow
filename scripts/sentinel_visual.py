@@ -35,14 +35,14 @@ df = con.execute("""
         ndsi_smooth,
         ndwi_smooth,
         ndii_smooth
-    FROM camonairflow.main.ice_indices 
+    FROM camonairflow.spectral.ice_indices 
     ORDER BY date ASC
 """).df()
 
 # NZ-optimized classifier
 def classify_ice_point(ndsi, ndwi, ndii):
-    if ndsi > 0.40:
-        if ndii < 0.65 and ndwi < 0.25:
+    if ndsi > 0.35:
+        if ndii < 0.60 and ndwi < 0.25:
             return "Good Ice Conditions"
         elif ndii >= 0.65 or ndwi >= 0.25:
             return "Wet/Thawing Ice"
@@ -50,7 +50,7 @@ def classify_ice_point(ndsi, ndwi, ndii):
             return "Dry/Brittle Ice"
         else:
             return "Uncertain Ice"
-    elif 0.20 < ndsi <= 0.40:
+    elif 0.20 < ndsi <= 0.35:
         if ndii <= 0.70 and ndwi < 0.30:
             return "Patchy Ice/Snow"
         else:

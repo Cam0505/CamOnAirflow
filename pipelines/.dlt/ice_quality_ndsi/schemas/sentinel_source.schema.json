@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "version_hash": "HvB+qwVibPRDK9Nl0bCDbuhSFGcvX8HwdrCjJATyOZE=",
+  "version_hash": "CfQYca+zPqIlpUsGzBR92FD7zyw7gYcawW0r8yGKA8E=",
   "engine_version": 11,
   "name": "sentinel_source",
   "tables": {
@@ -120,7 +120,7 @@
           "data_type": "double"
         }
       },
-      "write_disposition": "merge",
+      "write_disposition": "replace",
       "name": "ice_indices",
       "resource": "ice_indices",
       "x-normalizer": {
@@ -210,20 +210,11 @@
   "normalizers": {
     "names": "snake_case",
     "json": {
-      "module": "dlt.common.normalizers.json.relational",
-      "config": {
-        "propagation": {
-          "tables": {
-            "ice_indices": {
-              "_dlt_id": "_dlt_root_id"
-            }
-          }
-        }
-      }
+      "module": "dlt.common.normalizers.json.relational"
     }
   },
   "previous_hashes": [
-    "BSUpBH2wYTNQt3xivN4Eh8JS10qIsbI2JpJ4E2R6MKs=",
-    "fFcC8s2i3Awtvin+5xTFyCrl0XCUKdUVSpOlifHJNfs="
+    "/VU7Ud8i6ZtKpIAZu+uavh0vsQNhoJfrjsak2bBujnQ=",
+    "iTrq0USCnQoeTsFMVTTRh+6P5asmbn5WRZANADVoV+8="
   ]
 }

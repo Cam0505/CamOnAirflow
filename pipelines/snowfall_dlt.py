@@ -10,6 +10,7 @@ from dlt.destinations.exceptions import DatabaseUndefinedRelation
 import os
 import time as tyme
 from project_path import get_project_paths, set_dlt_env_vars
+import argparse
 
 # Load environment variables and set DLT config
 paths = get_project_paths()
@@ -192,7 +193,7 @@ def ski_field_lookup_resource(new_locations):
             yield field
 
 @dlt.source
-def snowfall_source(logger: logging.Logger, dataset):
+def snowfall_source(logger: logging.Logger, dataset, run_from_date: date | None = None):
     """
     DLT source for snow data from ski fields in NZ and Australia.
     Fetches daily snowfall and snow depth data for all locations, June-Nov only.
@@ -221,9 +222,21 @@ def snowfall_source(logger: logging.Logger, dataset):
         new_locations = set()
 
         # Pass the boolean for today to the missing range function
-        missing_ranges_by_location, table_truncated, default_applied = get_all_missing_date_ranges_by_season(
-            logger, SKI_FIELDS, START_DATE, end_date, dataset, daily_default=state["Daily_default"][today_str]
-        )
+        if run_from_date is not None:
+            # Bypass the normal "missing date" logic and request from the provided start date
+            logger.info(f"Bypassing missing-date logic: forcing run from {run_from_date} to {end_date} for all locations")
+            # Build a simple mapping { location_name: {"manual": (run_from_date, end_date)} }
+            missing_ranges_by_location = {
+                loc["name"]: {"manual": (run_from_date, end_date)}
+                for loc in SKI_FIELDS
+            }
+            # Treat dataset as truncated for the purposes of downstream state handling
+            table_truncated = True
+            default_applied = False
+        else:
+            missing_ranges_by_location, table_truncated, default_applied = get_all_missing_date_ranges_by_season(
+                logger, SKI_FIELDS, START_DATE, end_date, dataset, daily_default=state["Daily_default"][today_str]
+            )
 
         if table_truncated:
             state["Processed_Ranges"] = {}
@@ -303,6 +316,25 @@ def snowfall_source(logger: logging.Logger, dataset):
 
 if __name__ == "__main__":
 
+    # Set up argument parser
+    parser = argparse.ArgumentParser(description="Run the snowfall data pipeline")
+    parser.add_argument(
+        "--start-date",
+        type=str,
+        help="Optional start date for fetching snowfall data (format: YYYY-MM-DD)"
+    )
+    args = parser.parse_args()
+
+    # Parse the optional start date
+    run_from_date = None
+    if args.start_date:
+        try:
+            run_from_date = datetime.strptime(args.start_date, "%Y-%m-%d").date()
+            logger.info(f"Will run pipeline from specified start date: {run_from_date}")
+        except ValueError as e:
+            logger.error(f"Invalid start date format: {e}. Please use YYYY-MM-DD.")
+            raise
+
     # Set up DLT pipeline
     pipeline = dlt.pipeline(
         pipeline_name="snowfall_pipeline",
@@ -311,23 +343,39 @@ if __name__ == "__main__":
         pipelines_dir=str(DLT_PIPELINE_DIR),
         dev_mode=False
     )
+
+    # Only fetch the remote dataset if the user did NOT pass a --start-date.
+    # If a start date is provided we bypass the expensive/timeout-prone .df() call
+    # and pass dataset=None into the source (the source logic already handles that).
     dataset = None
     known_locations = set()
-    try:
-        dataset = pipeline.dataset()["ski_field_snowfall"].df()
-        if dataset is not None:
-            known_locations = set(dataset["location"].unique())
-    except PipelineNeverRan:
-        logger.warning(
-            "⚠️ No previous runs found for this pipeline. Assuming first run.")
-    except DatabaseUndefinedRelation:
-        logger.warning(
-            "⚠️ Table Doesn't Exist. Assuming truncation.")
+
+    if run_from_date is None:
+        try:
+            ds = pipeline.dataset()
+            # cheap probe: check the table exists before trying to download it
+            try:
+                dataset = ds["ski_field_snowfall"].df()
+                if dataset is not None:
+                    known_locations = set(dataset["location"].unique())
+            except Exception as e:
+                # If fetching the full table times out or fails, treat as empty
+                logger.warning(f"Could not load full 'ski_field_snowfall' table (continuing with empty dataset): {e}")
+                dataset = None
+        except PipelineNeverRan:
+            logger.warning("⚠️ No previous runs found for this pipeline. Assuming first run.")
+        except DatabaseUndefinedRelation:
+            logger.warning("⚠️ Table Doesn't Exist. Assuming truncation.")
+        except Exception as e:
+            logger.warning(f"Unexpected error while probing dataset; continuing with empty dataset: {e}")
+            dataset = None
+    else:
+        logger.info("Start date provided; skipping remote dataset fetch and running with dataset=None.")
 
     # Run the pipeline and handle errors
     try:
         logger.info("Running snowfall pipeline...")
-        source = snowfall_source(logger, dataset)
+        source = snowfall_source(logger, dataset, run_from_date)
         load_info = pipeline.run(source)
 
         state = source.state.get('snowfall', {})

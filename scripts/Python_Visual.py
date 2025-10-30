@@ -149,8 +149,8 @@ p2 = (
     )
 )
 
-# Remove 2025 from the dataframe before plotting p3
-df_plot = df[df['year_col'] != 2025]
+# Remove 2026 from the dataframe before plotting p3
+df_plot = df[df['year_col'] != 2026]
 
 # Dynamically calculate date breaks
 df_plot_year_breaks = calculate_year_breaks(df_plot['year_col'])

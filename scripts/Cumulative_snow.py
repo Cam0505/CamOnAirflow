@@ -121,14 +121,22 @@ for facet in df['facet_label'].unique():
     else:
         pct = 0
 
-    # Place label below x axis:
+    # compute facet x-range and place label at its center (clamped away from edges)
+    facet_days = df[df['facet_label'] == facet]['day_of_season']
+    min_day = int(facet_days.min())
+    max_day_overall = int(facet_days.max())
+    # center and margin (at least 3 days)
+    raw_center = (min_day + max_day_overall) / 2
+    margin = max(3, int(0.05 * (max_day_overall - min_day)))
+    x_center = float(min(max(raw_center, min_day + margin), max_day_overall - margin))
+
+    # vertical placement below plot
     min_y = df[df['facet_label'] == facet]['cumulative_snowfall_cm'].min()
     y_below = min_y - 0.12 * (df[df['facet_label'] == facet]['cumulative_snowfall_cm'].max() - min_y)
-    x_beyond = max_day + 4
 
     percentile_labels.append({
         'facet_label': facet,
-        'day_of_season': x_beyond,
+        'day_of_season': x_center,
         'cumulative_snowfall_cm': y_below,
         'percent_label': f"{pct:.0f}th Percentile"
     })

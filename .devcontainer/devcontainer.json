@@ -1,4 +1,3 @@
-
 {
     "name": "camonairflow",
     "build": {
@@ -23,7 +22,7 @@
       "type": "bind"
     }
   ],
-  "postCreateCommand": ".devcontainer/postcreate.sh",
+  "postCreateCommand": "bash /workspaces/CamOnAirFlow/.devcontainer/postcreate.sh",
   "remoteUser": "vscode",
   "customizations": {
     "vscode": {

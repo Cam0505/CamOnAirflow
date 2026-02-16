@@ -31,7 +31,7 @@ models:
       +tags: [base]
     staging:
       +schema: staging
-      +materialized: table
+      +materialized: 'table'
     common:
       +schema: common
       +materialized: table

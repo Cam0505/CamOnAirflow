@@ -962,8 +962,15 @@ if __name__ == "__main__":
 
         # Check existing pipeline state
         try:
-            existing_tables = pipeline.dataset().table_names
-            logger.info(f"Existing tables in dataset: {existing_tables}")
+            ds = pipeline.dataset()
+            try:
+                dataset = ds["weather_hourly_enriched"].df()
+            except Exception as e:
+                # If fetching the full table times out or fails, treat as empty
+                logger.warning(f"Could not load full 'weather_hourly_enriched' table (continuing with empty dataset): {e}")
+                dataset = None
+            if dataset is not None:
+                logger.info(f"Existing tables in dataset")
         except (PipelineNeverRan, DatabaseUndefinedRelation, ValueError, KeyError) as e:
             logger.warning(f"No previous runs or table found: {e}. Assuming first run or empty DB.")
 

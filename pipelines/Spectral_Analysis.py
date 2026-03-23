@@ -296,7 +296,7 @@ def compute_fetch_ranges(
 
 @dlt.source
 def sentinel_source(logger: logging.Logger, locations_with_data: set):
-    @dlt.resource(write_disposition="replace", name="ice_indices", primary_key=["location", "date"])
+    @dlt.resource(write_disposition="merge", name="ice_indices", primary_key=["location", "date"])
     def ice_indices_resource():
         state = dlt.current.source_state().setdefault(
             "ice_indices",

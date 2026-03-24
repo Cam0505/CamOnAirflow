@@ -1,0 +1,42 @@
+version: 2
+
+models:
+  - name: base_spectral_daily_features
+    description: >
+      Daily spectral features derived from satellite ice indices with lag,
+      rolling, anomaly, and quality columns for downstream modeling.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - spectral_date
+              - location
+    columns:
+      - name: spectral_date
+        description: Observation date for spectral metrics.
+        data_tests:
+          - not_null
+      - name: location
+        description: Location name.
+        data_tests:
+          - not_null
+      - name: ndsi_best
+        description: Preferred NDSI value (smoothed when available, else raw).
+      - name: ndwi_best
+        description: Preferred NDWI value (smoothed when available, else raw).
+      - name: ndii_best
+        description: Preferred NDII value (smoothed when available, else raw).
+      - name: ndsi_change_vs_prev_obs
+        description: Day-over-day NDSI delta versus previous available observation.
+      - name: ndwi_change_vs_prev_obs
+        description: Day-over-day NDWI delta versus previous available observation.
+      - name: ndii_change_vs_prev_obs
+        description: Day-over-day NDII delta versus previous available observation.
+      - name: ndsi_dayofyear_anomaly
+        description: NDSI anomaly against location day-of-year climatology.
+      - name: ndwi_dayofyear_anomaly
+        description: NDWI anomaly against location day-of-year climatology.
+      - name: ndii_dayofyear_anomaly
+        description: NDII anomaly against location day-of-year climatology.
+      - name: all_indices_null_flag
+        description: Flag when all preferred indices are null for the row.

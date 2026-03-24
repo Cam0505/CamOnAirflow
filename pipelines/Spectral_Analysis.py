@@ -10,6 +10,7 @@ import time
 import pyarrow as pa
 import numpy as np
 import pandas as pd
+from typing import Tuple
 
 # Microsoft Planetary Computer + STAC/xarray stack
 import planetary_computer
@@ -42,7 +43,7 @@ LOCATIONS = [
     {"name": "Island Gully", "lat": -42.133076, "lon": 172.755765},
     # {"name": "Milford Sound", "lat": -44.770974, "lon": 168.036796},
     # {"name": "Bush Stream", "lat": -43.8487, "lon": 170.0439},
-    # {"name": "Shrimpton Ice", "lat": -44.222395, "lon": 169.307676},
+    {"name": "Shrimpton Ice", "lat": -44.222395, "lon": 169.307676},
 ]
 # ~12 m buffer around each point (in degrees)
 EPSILON = 0.00018
@@ -122,7 +123,7 @@ def _years(span_start: date, span_end: date) -> list[tuple[date, date]]:
     return parts
 
 def fetch_stats_ndsi_mpc(
-    bbox: list[float],
+    bbox: Tuple[float, float, float, float],
     start_date: date,
     end_date: date,
     logger: logging.Logger,
@@ -172,7 +173,7 @@ def fetch_stats_ndsi_mpc(
         # 2) Per-day lowest-cloud selection
         by_day: dict[date, dict] = {}
         for it in items:
-            dt = pd.to_datetime(it.properties.get("datetime")).date()
+            dt = pd.to_datetime(it.properties.get("datetime")).date() # type: ignore
             cc = it.properties.get("eo:cloud_cover")
             if cc is None:
                 cc = 1000.0  # deprioritize unknown cloud cover
@@ -312,12 +313,12 @@ def sentinel_source(logger: logging.Logger, locations_with_data: set):
             state_min = state_dates.get("start_date")
             state_max = state_dates.get("end_date")
 
-            BBOX = [
+            BBOX: Tuple[float, float, float, float] = (
                 loc["lon"] - EPSILON,
                 loc["lat"] - EPSILON,
                 loc["lon"] + EPSILON,
                 loc["lat"] + EPSILON,
-            ]
+            )
 
             ranges = compute_fetch_ranges(
                 global_min=START_DATE,

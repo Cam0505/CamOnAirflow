@@ -1,0 +1,57 @@
+version: 2
+
+models:
+  - name: base_weather_daily_ice_features
+    description: >
+      Daily weather feature table for ice-formation analysis built from
+      weather_hourly_enriched and location_metadata. Includes daily aggregates,
+      freeze/thaw behavior, precipitation phase splits, and rolling window features.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - weather_date
+              - location
+    columns:
+      - name: weather_date
+        description: Local weather day for the location.
+        data_tests:
+          - not_null
+      - name: location
+        description: Ice climbing location name.
+        data_tests:
+          - not_null
+      - name: country
+        description: Country code for the location.
+      - name: timezone
+        description: IANA timezone for the location.
+      - name: hourly_obs_count
+        description: Number of hourly observations available for that day.
+        data_tests:
+          - not_null
+      - name: temperature_mean_c
+        description: Daily mean 2m air temperature in Celsius.
+      - name: temperature_min_c
+        description: Daily minimum 2m air temperature in Celsius.
+      - name: temperature_max_c
+        description: Daily maximum 2m air temperature in Celsius.
+      - name: precipitation_total_mm
+        description: Daily total precipitation in millimeters.
+      - name: snowfall_total_cm
+        description: Daily total snowfall in centimeters.
+      - name: snow_depth_mean_m
+        description: Daily mean snow depth in meters.
+      - name: freezing_hours
+        description: Count of hourly observations at or below 0C.
+      - name: freeze_thaw_cycles
+        description: Number of hourly sign crossings around 0C within the day.
+      - name: wet_freeze_hours
+        description: Hours with precipitation while temperature is at or below 0C.
+      - name: supercooled_risk_hours
+        description: Hours in a high-risk supercooled temperature/humidity band.
+      - name: shortwave_energy_mj_m2
+        description: Daily integrated shortwave energy estimate.
+      - name: site_elevation_m
+        description: Site elevation from location metadata.
+      - name: site_slope
+        description: Local site slope estimate from location metadata.

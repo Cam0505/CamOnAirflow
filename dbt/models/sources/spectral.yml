@@ -1,0 +1,10 @@
+version: 2
+
+sources:
+  - name: Spectral_Analysis
+    database: camonairflow
+    schema: spectral
+
+    tables:
+      - name: ice_indices
+        description: Raw daily ice formation indices from Satellite Spectral Analysis

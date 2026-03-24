@@ -970,7 +970,7 @@ if __name__ == "__main__":
                 logger.warning(f"Could not load full 'weather_hourly_enriched' table (continuing with empty dataset): {e}")
                 dataset = None
             if dataset is not None:
-                logger.info(f"Existing tables in dataset")
+                logger.info("Existing tables in dataset")
         except (PipelineNeverRan, DatabaseUndefinedRelation, ValueError, KeyError) as e:
             logger.warning(f"No previous runs or table found: {e}. Assuming first run or empty DB.")
 

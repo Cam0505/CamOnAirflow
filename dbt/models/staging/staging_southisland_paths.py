@@ -4,7 +4,28 @@ dbt Python model: Find all possible ski paths for South Island regions
 """
 
 import pandas as pd
+import json
 from typing import Dict, List
+
+
+OUTPUT_COLUMNS = [
+    "path_id",
+    "resort",
+    "starting_lift",
+    "starting_lift_id",
+    "run_count",
+    "total_distance_m",
+    "total_vertical_m",
+    "avg_gradient_pct",
+    "max_gradient_pct",
+    "run_path",
+    "node_ids",
+    "distance_profile_m",
+    "elevation_profile_m",
+    "ending_type",
+    "ending_name",
+    "ending_id",
+]
 
 
 # --- helpers ---
@@ -220,4 +241,16 @@ def model(dbt, session) -> pd.DataFrame:
                 )
                 all_paths.extend(run_paths)
 
-    return pd.DataFrame(all_paths)
+    result = pd.DataFrame(all_paths, columns=OUTPUT_COLUMNS)
+
+    for col in ["node_ids", "distance_profile_m", "elevation_profile_m"]:
+        if col in result.columns:
+            result[col] = result[col].apply(
+                lambda value: json.dumps(value)
+                if isinstance(value, list)
+                else (None if pd.isna(value) else str(value))
+            )
+
+    temp_relation = "__staging_southisland_paths_df"
+    session.register(temp_relation, result)
+    return session.sql(f"select * from {temp_relation}")

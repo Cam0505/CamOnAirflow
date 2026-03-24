@@ -173,7 +173,7 @@ def fetch_stats_ndsi_mpc(
         # 2) Per-day lowest-cloud selection
         by_day: dict[date, dict] = {}
         for it in items:
-            dt = pd.to_datetime(it.properties.get("datetime")).date() # type: ignore
+            dt = pd.to_datetime(it.properties.get("datetime")).date()  # type: ignore
             cc = it.properties.get("eo:cloud_cover")
             if cc is None:
                 cc = 1000.0  # deprioritize unknown cloud cover

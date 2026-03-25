@@ -74,8 +74,8 @@ def classify_ice_point(ndsi, ndwi, ndii, month):  # CHANGED
     else:
         return "Bare Rock or Error"
 
-# Only plot one location (e.g. Wye Creek)
-df = df[df["location"] == "Wye Creek"]
+# Only plot one location (e.g. Island Gully)
+df = df[df["location"] == "Island Gully"]
 df["date"] = pd.to_datetime(df["date"])
 df = df.reset_index(drop=True)
 

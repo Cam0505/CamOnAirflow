@@ -19,6 +19,7 @@ WITH segs AS (
             ELSE ((tp.elevation_m - fp.elevation_m) / s.length_m) * 100.0
         END AS gradient,
         r.resort,
+        r.country_code,
         r.run_name,     -- ✅ corrected run names from base_filtered_ski_runs
         r.difficulty
     FROM {{ source('ski_runs', 'ski_run_segments') }} s
@@ -52,5 +53,6 @@ SELECT
     0.0 AS to_elev_m,
     0.0 AS gradient,  -- flat connector
     'Cardrona Alpine Resort' AS resort,
+    'NZ' AS country_code,
     'manual_connector' AS run_name,
     NULL AS difficulty

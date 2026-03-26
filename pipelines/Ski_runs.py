@@ -2,6 +2,7 @@ import dlt
 from dlt.sources.helpers import requests
 import os
 import logging
+from time import perf_counter
 from dotenv import load_dotenv
 from project_path import get_project_paths, set_dlt_env_vars
 from geopy.distance import geodesic
@@ -38,9 +39,23 @@ AVERAGE_LIFT_SPEEDS = {
 
 
 SKI_FIELDS = [
+    # Canadian Ski Resorts
+    {"name": "Whistler Blackcomb", "country": "CA", "region": "British Columbia"},
+    # {"name": "Banff Sunshine", "country": "CA", "region": "Alberta"},
+    # {"name": "Lake Louise Ski Resort", "country": "CA", "region": "Alberta"},
+    # {"name": "Nakiska", "country": "CA", "region": "Alberta"},
+    # {"name": "Fernie Alpine", "country": "CA", "region": "British Columbia"},
+    # {"name": "Kicking Horse", "country": "CA", "region": "British Columbia"},
+    # {"name": "Red Mountain", "country": "CA", "region": "British Columbia"},
+    # {"name": "Silver Star", "country": "CA", "region": "British Columbia"},
+    # {"name": "Sun Peaks", "country": "CA", "region": "British Columbia"},
+    # {"name": "Cypress Mountain", "country": "CA", "region": "British Columbia"},
+    {"name": "Grouse Mountain", "country": "CA", "region": "British Columbia"},
+    {"name": "Marmot Basin", "country": "CA", "region": "Alberta"},
+    {"name": "Fortress Mountain Resort", "country": "CA", "region": "Alberta"},
+    # New Zealand Ski Resorts
     {"name": "Broken River Ski Area", "country": "NZ", "region": "Canterbury"},
     {"name": "Cardrona Alpine Resort", "country": "NZ", "region": "Otago"},
-    {"name": "Coronet Peak", "country": "NZ", "region": "Otago"},
     {"name": "Coronet Peak Ski Area", "country": "NZ", "region": "Otago"},
     {"name": "Craigieburn Valley Ski Area", "country": "NZ", "region": "Canterbury"},
     {"name": "Fox Peak Ski Area", "country": "NZ", "region": "Canterbury"},
@@ -51,11 +66,9 @@ SKI_FIELDS = [
     {"name": "Mount Hutt Ski Area", "country": "NZ", "region": "Canterbury"},
     {"name": "Mount Lyford Alpine Resort", "country": "NZ", "region": "Canterbury"},
     {"name": "Mount Olympus Ski Area", "country": "NZ", "region": "Canterbury"},
-    {"name": "Mt Cheeseman Ski Area", "country": "NZ", "region": "Canterbury"},
     {"name": "Porters Ski Area", "country": "NZ", "region": "Canterbury"},
     {"name": "Rainbow Ski Area", "country": "NZ", "region": "Tasman"},
     {"name": "Roundhill Ski Field", "country": "NZ", "region": "Canterbury"},
-    {"name": "Temple Basin", "country": "NZ", "region": "Canterbury"},
     {"name": "Temple Basin Ski Area", "country": "NZ", "region": "Canterbury"},
     {"name": "The Remarkables Ski Area", "country": "NZ", "region": "Otago"},
     {"name": "Treble Cone Ski Area", "country": "NZ", "region": "Otago"},
@@ -63,6 +76,7 @@ SKI_FIELDS = [
     {"name": "Tūroa Ski Area", "country": "NZ", "region": "Manawatu-Wanganui"},
     {"name": "Whakapapa Ski Area", "country": "NZ", "region": "Manawatu-Wanganui"},
     {"name": "Ōhau Snow Fields", "country": "NZ", "region": "Canterbury"},
+    # Australian Ski Resorts
     {"name": "Charlotte Pass", "country": "AU", "region": "New South Wales"},
     {"name": "Falls Creek", "country": "AU", "region": "Victoria"},
     {"name": "Mount Baw Baw", "country": "AU", "region": "Victoria"},
@@ -76,8 +90,97 @@ SKI_FIELDS = [
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 BASE_URL = "https://overpass-api.de/api/interpreter"
+DESTINATION_DATABASE = "camonairflow"
+MIN_LIFT_LENGTH_M = 100
+PISTE_TYPE_REGEX = "^(downhill|nordic|skitour|snow_park|sled|connection)$"
+IGNORED_AERIALWAY_REGEX = "^(station|goods)$"
 
-def get_elevations_batch(coords_list):
+
+def _post_overpass_query(query, field_name, timeout=90, stats=None, time_key=None):
+    started_at = perf_counter()
+    response = requests.post(BASE_URL, data={"data": query}, timeout=timeout)
+    if stats is not None and time_key is not None:
+        stats[time_key] += perf_counter() - started_at
+    if response.status_code != 200:
+        raise RuntimeError(
+            f"Overpass API error for {field_name}: {response.status_code} {response.text}"
+        )
+    return response.json().get("elements", [])
+
+
+
+def _fetch_all_resorts_candidate_ids(stats=None):
+    area_clauses = "\n".join(
+        f'      area["name"="{field["name"]}"]["landuse"="winter_sports"];'
+        for field in SKI_FIELDS
+    )
+    query = f'''
+    [out:json][timeout:90];
+    (
+{area_clauses}
+    )->.all_areas;
+    (
+      way["piste:type"~"{PISTE_TYPE_REGEX}"](area.all_areas);
+      way["aerialway"]
+        ["aerialway"!~"{IGNORED_AERIALWAY_REGEX}"]
+        (area.all_areas)
+        (if: length() >= {MIN_LIFT_LENGTH_M});
+    );
+    out tags;
+    '''
+    if stats is not None:
+        stats["overpass_id_requests_sent"] += 1
+
+    run_ids = set()
+    lift_ids = set()
+    raw_elements = _post_overpass_query(
+        query,
+        "all configured ski resorts",
+        timeout=120,
+        stats=stats,
+        time_key="overpass_id_time_s",
+    )
+
+    for element in raw_elements:
+        element_id = element.get("id")
+        tags = element.get("tags", {})
+        if element_id is None:
+            continue
+        if "piste:type" in tags:
+            run_ids.add(element_id)
+        elif "aerialway" in tags:
+            lift_ids.add(element_id)
+
+    logger.info(
+        "Global ID preflight result: candidate_run_ids=%s | candidate_lift_ids=%s",
+        len(run_ids),
+        len(lift_ids),
+    )
+
+    return run_ids, lift_ids
+
+
+def _fetch_resort_elements(field, stats=None):
+    query = f'''
+    [out:json][timeout:60];
+    area["name"="{field['name']}"]["landuse"="winter_sports"]->.a;
+    (
+      way["piste:type"~"{PISTE_TYPE_REGEX}"](area.a);
+      way["aerialway"](area.a);
+    );
+    out body geom;
+    '''
+    if stats is not None:
+        stats["overpass_requests_sent"] += 1
+    return _post_overpass_query(
+        query,
+        field["name"],
+        stats=stats,
+        time_key="overpass_geom_time_s",
+    )
+
+
+def get_elevations_batch(coords_list, stats=None):
     if not coords_list:
         return []
     BATCH_SIZE = 200
@@ -85,12 +188,18 @@ def get_elevations_batch(coords_list):
     for i in range(0, len(coords_list), BATCH_SIZE):
         batch = coords_list[i:i+BATCH_SIZE]
         locations = "|".join(f"{lat},{lon}" for lat, lon in batch)
-        url = (
-            f"https://maps.googleapis.com/maps/api/elevation/json"
-            f"?locations={locations}&key={GOOGLE_API_KEY}"
-        )
         try:
-            r = requests.get(url, timeout=10)
+            if stats is not None:
+                stats["elevation_requests_sent"] += 1
+                stats["elevation_points_requested"] += len(batch)
+            started_at = perf_counter()
+            r = requests.get(
+                "https://maps.googleapis.com/maps/api/elevation/json",
+                params={"locations": locations, "key": GOOGLE_API_KEY},
+                timeout=10,
+            )
+            if stats is not None:
+                stats["elevation_time_s"] += perf_counter() - started_at
             r.raise_for_status()
             elevations = [res.get("elevation") for res in r.json().get("results", [])]
             while len(elevations) < len(batch):
@@ -169,34 +278,78 @@ def get_top_bottom_coordinates(coords, elevations=None, is_lift=False):
             bottom_coords[0], bottom_coords[1], bottom_elevation)
 
 @dlt.source
-def ski_source(known_osm: set):
+def ski_source(known_run_osm: set, known_lift_osm: set):
     ski_runs_data = []
     ski_lifts = []
-    for field in SKI_FIELDS:
+    should_preflight_ids = bool(known_run_osm or known_lift_osm)
+    stats = {
+        "overpass_requests_sent": 0,
+        "overpass_id_requests_sent": 0,
+        "overpass_id_time_s": 0.0,
+        "overpass_geom_time_s": 0.0,
+        "elevation_requests_sent": 0,
+        "elevation_points_requested": 0,
+        "elevation_time_s": 0.0,
+        "elements_seen": 0,
+        "elements_sent_to_elevation": 0,
+        "preflight_run_ids_seen": 0,
+        "preflight_lift_ids_seen": 0,
+        "preflight_new_run_ids": 0,
+        "preflight_new_lift_ids": 0,
+        "resorts_skipped_geometry": 0,
+        "resorts_with_new_ids": 0,
+        "skipped_known_run": 0,
+        "skipped_known_lift": 0,
+        "skipped_unknown_type": 0,
+        "skipped_insufficient_coords": 0,
+        "skipped_filtered_lift_type": 0,
+        "skipped_short_lift": 0,
+    }
+    if should_preflight_ids:
+        try:
+            logger.info("Checking OSM ids across all configured resorts before geometry fetch ...")
+            run_ids, lift_ids = _fetch_all_resorts_candidate_ids(stats=stats)
+            new_run_ids = run_ids - known_run_osm
+            new_lift_ids = lift_ids - known_lift_osm
 
-        query = f'''
-        [out:json][timeout:60];
-        area["name"="{field['name']}"]["landuse"="winter_sports"]->.a;
-        (
-          way["piste:type"~"^(downhill|nordic|skitour|snow_park|sled|connection)$"](area.a);
-          way["aerialway"](area.a);
-        );
-        out body geom;
-        '''
+            stats["preflight_run_ids_seen"] = len(run_ids)
+            stats["preflight_lift_ids_seen"] = len(lift_ids)
+            stats["preflight_new_run_ids"] = len(new_run_ids)
+            stats["preflight_new_lift_ids"] = len(new_lift_ids)
+
+            if not new_run_ids and not new_lift_ids:
+                stats["resorts_skipped_geometry"] = len(SKI_FIELDS)
+                stats["resorts_with_new_ids"] = 0
+                logger.info("No new OSM ids across configured resorts, skipping all geometry fetches")
+            else:
+                logger.info(
+                    "New OSM ids across configured resorts | runs=%s | lifts=%s",
+                    len(new_run_ids),
+                    len(new_lift_ids),
+                )
+                stats["resorts_with_new_ids"] = len(SKI_FIELDS)
+                stats["resorts_skipped_geometry"] = 0
+                logger.info("New IDs found globally, fetching geometry for all configured resorts")
+        except Exception as e:
+            logger.warning(
+                f"Global ID preflight failed, falling back to geometry fetch: {e}"
+            )
+            should_preflight_ids = False
+
+    for field in SKI_FIELDS:
+        if should_preflight_ids and stats["preflight_new_run_ids"] == 0 and stats["preflight_new_lift_ids"] == 0:
+            continue 
 
         logger.info(f"Fetching ski runs for {field['name']} ...")
-        response = requests.post(BASE_URL, data={"data": query}, timeout=90)
-        if response.status_code != 200:
-            logger.error(f"Overpass API error for {field['name']}: {response.status_code} {response.text}")
-            logger.error(f"Query sent: {query}")
+        try:
+            elements = _fetch_resort_elements(field, stats=stats)
+        except Exception as e:
+            logger.error(str(e))
             continue
-        elements = response.json().get("elements", [])
 
         for run in elements:
+            stats["elements_seen"] += 1
             run_id = run.get("id")
-            if run_id in known_osm:
-                logger.info(f"Skipping OSM ID {run_id} - already in database")
-                continue
             tags = run.get("tags", {})
             geometry = run.get("geometry", [])
             nodes = run.get("nodes", [])
@@ -208,35 +361,62 @@ def ski_source(known_osm: set):
             if not nodes:
                 logger.warning(f"No node_ids for OSM ID {run_id} ({tags.get('name', '')})")
 
+            is_run = "piste:type" in tags
+            is_lift = "aerialway" in tags
+            if not is_run and not is_lift:
+                stats["skipped_unknown_type"] += 1
+                continue
+
+            if is_run and run_id in known_run_osm:
+                stats["skipped_known_run"] += 1
+                continue
+
+            if is_lift and run_id in known_lift_osm:
+                stats["skipped_known_lift"] += 1
+                continue
+
+            if len(coords) < 2:
+                stats["skipped_insufficient_coords"] += 1
+                # logger.info(f"Skipping OSM ID {run_id}: insufficient coordinates ({len(coords)})")
+                continue
+
             element_length = sum(
                 geodesic(coords[i], coords[i + 1]).meters
                 for i in range(len(coords) - 1)
             )
-            if len(coords) < 2:
-                continue
+
+            aerialway_type = None
+            name = tags.get("name", "unnamed").lower()
+            if is_lift:
+                aerialway_type = tags.get("aerialway", "").lower()
+                if aerialway_type in ["station", "goods"]:
+                    stats["skipped_filtered_lift_type"] += 1
+                    # logger.info(f"Filtering out {aerialway_type} lift: {name} at {field['name']}")
+                    continue
+                if element_length < MIN_LIFT_LENGTH_M:
+                    stats["skipped_short_lift"] += 1
+                    # logger.info(f"Skipping {name} - length < {MIN_LIFT_LENGTH_M}m")
+                    continue
 
             # Calculate elevations ONCE for all coords
-            elevations = get_elevations_batch(coords)
+            stats["elements_sent_to_elevation"] += 1
+            elevations = get_elevations_batch(coords, stats=stats)
 
-            # Calculate cumulative distances once
-            cum_distances = [0.0]
-            for i in range(1, len(coords)):
-                dist = geodesic(coords[i - 1], coords[i]).meters
-                cum_distances.append(cum_distances[-1] + dist)
+            if is_run:
+                # Calculate cumulative distances once
+                cum_distances = [0.0]
+                for i in range(1, len(coords)):
+                    dist = geodesic(coords[i - 1], coords[i]).meters
+                    cum_distances.append(cum_distances[-1] + dist)
 
-            # Smooth elevations if needed
-            if len(elevations) >= 3:
-                elevations_smooth, gradients_smooth = smooth_steep_gradients(
-                    elevations, cum_distances, threshold=0.80, window=7
-                )
-            else:
-                elevations_smooth = elevations
-                gradients_smooth = [0.0] * len(elevations)
-
-            if "piste:type" in tags:
-                if not coords:
-                    logger.info(f"Skipping run {field['name']} ({run_id}): no coordinates")
-                    continue
+                # Smooth elevations if needed
+                if len(elevations) >= 3:
+                    elevations_smooth, gradients_smooth = smooth_steep_gradients(
+                        elevations, cum_distances, threshold=0.80, window=7
+                    )
+                else:
+                    elevations_smooth = elevations
+                    gradients_smooth = [0.0] * len(elevations)
 
                 # Calculate top/bottom coordinates ONCE
                 top_lat, top_lon, top_elev, bottom_lat, bottom_lon, bottom_elev = get_top_bottom_coordinates(coords, elevations)
@@ -265,13 +445,7 @@ def ski_source(known_osm: set):
                     "bottom_elev": bottom_elev,
                     "turniness_score": turniness_score  # store turniness
                 })
-            elif "aerialway" in tags:
-                aerialway_type = tags.get("aerialway", "").lower()
-                name = tags.get("name", "unnamed").lower()
-                if aerialway_type in ["station", "goods"]:
-                    logger.info(f"Filtering out {aerialway_type} lift: {name} at {field['name']}")
-                    continue
-
+            elif is_lift:
                 # Calculate top/bottom coordinates ONCE with is_lift=True
                 top_lat, top_lon, top_elev, bottom_lat, bottom_lon, bottom_elev = get_top_bottom_coordinates(coords, elevations, is_lift=True)
 
@@ -295,6 +469,47 @@ def ski_source(known_osm: set):
                     "bottom_lon": bottom_lon,
                     "bottom_elev": bottom_elev
                 })
+
+    skipped_before_elevation = (
+        stats["elements_seen"] - stats["elements_sent_to_elevation"]
+    )
+    logger.info(
+        "API summary | overpass_id_sent=%s | overpass_geom_sent=%s | elevation_sent=%s | elevation_points=%s",
+        stats["overpass_id_requests_sent"],
+        stats["overpass_requests_sent"],
+        stats["elevation_requests_sent"],
+        stats["elevation_points_requested"],
+    )
+    logger.info(
+        "Timing summary | overpass_id_s=%.2f | overpass_geom_s=%.2f | elevation_s=%.2f",
+        stats["overpass_id_time_s"],
+        stats["overpass_geom_time_s"],
+        stats["elevation_time_s"],
+    )
+    logger.info(
+        "Prefetch summary | run_ids_seen=%s | lift_ids_seen=%s | new_run_ids=%s | new_lift_ids=%s | resorts_with_new_ids=%s | resorts_skipped_geometry=%s",
+        stats["preflight_run_ids_seen"],
+        stats["preflight_lift_ids_seen"],
+        stats["preflight_new_run_ids"],
+        stats["preflight_new_lift_ids"],
+        stats["resorts_with_new_ids"],
+        stats["resorts_skipped_geometry"],
+    )
+    logger.info(
+        "Element summary | seen=%s | sent_to_elevation=%s | skipped_before_elevation=%s",
+        stats["elements_seen"],
+        stats["elements_sent_to_elevation"],
+        skipped_before_elevation,
+    )
+    logger.info(
+        "Skip breakdown | known_run=%s | known_lift=%s | unknown_type=%s | insufficient_coords=%s | filtered_lift_type=%s | short_lift=%s",
+        stats["skipped_known_run"],
+        stats["skipped_known_lift"],
+        stats["skipped_unknown_type"],
+        stats["skipped_insufficient_coords"],
+        stats["skipped_filtered_lift_type"],
+        stats["skipped_short_lift"],
+    )
 
     @dlt.resource(write_disposition="merge", table_name="ski_runs", primary_key=["osm_id"])
     def ski_runs():
@@ -362,8 +577,8 @@ def ski_source(known_osm: set):
     def ski_lifts_resource():
         for lift in ski_lifts:
             lift_length = lift.get("length_m", 0)
-            if lift_length < 100:
-                logger.info(f"Skipping {lift['name']} - length < 100m")
+            if lift_length < MIN_LIFT_LENGTH_M:
+                # logger.info(f"Skipping {lift['name']} - length < {MIN_LIFT_LENGTH_M}m")
                 continue
 
             lift_type = lift.get("lift_type")
@@ -433,8 +648,18 @@ def ski_source(known_osm: set):
 
     return [ski_runs, ski_run_points, ski_lifts_resource, ski_run_segments]
 
+
+def _load_known_osm_ids(pipeline, table_name):
+    sql = f"SELECT osm_id FROM {DESTINATION_DATABASE}.ski_runs.{table_name}"
+    with pipeline.sql_client() as client:
+        result = client.execute_sql(sql)
+    if result is None:
+        return set()
+    return {row[0] for row in result if row and row[0] is not None}
+
 def run_pipeline(logger):
     logger.info("Starting DLT pipeline...")
+    bootstrap_started_at = perf_counter()
     pipeline = dlt.pipeline(
         pipeline_name="ski_run_pipeline",
         destination=os.getenv("DLT_DESTINATION"),
@@ -442,25 +667,44 @@ def run_pipeline(logger):
         pipelines_dir=str(DLT_PIPELINE_DIR),
         dev_mode=False
     )
-    dataset = None
-    known_osm = set()
+    known_run_osm = set()
+    known_lift_osm = set()
 
     try:
         logger.info("Trying to access table: ski_runs")
-        dataset = pipeline.dataset()["ski_runs"].df()
-        if dataset is not None and not dataset.empty:
-            known_osm = set(dataset["osm_id"].unique())
-            logger.info(f"Found {len(known_osm)} known locations: {known_osm}")
+        started_at = perf_counter()
+        known_run_osm = _load_known_osm_ids(pipeline, "ski_runs")
+        logger.info(
+            "Found %s known ski runs in %.2fs",
+            len(known_run_osm),
+            perf_counter() - started_at,
+        )
     except (ValueError, KeyError, DatabaseUndefinedRelation) as e:
         logger.info(f"Table ski_runs not found: {e}")
     except Exception as e:
         logger.warning(f"Error accessing table ski_runs: {e}")
 
-    if not known_osm:
-        logger.info("No existing ski runs data found, treating as first run")
+    try:
+        logger.info("Trying to access table: ski_lifts")
+        started_at = perf_counter()
+        known_lift_osm = _load_known_osm_ids(pipeline, "ski_lifts")
+        logger.info(
+            "Found %s known ski lifts in %.2fs",
+            len(known_lift_osm),
+            perf_counter() - started_at,
+        )
+    except (ValueError, KeyError, DatabaseUndefinedRelation) as e:
+        logger.info(f"Table ski_lifts not found: {e}")
+    except Exception as e:
+        logger.warning(f"Error accessing table ski_lifts: {e}")
+
+    logger.info("Bootstrap summary | known_id_load_s=%.2f", perf_counter() - bootstrap_started_at)
+
+    if not known_run_osm and not known_lift_osm:
+        logger.info("No existing ski runs/lifts data found, treating as first run")
 
     try:
-        pipeline.run(ski_source(known_osm))
+        pipeline.run(ski_source(known_run_osm, known_lift_osm))
     except Exception as e:
         logger.error(f"❌ Pipeline run failed: {e}")
         return False

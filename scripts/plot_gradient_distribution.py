@@ -1,9 +1,10 @@
 import os
 import duckdb
 from dotenv import load_dotenv
-import itertools
 import matplotlib.pyplot as plt
 import matplotlib
+import numpy as np
+from matplotlib.patches import Patch
 from project_path import get_project_paths, set_dlt_env_vars
 
 # --- ENV, DuckDB connection ---
@@ -17,73 +18,132 @@ con = duckdb.connect(database_string)
 
 
 # --- Define Regions ---
-NZ_RESORTS = [
-    'Temple Basin Ski Area', 'Mount Cheeseman Ski Area', 'Mount Dobson Ski Field',
-    'Roundhill Ski Field', 'Mount Hutt Ski Area', 'Broken River Ski Area',
-    'Porters Ski Area', 'Rainbow Ski Area', 'Mount Olympus Ski Area',
-    'The Remarkables Ski Area', 'Whakapapa Ski Area', 'Cardrona Alpine Resort',
-    'Manganui Ski Area', 'Coronet Peak Ski Area', 'Mount Lyford Alpine Resort',
-    'Treble Cone Ski Area', 'Tūroa Ski Area', 'Craigieburn Valley Ski Area',
-    'Fox Peak Ski Area'
-]
-
-AU_RESORTS = [
-    'Charlotte Pass', 'Falls Creek', 'Mount Baw Baw', 'Mount Buller',
-    'Mount Hotham', 'Perisher', 'Thredbo Resort'
-]
-
-REGIONS = {
-    "New Zealand": NZ_RESORTS,
-    "Australia": AU_RESORTS
+COUNTRIES = {
+    "New Zealand": "NZ",
+    "Australia": "AU",
+    "Canada": "CA",
 }
 
 # --- Query ---
-query = """
-SELECT
-    resort,
-    gradient_bin,
-    gradient_bin_center_deg,
-    cumulative_pct_runs
-FROM camonairflow.public_staging.staging_ski_gradient_distribution
-WHERE resort in {resorts}
-ORDER BY resort, gradient_bin
-"""
+df_all = con.execute("""
+    SELECT
+        country_code,
+        resort,
+        gradient_bin,
+        gradient_bin_center_deg,
+        terrain_m
+    FROM camonairflow.public_staging.staging_ski_gradient_distribution
+    ORDER BY country_code, resort, gradient_bin
+""").df()
 
 # --- Plotting ---
-markers = itertools.cycle(('o', 's', 'D', '^', 'v', '<', '>', 'p', '*', 'h', 'H', 'X', 'd'))
-# Use the new Matplotlib colormap API to avoid deprecation warning
-colormap = matplotlib.colormaps['tab20']
-num_resorts = len(NZ_RESORTS)
-colors = [colormap(i % 20) for i in range(num_resorts)]  # tab20 has 20 distinct colors
+def short_resort_name(name: str) -> str:
+    suffixes = [
+        " Ski Area", " Ski Field", " Alpine Resort", " Valley Ski Area", " Resort"
+    ]
+    short_name = name
+    for suffix in suffixes:
+        short_name = short_name.replace(suffix, "")
+    return short_name.strip()
 
-for region, resorts in REGIONS.items():
-    df = con.execute(query.format(resorts=tuple(resorts))).df()
 
-    fig, ax = plt.subplots(figsize=(12, 8))
+def _band_color_for_value(value):
+    for band in gradient_bands:
+        if band["start"] <= value < band["end"] or (value == 50 and band["end"] == 50):
+            return band["color"]
+    return "#444444"
 
-    for idx, resort in enumerate(sorted(df['resort'].unique())):
-        df_resort = df[df['resort'] == resort]
-        marker = next(markers)
-        color = colors[idx % len(colors)]
-        ax.plot(
-            df_resort['gradient_bin_center_deg'],
-            df_resort['cumulative_pct_runs'] * 100,
-            label=resort,
-            linewidth=2,
-            alpha=0.85,
-            marker=marker,
-            markersize=6,
-            color=color
+
+def _apply_gradient_bands(ax):
+    for band in gradient_bands:
+        ax.axvspan(band["start"], band["end"], color=band["color"], alpha=0.1, zorder=0)
+
+    for tick_value, tick_label in zip(ax.get_xticks(), ax.get_xticklabels()):
+        tick_label.set_color(_band_color_for_value(tick_value))
+        tick_label.set_fontweight("bold")
+
+
+# Broad, non-resort-specific guide to how gradient commonly maps to run colour.
+gradient_bands = [
+    {"start": 5, "end": 15, "label": "Green", "color": "#57a773"},
+    {"start": 15, "end": 25, "label": "Blue", "color": "#4c78a8"},
+    {"start": 25, "end": 35, "label": "Red", "color": "#e45756"},
+    {"start": 35, "end": 50, "label": "Black", "color": "#3a3a3a"},
+]
+
+colormap = matplotlib.colormaps["viridis"]
+bar_color = colormap(0.25)
+edge_color = colormap(0.1)
+bar_width = 2.05
+
+for region, country_code in COUNTRIES.items():
+    df = df_all[df_all["country_code"] == country_code]
+    if df.empty:
+        print(f"No data for {region} ({country_code}), skipping.")
+        continue
+
+    resort_order = sorted(df["resort"].unique())
+    n_panels = len(resort_order)
+    ncols = 3
+    nrows = int(np.ceil(n_panels / ncols))
+    y_max = float(df["terrain_m"].max())
+    y_top = y_max * 1.05 if y_max > 0 else 1.0
+
+    fig, axes = plt.subplots(
+        nrows,
+        ncols,
+        figsize=(18, 4.2 * nrows),
+        sharex=False,
+        sharey=False
+    )
+    axes = np.array(axes).reshape(nrows, ncols)
+
+    for idx, resort in enumerate(resort_order):
+        r, c = divmod(idx, ncols)
+        ax = axes[r, c]
+        df_resort = df[df["resort"] == resort]
+
+        ax.bar(
+            df_resort["gradient_bin_center_deg"],
+            df_resort["terrain_m"],
+            width=bar_width,
+            color=bar_color,
+            edgecolor=edge_color,
+            linewidth=0.5
         )
+        ax.set_title(
+            f"{country_code} - {short_resort_name(resort)}",
+            fontsize=14,
+            fontweight="bold",
+            pad=8
+        )
+        ax.grid(True, axis="y", linestyle="--", alpha=0.35)
+        ax.set_xlim(5, 50)
+        ax.set_ylim(0, y_top)
+        ax.set_xticks(np.arange(5, 51, 5))
+        ax.tick_params(axis="x", labelrotation=45, labelsize=11, labelbottom=True)
+        ax.tick_params(axis="y", labelsize=11)
+        _apply_gradient_bands(ax)
+        ax.set_xlabel("Gradient Bucket Center (°)", fontsize=12, fontweight="bold")
+        ax.set_ylabel("API Skiable Terrain (m)", fontsize=12, fontweight="bold")
 
-    ax.set_title(f"% of Runs by Gradient (°) - {region}", fontsize=20, fontweight="bold")
-    ax.set_xlabel("Gradient (°)", fontsize=14)
-    ax.set_ylabel("% of Runs ≤ Gradient (°)", fontsize=14)
-    ax.set_xlim(5, 50)
-    ax.set_ylim(0, 105)
-    ax.grid(True, linestyle='--', alpha=0.6)
-    ax.legend(fontsize=9, loc='upper left', bbox_to_anchor=(1.02, 1))
-    plt.tight_layout()
-    out_path = f"charts/gradient_distribution_{region.lower().replace(' ', '_')}.png"
-    plt.savefig(out_path, dpi=250, bbox_inches='tight')
+    # Hide empty facets in the final row.
+    for idx in range(n_panels, nrows * ncols):
+        r, c = divmod(idx, ncols)
+        axes[r, c].set_visible(False)
+
+    fig.suptitle(f"Ski Terrain Gradient Distribution ({region})", fontsize=22, fontweight="bold", y=0.995)
+    fig.legend(
+        handles=[
+            Patch(facecolor=band["color"], edgecolor="none", alpha=0.2, label=f"{band['label']}: {band['start']}\u00b0-{band['end']}\u00b0")
+            for band in gradient_bands
+        ],
+        loc="upper center",
+        ncol=4,
+        frameon=False,
+        bbox_to_anchor=(0.5, 0.965),
+    )
+    plt.tight_layout(rect=(0.03, 0.05, 1, 0.94))
+    out_path = f"charts/gradient_distribution_{country_code.lower()}.png"
+    plt.savefig(out_path, dpi=250, bbox_inches="tight")
     plt.show()

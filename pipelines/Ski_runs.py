@@ -40,13 +40,9 @@ AVERAGE_LIFT_SPEEDS = {
 
 SKI_FIELDS = [
     # Canadian Ski Resorts
+    {"name": "Banff Sunshine Village", "country": "CA", "region": "Alberta"},
+    {"name": "Lake Louise Ski Area", "country": "CA", "region": "Alberta"},
     {"name": "Whistler Blackcomb", "country": "CA", "region": "British Columbia"},
-    # {"name": "Banff Sunshine", "country": "CA", "region": "Alberta"},
-    # {"name": "Lake Louise Ski Resort", "country": "CA", "region": "Alberta"},
-    # {"name": "Nakiska", "country": "CA", "region": "Alberta"},
-    # {"name": "Fernie Alpine", "country": "CA", "region": "British Columbia"},
-    # {"name": "Kicking Horse", "country": "CA", "region": "British Columbia"},
-    # {"name": "Red Mountain", "country": "CA", "region": "British Columbia"},
     {"name": "Cypress Mountain", "country": "CA", "region": "British Columbia"},
     {"name": "Grouse Mountain", "country": "CA", "region": "British Columbia"},
     {"name": "Marmot Basin", "country": "CA", "region": "Alberta"},

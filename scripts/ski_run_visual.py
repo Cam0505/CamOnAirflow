@@ -60,7 +60,7 @@ runs = con.execute("""
     FROM camonairflow.public_base.base_filtered_ski_runs
     WHERE run_length_m > 200
       AND n_points > 4
-            AND coalesce(piste_type, '') NOT IN ('skitour', 'nordic', 'sled')
+            AND coalesce(piste_type, '') NOT IN ('skitour', 'nordic', 'sled', 'snow_park')
 """).df()
 
 points = con.execute("""
@@ -71,7 +71,7 @@ points = con.execute("""
        AND p.resort = r.resort
     WHERE r.run_length_m > 200
       AND r.n_points > 4
-            AND coalesce(r.piste_type, '') NOT IN ('skitour', 'nordic', 'sled')
+            AND coalesce(r.piste_type, '') NOT IN ('skitour', 'nordic', 'sled', 'snow_park')
 """).df()
 
 gradient_stats = con.execute("""
@@ -80,7 +80,7 @@ gradient_stats = con.execute("""
         FROM camonairflow.public_base.base_filtered_ski_runs
         WHERE run_length_m > 200
           AND n_points > 4
-                    AND coalesce(piste_type, '') NOT IN ('skitour', 'nordic', 'sled')
+                    AND coalesce(piste_type, '') NOT IN ('skitour', 'nordic', 'sled', 'snow_park')
     )
     SELECT fr.region,
         gs.resort,

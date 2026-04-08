@@ -1,4 +1,3 @@
-{{ config(materialized='table') }}
 
 /*
 Daily spectral feature table for downstream fusion with weather and terrain data.

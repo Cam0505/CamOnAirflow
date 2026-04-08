@@ -15,40 +15,6 @@ if not database_string:
     raise ValueError("Missing MD in environment.")
 con = duckdb.connect(database_string)
 
-# --- Separate resorts ---
-NZ_RESORTS = [
-    'Temple Basin Ski Area',
-    'Mount Cheeseman Ski Area',
-    'Mount Dobson Ski Field',
-    'Roundhill Ski Field',
-    'Mount Hutt Ski Area',
-    'Broken River Ski Area',
-    'Porters Ski Area',
-    'Rainbow Ski Area',
-    'Mount Olympus Ski Area',
-    'The Remarkables Ski Area',
-    'Whakapapa Ski Area',
-    'Cardrona Alpine Resort',
-    'Manganui Ski Area',
-    'Coronet Peak Ski Area',
-    'Mount Lyford Alpine Resort',
-    'Treble Cone Ski Area',
-    'Tūroa Ski Area',
-    'Craigieburn Valley Ski Area',
-    'Fox Peak Ski Area'
-]
-
-AU_RESORTS = [
-    'Charlotte Pass', 'Falls Creek', 'Mount Baw Baw', 'Mount Buller',
-    'Mount Hotham', 'Perisher', 'Thredbo Resort'
-]
-
-
-REGIONS = {
-    "New Zealand": NZ_RESORTS,
-    "Australia": AU_RESORTS
-}
-
 # --- Difficulty color palette ---
 difficulty_colors = {
     "novice": "#4daf4a",
@@ -70,48 +36,91 @@ def smooth_elevation(y, window=9, poly=2):
         return y
     return savgol_filter(y, window, poly)
 
+
+def normalize_region(value):
+    if value is None:
+        return "Unknown Region"
+    text = str(value).strip()
+    return text if text else "Unknown Region"
+
+
+def slugify_region(region):
+    return normalize_region(region).lower().replace(' ', '_').replace('/', '_')
+
+
+# --- Load all data once, then split into one chart per region ---
+runs = con.execute("""
+    SELECT osm_id, resort, region, run_name, country_code,
+        CASE WHEN difficulty = 'extreme' THEN 'intermediate'
+             WHEN difficulty = 'expert' THEN 'advanced'
+             ELSE difficulty END AS difficulty,
+        piste_type,
+        run_length_m,
+        n_points
+    FROM camonairflow.public_base.base_filtered_ski_runs
+    WHERE run_length_m > 200
+      AND n_points > 4
+            AND coalesce(piste_type, '') NOT IN ('skitour', 'nordic', 'sled')
+""").df()
+
+points = con.execute("""
+    SELECT p.osm_id, p.resort, r.region, p.distance_along_run_m, p.elevation_m
+    FROM camonairflow.public_base.base_filtered_ski_points AS p
+    INNER JOIN camonairflow.public_base.base_filtered_ski_runs AS r
+        ON p.osm_id = r.osm_id
+       AND p.resort = r.resort
+    WHERE r.run_length_m > 200
+      AND r.n_points > 4
+            AND coalesce(r.piste_type, '') NOT IN ('skitour', 'nordic', 'sled')
+""").df()
+
+gradient_stats = con.execute("""
+    WITH filtered_runs AS (
+        SELECT DISTINCT resort, region
+        FROM camonairflow.public_base.base_filtered_ski_runs
+        WHERE run_length_m > 200
+          AND n_points > 4
+                    AND coalesce(piste_type, '') NOT IN ('skitour', 'nordic', 'sled')
+    )
+    SELECT fr.region,
+        gs.resort,
+        CASE WHEN gs.difficulty = 'extreme' THEN 'intermediate'
+             WHEN gs.difficulty = 'expert' THEN 'advanced'
+             ELSE gs.difficulty END AS difficulty,
+        gs.run_count,
+        gs.mean_gradient_degrees,
+        gs.mean_steepest_degrees,
+        gs.mean_gradient_percent,
+        gs.mean_steepest_percent
+    FROM camonairflow.public_base.base_ski_gradient_stats AS gs
+    INNER JOIN filtered_runs AS fr
+        ON gs.resort = fr.resort
+""").df()
+
+runs['region'] = runs['region'].map(normalize_region)
+points['region'] = points['region'].map(normalize_region)
+gradient_stats['region'] = gradient_stats['region'].map(normalize_region)
+
 # , "percent"
 # --- Plotting loop ---
-for region, resorts in REGIONS.items():
+for region in sorted(runs['region'].dropna().unique()):
+    runs_region = runs[runs['region'] == region].copy()
+    points_region = points[points['region'] == region].copy()
+    gradient_stats_region = gradient_stats[gradient_stats['region'] == region].copy()
+    resorts = sorted(runs_region['resort'].dropna().unique())
+
+    if not resorts or points_region.empty:
+        continue
+
     for label_mode in ["degrees"]:
-        # Load Data
-        points = con.execute(f"""
-            SELECT osm_id, resort, distance_along_run_m, elevation_m
-            FROM camonairflow.public_base.base_filtered_ski_points
-            WHERE resort in {tuple(resorts)}
-        """).df()
-
-        runs = con.execute(f"""
-            SELECT osm_id, resort, run_name, country_code,
-                CASE WHEN difficulty = 'extreme' THEN 'intermediate'
-                     WHEN difficulty = 'expert' THEN 'advanced'
-                     ELSE difficulty END AS difficulty,
-                run_length_m
-            FROM camonairflow.public_base.base_filtered_ski_runs
-            WHERE resort in {tuple(resorts)}
-            and run_length_m > 200
-            and n_points > 4
-        """).df()
-
-        gradient_stats = con.execute(f"""
-            SELECT resort,
-                CASE WHEN difficulty = 'extreme' THEN 'intermediate'
-                     WHEN difficulty = 'expert' THEN 'advanced'
-                     ELSE difficulty END AS difficulty,
-                run_count, mean_gradient_degrees, mean_steepest_degrees,
-                mean_gradient_percent, mean_steepest_percent
-            FROM camonairflow.public_base.base_ski_gradient_stats
-            WHERE resort in {tuple(resorts)}
-        """).df()
-
         # Update color map if any new difficulties appear
-        for diff in runs['difficulty'].dropna().unique():
+        for diff in runs_region['difficulty'].dropna().unique():
             if diff not in difficulty_colors:
                 difficulty_colors[diff] = "#444444"
 
-        max_distance = points['distance_along_run_m'].max() * 1.05
-        min_elev = int(np.floor(points['elevation_m'].min() / 100.0) * 100)
-        max_elev = int(np.ceil(points['elevation_m'].max() / 100.0) * 100)
+        max_distance = points_region['distance_along_run_m'].max() * 1.05
+        min_elev = int(np.floor(points_region['elevation_m'].min() / 100.0) * 100)
+        max_elev = int(np.ceil(points_region['elevation_m'].max() / 100.0) * 100)
 
         # --- Plot setup ---
         ncols = 4
@@ -120,8 +129,8 @@ for region, resorts in REGIONS.items():
         axes = axes.flatten()
 
         for ax, resort in zip(axes, resorts):
-            runs_this = runs[runs['resort'] == resort]
-            points_this = points[points['resort'] == resort]
+            runs_this = runs_region[runs_region['resort'] == resort]
+            points_this = points_region[points_region['resort'] == resort]
             for _, run in runs_this.iterrows():
                 pts = points_this[points_this['osm_id'] == run['osm_id']].sort_values('distance_along_run_m')
                 if len(pts) > 1 and pts.iloc[0]['elevation_m'] < pts.iloc[-1]['elevation_m']:
@@ -147,7 +156,7 @@ for region, resorts in REGIONS.items():
             ax.set_ylim(min_elev, max_elev)
 
             # Avg gradient labels
-            labels_this = gradient_stats[gradient_stats['resort'] == resort]
+            labels_this = gradient_stats_region[gradient_stats_region['resort'] == resort]
             if not labels_this.empty:
                 labels_this = labels_this.sort_values(
                     'mean_gradient_degrees' if label_mode == "degrees" else 'mean_gradient_percent',
@@ -194,8 +203,8 @@ for region, resorts in REGIONS.items():
         )
         plt.tight_layout(rect=(0, 0.03, 1, 0.96))
         plt.subplots_adjust(hspace=0.36, wspace=0.18)
-        out_path = f"charts/ski_run_elevations_matplotlib_{region.lower().replace(' ', '_')}_{label_mode}.png"
+        out_path = f"charts/ski_run_elevations_matplotlib_{slugify_region(region)}_{label_mode}.png"
         plt.savefig(out_path, dpi=300, bbox_inches='tight')
-        plt.show()
+        plt.close(fig)
 
 con.close()

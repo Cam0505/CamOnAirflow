@@ -42,7 +42,7 @@ SELECT
     p.resort,
     p.country_code,
     p.run_name,
-    p.area,
+    COALESCE(LOWER(TRIM(p.area)), '')  as area,
     CASE
         WHEN ur.osm_id IS NOT NULL THEN mpi.max_point_index - p.point_index
         ELSE p.point_index

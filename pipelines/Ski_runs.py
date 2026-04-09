@@ -40,8 +40,8 @@ AVERAGE_LIFT_SPEEDS = {
 
 SKI_FIELDS = [
     # Canadian Ski Resorts
-    # {"name": "Banff Sunshine Village", "country": "CA", "region": "Alberta"},
-    # {"name": "Lake Louise Ski Area", "country": "CA", "region": "Alberta"},
+    {"name": "Banff Sunshine Village", "country": "CA", "region": "Alberta"},
+    {"name": "Lake Louise Ski Area", "country": "CA", "region": "Alberta"},
     # {"name": "Whistler Blackcomb", "country": "CA", "region": "British Columbia"},
     # {"name": "Cypress Mountain", "country": "CA", "region": "British Columbia"},
     # {"name": "Grouse Mountain", "country": "CA", "region": "British Columbia"},
@@ -78,7 +78,7 @@ SKI_FIELDS = [
     # {"name": "Mount Hotham", "country": "AU", "region": "Victoria"},
     # {"name": "Perisher", "country": "AU", "region": "New South Wales"},
     # {"name": "Selwyn Snow Resort", "country": "AU", "region": "New South Wales"},
-    {"name": "Thredbo Resort", "country": "AU", "region": "New South Wales"}
+    # {"name": "Thredbo Resort", "country": "AU", "region": "New South Wales"}
 ]
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -640,6 +640,7 @@ def ski_source(known_run_osm: set, known_lift_osm: set):
                     "resort": run["resort"],
                     "run_name": tags.get("name", ""),
                     "difficulty": tags.get("piste:difficulty"),
+                    "area": tags.get("area", ""),
                 }
 
     return [ski_runs, ski_run_points, ski_lifts_resource, ski_run_segments]

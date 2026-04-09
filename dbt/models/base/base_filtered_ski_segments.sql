@@ -31,6 +31,8 @@ WITH segs AS (
      AND s.run_osm_id = tp.osm_id
     LEFT JOIN {{ ref('base_filtered_ski_runs') }} r
       ON s.run_osm_id = r.osm_id
+    WHERE COALESCE(LOWER(TRIM(s.area)), '') <> 'yes'
+      AND COALESCE(LOWER(TRIM(r.area)), '') <> 'yes'
 )
 
 SELECT * FROM segs

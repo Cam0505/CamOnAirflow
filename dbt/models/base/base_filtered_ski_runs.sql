@@ -5,7 +5,7 @@ WITH deduplicated_runs AS (
         country_code,
         region,
         run_name,
-        area,
+        COALESCE(LOWER(TRIM(area)), '') as area,
         piste_type,
         run_length_m,
         n_points,

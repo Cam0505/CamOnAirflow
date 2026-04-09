@@ -12,6 +12,7 @@ WITH uphill_runs AS (
        AND pts.osm_id = runs.osm_id
     WHERE runs.piste_type = 'downhill'
       AND runs.run_length_m > 100
+      AND COALESCE(LOWER(TRIM(pts.area)), '') <> 'yes'
     GROUP BY
         pts.resort,
         pts.country_code,
@@ -41,6 +42,7 @@ SELECT
     p.resort,
     p.country_code,
     p.run_name,
+    p.area,
     CASE
         WHEN ur.osm_id IS NOT NULL THEN mpi.max_point_index - p.point_index
         ELSE p.point_index
@@ -64,3 +66,4 @@ LEFT JOIN max_point_indexes AS mpi
     ON p.osm_id = mpi.osm_id
    AND p.resort = mpi.resort
    AND p.country_code = mpi.country_code
+WHERE COALESCE(LOWER(TRIM(p.area)), '') <> 'yes'

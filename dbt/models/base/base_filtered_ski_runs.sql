@@ -5,6 +5,7 @@ WITH deduplicated_runs AS (
         country_code,
         region,
         run_name,
+        area,
         piste_type,
         run_length_m,
         n_points,
@@ -25,7 +26,8 @@ WITH deduplicated_runs AS (
         run_length_m / 10.0 AS ski_time_fast_sec
     FROM {{ source('ski_runs', 'ski_runs') }}
     WHERE
-        run_length_m >= {{ var('min_run_length', 10) }}
+        COALESCE(LOWER(TRIM(area)), '') <> 'yes'
+        AND run_length_m >= {{ var('min_run_length', 10) }}
         AND n_points >= {{ var('min_n_points', 2) }}
 ),
 
@@ -52,6 +54,7 @@ SELECT
         ELSE run_name
     END AS run_name,
     region,
+    area,
     piste_type,
     run_length_m,
     n_points,

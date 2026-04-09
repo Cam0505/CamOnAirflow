@@ -1,6 +1,6 @@
 {
-  "version": 2,
-  "version_hash": "meMLraHHiZCzRuQmc3bIK9wDAuUZaXdlN3FByMLvFXg=",
+  "version": 3,
+  "version_hash": "HpHthXx9akrUlMEw5ALAM/H1j7BG45uYu8D8puhaYng=",
   "engine_version": 11,
   "name": "ski_source",
   "tables": {
@@ -169,6 +169,11 @@
           "nullable": false,
           "unique": true,
           "row_key": true
+        },
+        "area": {
+          "name": "area",
+          "data_type": "text",
+          "nullable": true
         }
       },
       "write_disposition": "merge",
@@ -253,6 +258,11 @@
           "nullable": false,
           "unique": true,
           "row_key": true
+        },
+        "area": {
+          "name": "area",
+          "data_type": "text",
+          "nullable": true
         }
       },
       "write_disposition": "merge",
@@ -554,6 +564,7 @@
     }
   },
   "previous_hashes": [
+    "meMLraHHiZCzRuQmc3bIK9wDAuUZaXdlN3FByMLvFXg=",
     "xnC28XOlSMaBeju9IFNCC5Kx2VcjHgigc+QkaqtdpMY=",
     "gEJfxuPm3QPCFeRBwAQjGa/2z8f9s1IAvLoz92rMhE8="
   ]

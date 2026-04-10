@@ -41,10 +41,23 @@ AVERAGE_LIFT_SPEEDS = {
 
 SKI_FIELDS = [
     # Japanese Ski Resorts
-    # {"name": "Kiroro Resort", "country": "JP", "region": "Hokkaido"},
-    # {"name": "Rusutsu Resort Ski Area", "country": "JP", "region": "Hokkaido"},
+    {"name": "Kiroro Resort", "country": "JP", "region": "Hokkaido"},
+    {"name": "Rusutsu Resort Ski Area", "country": "JP", "region": "Hokkaido"},
     {"name": "Mount Racey", "country": "JP", "region": "Hokkaido"},
-    {"name": "Appi Kogen Ski Resort", "country": "JP", "region": "Iwate"},
+    {"name": "Niseko United", "country": "JP", "region": "Hokkaido"},
+    {"name": "Furano Ski Resort", "country": "JP", "region": "Hokkaido"},
+    {"name": "Tomamu Ski Resort", "country": "JP", "region": "Hokkaido"},
+    {"name": "Hakodate Nanae Snowpark", "country": "JP", "region": "Hokkaido"},
+    {"name": "Sahoro", "country": "JP", "region": "Hokkaido"},
+
+    {"name": "Appi Kogen Ski Resort", "country": "JP", "region": "Honshu"},
+    {"name": "Shizukuishi Ski Resort", "country": "JP", "region": "Honshu"},
+    {"name": "Takasu Snow Park", "country": "JP", "region": "Honshu"},
+    {"name": "Washigatake Ski Area", "country": "JP", "region": "Honshu"},
+    {"name": "WINGHILLS Shiratori Resort", "country": "JP", "region": "Honshu"},
+    {"name": "Zao Onsen Ski Resort", "country": "JP", "region": "Honshu"},
+    {"name": "Miyagi Zao Eboshi Resort", "country": "JP", "region": "Honshu"},
+    {"name": "Miyagi Zao Shiroishi Ski Resort", "country": "JP", "region": "Honshu"},
     # Canadian Ski Resorts
     {"name": "Nakiska", "country": "CA", "region": "Alberta"},
     {"name": "Banff Sunshine Village", "country": "CA", "region": "Alberta"},
@@ -52,6 +65,7 @@ SKI_FIELDS = [
     {"name": "Whistler Blackcomb", "country": "CA", "region": "British Columbia"},
     {"name": "Cypress Mountain", "country": "CA", "region": "British Columbia"},
     {"name": "Grouse Mountain", "country": "CA", "region": "British Columbia"},
+    {"name": "Kicking Horse Resort", "country": "CA", "region": "British Columbia"},
     {"name": "Marmot Basin", "country": "CA", "region": "Alberta"},
     {"name": "Fortress Mountain Resort", "country": "CA", "region": "Alberta"},
     # New Zealand Ski Resorts

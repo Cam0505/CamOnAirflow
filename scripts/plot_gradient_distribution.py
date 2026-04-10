@@ -22,6 +22,7 @@ COUNTRIES = {
     "New Zealand": "NZ",
     "Australia": "AU",
     "Canada": "CA",
+    "Japan": "JP",
 }
 
 # --- Query ---

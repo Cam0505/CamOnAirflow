@@ -3,6 +3,7 @@ from dlt.sources.helpers import requests
 import os
 import logging
 from time import perf_counter
+from collections import defaultdict
 from dotenv import load_dotenv
 from project_path import get_project_paths, set_dlt_env_vars
 from geopy.distance import geodesic
@@ -39,46 +40,52 @@ AVERAGE_LIFT_SPEEDS = {
 
 
 SKI_FIELDS = [
+    # Japanese Ski Resorts
+    # {"name": "Kiroro Resort", "country": "JP", "region": "Hokkaido"},
+    # {"name": "Rusutsu Resort Ski Area", "country": "JP", "region": "Hokkaido"},
+    {"name": "Mount Racey", "country": "JP", "region": "Hokkaido"},
+    {"name": "Appi Kogen Ski Resort", "country": "JP", "region": "Iwate"},
     # Canadian Ski Resorts
+    {"name": "Nakiska", "country": "CA", "region": "Alberta"},
     {"name": "Banff Sunshine Village", "country": "CA", "region": "Alberta"},
     {"name": "Lake Louise Ski Area", "country": "CA", "region": "Alberta"},
-    # {"name": "Whistler Blackcomb", "country": "CA", "region": "British Columbia"},
-    # {"name": "Cypress Mountain", "country": "CA", "region": "British Columbia"},
-    # {"name": "Grouse Mountain", "country": "CA", "region": "British Columbia"},
-    # {"name": "Marmot Basin", "country": "CA", "region": "Alberta"},
-    # {"name": "Fortress Mountain Resort", "country": "CA", "region": "Alberta"},
+    {"name": "Whistler Blackcomb", "country": "CA", "region": "British Columbia"},
+    {"name": "Cypress Mountain", "country": "CA", "region": "British Columbia"},
+    {"name": "Grouse Mountain", "country": "CA", "region": "British Columbia"},
+    {"name": "Marmot Basin", "country": "CA", "region": "Alberta"},
+    {"name": "Fortress Mountain Resort", "country": "CA", "region": "Alberta"},
     # New Zealand Ski Resorts
-    # {"name": "Broken River Ski Area", "country": "NZ", "region": "Canterbury"},
-    # {"name": "Cardrona Alpine Resort", "country": "NZ", "region": "Otago"},
-    # {"name": "Coronet Peak Ski Area", "country": "NZ", "region": "Otago"},
-    # {"name": "Craigieburn Valley Ski Area", "country": "NZ", "region": "Canterbury"},
-    # {"name": "Fox Peak Ski Area", "country": "NZ", "region": "Canterbury"},
-    # {"name": "Hanmer Springs Ski Area", "country": "NZ", "region": "Canterbury"},
-    # {"name": "Manganui Ski Area", "country": "NZ", "region": "Taranaki"},
-    # {"name": "Mount Cheeseman Ski Area", "country": "NZ", "region": "Canterbury"},
-    # {"name": "Mount Dobson Ski Field", "country": "NZ", "region": "Canterbury"},
-    # {"name": "Mount Hutt Ski Area", "country": "NZ", "region": "Canterbury"},
-    # {"name": "Mount Lyford Alpine Resort", "country": "NZ", "region": "Canterbury"},
-    # {"name": "Mount Olympus Ski Area", "country": "NZ", "region": "Canterbury"},
-    # {"name": "Porters Ski Area", "country": "NZ", "region": "Canterbury"},
-    # {"name": "Rainbow Ski Area", "country": "NZ", "region": "Tasman"},
-    # {"name": "Roundhill Ski Field", "country": "NZ", "region": "Canterbury"},
-    # {"name": "Temple Basin Ski Area", "country": "NZ", "region": "Canterbury"},
-    # {"name": "The Remarkables Ski Area", "country": "NZ", "region": "Otago"},
-    # {"name": "Treble Cone Ski Area", "country": "NZ", "region": "Otago"},
-    # {"name": "Tukino Skifield", "country": "NZ", "region": "Manawatu-Wanganui"},
-    # {"name": "Tūroa Ski Area", "country": "NZ", "region": "Manawatu-Wanganui"},
-    # {"name": "Whakapapa Ski Area", "country": "NZ", "region": "Manawatu-Wanganui"},
-    # {"name": "Ōhau Snow Fields", "country": "NZ", "region": "Canterbury"},
+    {"name": "Broken River Ski Area", "country": "NZ", "region": "Canterbury"},
+    {"name": "Cardrona Alpine Resort", "country": "NZ", "region": "Otago"},
+    {"name": "Coronet Peak Ski Area", "country": "NZ", "region": "Otago"},
+    {"name": "Craigieburn Valley Ski Area", "country": "NZ", "region": "Canterbury"},
+    {"name": "Fox Peak Ski Area", "country": "NZ", "region": "Canterbury"},
+    {"name": "Hanmer Springs Ski Area", "country": "NZ", "region": "Canterbury"},
+    {"name": "Manganui Ski Area", "country": "NZ", "region": "Taranaki"},
+    {"name": "Mount Cheeseman Ski Area", "country": "NZ", "region": "Canterbury"},
+    {"name": "Mount Dobson Ski Field", "country": "NZ", "region": "Canterbury"},
+    {"name": "Mount Hutt Ski Area", "country": "NZ", "region": "Canterbury"},
+    {"name": "Mount Lyford Alpine Resort", "country": "NZ", "region": "Canterbury"},
+    {"name": "Mount Olympus Ski Area", "country": "NZ", "region": "Canterbury"},
+    {"name": "Porters Ski Area", "country": "NZ", "region": "Canterbury"},
+    {"name": "Rainbow Ski Area", "country": "NZ", "region": "Tasman"},
+    {"name": "Roundhill Ski Field", "country": "NZ", "region": "Canterbury"},
+    {"name": "Temple Basin Ski Area", "country": "NZ", "region": "Canterbury"},
+    {"name": "The Remarkables Ski Area", "country": "NZ", "region": "Otago"},
+    {"name": "Treble Cone Ski Area", "country": "NZ", "region": "Otago"},
+    {"name": "Tukino Skifield", "country": "NZ", "region": "Manawatu-Wanganui"},
+    {"name": "Tūroa Ski Area", "country": "NZ", "region": "Manawatu-Wanganui"},
+    {"name": "Whakapapa Ski Area", "country": "NZ", "region": "Manawatu-Wanganui"},
+    {"name": "Ōhau Snow Fields", "country": "NZ", "region": "Canterbury"},
     # Australian Ski Resorts
-    # {"name": "Charlotte Pass", "country": "AU", "region": "New South Wales"},
-    # {"name": "Falls Creek", "country": "AU", "region": "Victoria"},
-    # {"name": "Mount Baw Baw", "country": "AU", "region": "Victoria"},
-    # {"name": "Mount Buller", "country": "AU", "region": "Victoria"},
-    # {"name": "Mount Hotham", "country": "AU", "region": "Victoria"},
-    # {"name": "Perisher", "country": "AU", "region": "New South Wales"},
-    # {"name": "Selwyn Snow Resort", "country": "AU", "region": "New South Wales"},
-    # {"name": "Thredbo Resort", "country": "AU", "region": "New South Wales"}
+    {"name": "Charlotte Pass", "country": "AU", "region": "New South Wales"},
+    {"name": "Falls Creek", "country": "AU", "region": "Victoria"},
+    {"name": "Mount Baw Baw", "country": "AU", "region": "Victoria"},
+    {"name": "Mount Buller", "country": "AU", "region": "Victoria"},
+    {"name": "Mount Hotham", "country": "AU", "region": "Victoria"},
+    {"name": "Perisher", "country": "AU", "region": "New South Wales"},
+    {"name": "Selwyn Snow Resort", "country": "AU", "region": "New South Wales"},
+    {"name": "Thredbo Resort", "country": "AU", "region": "New South Wales"}
 ]
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -103,30 +110,129 @@ def _post_overpass_query(query, field_name, timeout=90, stats=None, time_key=Non
 
 
 
-def _fetch_all_resorts_candidate_ids(stats=None):
-    area_clauses = "\n".join(
-        f'      area["name"="{field["name"]}"]["landuse"="winter_sports"];'
-        for field in SKI_FIELDS
-    )
-    query = f'''
-    [out:json][timeout:90];
+def _escape_overpass_string(value):
+    return value.replace("\\", "\\\\").replace('"', '\\"')
+
+
+def _get_resort_lookup_names(field):
+    names = [field["name"]]
+    names.extend(field.get("lookup_names", []))
+    # Preserve order while removing duplicates.
+    return list(dict.fromkeys(name for name in names if name))
+
+
+def _build_resort_match_clauses(field):
+    lookup_names = _get_resort_lookup_names(field)
+    area_seed_clauses = []
+    relation_seed_clauses = []
+    for lookup_name in lookup_names:
+        escaped_name = _escape_overpass_string(lookup_name)
+        area_seed_clauses.extend([
+            f'  area["landuse"="winter_sports"]["name"="{escaped_name}"];',
+            f'  area["landuse"="winter_sports"]["name:en"="{escaped_name}"];',
+            f'  way["landuse"="winter_sports"]["name"="{escaped_name}"];',
+            f'  way["landuse"="winter_sports"]["name:en"="{escaped_name}"];',
+            f'  rel["landuse"="winter_sports"]["name"="{escaped_name}"];',
+            f'  rel["landuse"="winter_sports"]["name:en"="{escaped_name}"];',
+        ])
+        relation_seed_clauses.extend([
+            f'  rel["site"="piste"]["name"="{escaped_name}"];',
+            f'  rel["site"="piste"]["name:en"="{escaped_name}"];',
+        ])
+    return area_seed_clauses, relation_seed_clauses
+
+
+def _build_resort_preflight_query(field, area_seed_name, relation_seed_name, area_result_name, relation_result_name):
+    area_seed_clauses, relation_seed_clauses = _build_resort_match_clauses(field)
+    escaped_resort_name = _escape_overpass_string(field["name"])
+    area_seed_block = "\n".join(area_seed_clauses) or "  // no area-capable selectors configured"
+    relation_seed_block = "\n".join(relation_seed_clauses) or "  // no relation selectors configured"
+    return f'''
+(
+{area_seed_block}
+)->.{area_seed_name};
+.{area_seed_name} map_to_area -> .{area_seed_name}_areas;
+(
+  way["piste:type"~"{PISTE_TYPE_REGEX}"](area.{area_seed_name}_areas);
+  way["aerialway"]
+    ["aerialway"!~"{IGNORED_AERIALWAY_REGEX}"]
+    (area.{area_seed_name}_areas)
+    (if: length() >= {MIN_LIFT_LENGTH_M});
+);
+convert item
+  ::id = id(),
+  resort = "{escaped_resort_name}",
+  element_kind = is_tag("piste:type") ? "run" : "lift";
+out tags;
+
+(
+{relation_seed_block}
+)->.{relation_seed_name};
+(
+  way(r.{relation_seed_name})["piste:type"~"{PISTE_TYPE_REGEX}"];
+  way(r.{relation_seed_name})["aerialway"]
+    ["aerialway"!~"{IGNORED_AERIALWAY_REGEX}"]
+    (if: length() >= {MIN_LIFT_LENGTH_M});
+);
+convert item
+  ::id = id(),
+  resort = "{escaped_resort_name}",
+  element_kind = is_tag("piste:type") ? "run" : "lift";
+out tags;
+'''
+
+
+def _build_resort_geometry_query(field):
+    area_seed_clauses, relation_seed_clauses = _build_resort_match_clauses(field)
+    area_seed_block = "\n".join(area_seed_clauses) or "  // no area-capable selectors configured"
+    relation_seed_block = "\n".join(relation_seed_clauses) or "  // no relation selectors configured"
+    return f'''
+    [out:json][timeout:60];
     (
-{area_clauses}
-    )->.all_areas;
+{area_seed_block}
+    )->.resort_seed;
+    .resort_seed map_to_area -> .resort_areas;
     (
-      way["piste:type"~"{PISTE_TYPE_REGEX}"](area.all_areas);
-      way["aerialway"]
-        ["aerialway"!~"{IGNORED_AERIALWAY_REGEX}"]
-        (area.all_areas)
-        (if: length() >= {MIN_LIFT_LENGTH_M});
+      way["piste:type"~"{PISTE_TYPE_REGEX}"](area.resort_areas);
+      way["aerialway"](area.resort_areas);
+    )->.area_results;
+
+    (
+{relation_seed_block}
+    )->.resort_relations;
+    (
+      way(r.resort_relations)["piste:type"~"{PISTE_TYPE_REGEX}"];
+      way(r.resort_relations)["aerialway"];
+    )->.relation_results;
+
+    (
+      .area_results;
+      .relation_results;
     );
-    out tags;
+    out body geom;
     '''
+
+
+
+def _fetch_all_resorts_candidate_ids(stats=None):
+    query_parts = ["[out:json][timeout:120];"]
+    for idx, field in enumerate(SKI_FIELDS):
+        query_parts.append(
+            _build_resort_preflight_query(
+                field,
+                area_seed_name=f"resort_seed_{idx}",
+                relation_seed_name=f"resort_relation_{idx}",
+                area_result_name=f"resort_area_results_{idx}",
+                relation_result_name=f"resort_relation_results_{idx}",
+            )
+        )
+    query = "\n".join(query_parts)
     if stats is not None:
         stats["overpass_id_requests_sent"] += 1
 
-    run_ids = set()
-    lift_ids = set()
+    candidate_ids_by_resort = defaultdict(
+        lambda: {"run_ids": set(), "lift_ids": set()}
+    )
     raw_elements = _post_overpass_query(
         query,
         "all configured ski resorts",
@@ -138,12 +244,22 @@ def _fetch_all_resorts_candidate_ids(stats=None):
     for element in raw_elements:
         element_id = element.get("id")
         tags = element.get("tags", {})
+        resort_name = tags.get("resort")
+        element_kind = tags.get("element_kind")
         if element_id is None:
             continue
-        if "piste:type" in tags:
-            run_ids.add(element_id)
-        elif "aerialway" in tags:
-            lift_ids.add(element_id)
+        if not resort_name or not element_kind:
+            continue
+        if element_kind == "run":
+            candidate_ids_by_resort[resort_name]["run_ids"].add(element_id)
+        elif element_kind == "lift":
+            candidate_ids_by_resort[resort_name]["lift_ids"].add(element_id)
+
+    run_ids = set()
+    lift_ids = set()
+    for candidate_ids in candidate_ids_by_resort.values():
+        run_ids.update(candidate_ids["run_ids"])
+        lift_ids.update(candidate_ids["lift_ids"])
 
     logger.info(
         "Global ID preflight result: candidate_run_ids=%s | candidate_lift_ids=%s",
@@ -151,19 +267,11 @@ def _fetch_all_resorts_candidate_ids(stats=None):
         len(lift_ids),
     )
 
-    return run_ids, lift_ids
+    return candidate_ids_by_resort
 
 
 def _fetch_resort_elements(field, stats=None):
-    query = f'''
-    [out:json][timeout:60];
-    area["name"="{field['name']}"]["landuse"="winter_sports"]->.a;
-    (
-      way["piste:type"~"{PISTE_TYPE_REGEX}"](area.a);
-      way["aerialway"](area.a);
-    );
-    out body geom;
-    '''
+    query = _build_resort_geometry_query(field)
     if stats is not None:
         stats["overpass_requests_sent"] += 1
     return _post_overpass_query(
@@ -272,10 +380,13 @@ def get_top_bottom_coordinates(coords, elevations=None, is_lift=False):
             bottom_coords[0], bottom_coords[1], bottom_elevation)
 
 @dlt.source
-def ski_source(known_run_osm: set, known_lift_osm: set):
+def ski_source(known_run_osm_by_resort: dict, known_lift_osm_by_resort: dict):
     ski_runs_data = []
     ski_lifts = []
+    known_run_osm = set().union(*known_run_osm_by_resort.values()) if known_run_osm_by_resort else set()
+    known_lift_osm = set().union(*known_lift_osm_by_resort.values()) if known_lift_osm_by_resort else set()
     should_preflight_ids = bool(known_run_osm or known_lift_osm)
+    resorts_to_fetch = {field["name"] for field in SKI_FIELDS}
     stats = {
         "overpass_requests_sent": 0,
         "overpass_id_requests_sent": 0,
@@ -302,9 +413,30 @@ def ski_source(known_run_osm: set, known_lift_osm: set):
     if should_preflight_ids:
         try:
             logger.info("Checking OSM ids across all configured resorts before geometry fetch ...")
-            run_ids, lift_ids = _fetch_all_resorts_candidate_ids(stats=stats)
-            new_run_ids = run_ids - known_run_osm
-            new_lift_ids = lift_ids - known_lift_osm
+            candidate_ids_by_resort = _fetch_all_resorts_candidate_ids(stats=stats)
+            run_ids = set()
+            lift_ids = set()
+            new_run_ids = set()
+            new_lift_ids = set()
+            resorts_to_fetch = set()
+
+            for field in SKI_FIELDS:
+                resort_name = field["name"]
+                resort_candidates = candidate_ids_by_resort.get(
+                    resort_name,
+                    {"run_ids": set(), "lift_ids": set()},
+                )
+                resort_run_ids = resort_candidates["run_ids"]
+                resort_lift_ids = resort_candidates["lift_ids"]
+                run_ids.update(resort_run_ids)
+                lift_ids.update(resort_lift_ids)
+
+                resort_new_run_ids = resort_run_ids - known_run_osm_by_resort.get(resort_name, set())
+                resort_new_lift_ids = resort_lift_ids - known_lift_osm_by_resort.get(resort_name, set())
+                if resort_new_run_ids or resort_new_lift_ids:
+                    resorts_to_fetch.add(resort_name)
+                    new_run_ids.update(resort_new_run_ids)
+                    new_lift_ids.update(resort_new_lift_ids)
 
             stats["preflight_run_ids_seen"] = len(run_ids)
             stats["preflight_lift_ids_seen"] = len(lift_ids)
@@ -314,6 +446,7 @@ def ski_source(known_run_osm: set, known_lift_osm: set):
             if not new_run_ids and not new_lift_ids:
                 stats["resorts_skipped_geometry"] = len(SKI_FIELDS)
                 stats["resorts_with_new_ids"] = 0
+                resorts_to_fetch = set()
                 logger.info("No new OSM ids across configured resorts, skipping all geometry fetches")
             else:
                 logger.info(
@@ -321,17 +454,21 @@ def ski_source(known_run_osm: set, known_lift_osm: set):
                     len(new_run_ids),
                     len(new_lift_ids),
                 )
-                stats["resorts_with_new_ids"] = len(SKI_FIELDS)
-                stats["resorts_skipped_geometry"] = 0
-                logger.info("New IDs found globally, fetching geometry for all configured resorts")
+                stats["resorts_with_new_ids"] = len(resorts_to_fetch)
+                stats["resorts_skipped_geometry"] = len(SKI_FIELDS) - len(resorts_to_fetch)
+                logger.info(
+                    "New IDs found for %s resorts, fetching geometry only for those resorts",
+                    len(resorts_to_fetch),
+                )
         except Exception as e:
             logger.warning(
                 f"Global ID preflight failed, falling back to geometry fetch: {e}"
             )
             should_preflight_ids = False
+            resorts_to_fetch = {field["name"] for field in SKI_FIELDS}
 
     for field in SKI_FIELDS:
-        if should_preflight_ids and stats["preflight_new_run_ids"] == 0 and stats["preflight_new_lift_ids"] == 0:
+        if should_preflight_ids and field["name"] not in resorts_to_fetch:
             continue 
 
         logger.info(f"Fetching ski runs for {field['name']} ...")
@@ -646,13 +783,21 @@ def ski_source(known_run_osm: set, known_lift_osm: set):
     return [ski_runs, ski_run_points, ski_lifts_resource, ski_run_segments]
 
 
-def _load_known_osm_ids(pipeline, table_name):
-    sql = f"SELECT osm_id FROM {DESTINATION_DATABASE}.ski_runs.{table_name}"
+def _load_known_osm_ids_by_resort(pipeline, table_name):
+    sql = f"SELECT resort, osm_id FROM {DESTINATION_DATABASE}.ski_runs.{table_name}"
     with pipeline.sql_client() as client:
         result = client.execute_sql(sql)
     if result is None:
-        return set()
-    return {row[0] for row in result if row and row[0] is not None}
+        return {}
+    known_ids_by_resort = defaultdict(set)
+    for row in result:
+        if not row or len(row) < 2:
+            continue
+        resort_name, osm_id = row[0], row[1]
+        if resort_name is None or osm_id is None:
+            continue
+        known_ids_by_resort[resort_name].add(osm_id)
+    return dict(known_ids_by_resort)
 
 def run_pipeline(logger):
     logger.info("Starting DLT pipeline...")
@@ -664,16 +809,18 @@ def run_pipeline(logger):
         pipelines_dir=str(DLT_PIPELINE_DIR),
         dev_mode=False
     )
-    known_run_osm = set()
-    known_lift_osm = set()
+    known_run_osm_by_resort = {}
+    known_lift_osm_by_resort = {}
 
     try:
         logger.info("Trying to access table: ski_runs")
         started_at = perf_counter()
-        known_run_osm = _load_known_osm_ids(pipeline, "ski_runs")
+        known_run_osm_by_resort = _load_known_osm_ids_by_resort(pipeline, "ski_runs")
+        known_run_count = sum(len(osm_ids) for osm_ids in known_run_osm_by_resort.values())
         logger.info(
-            "Found %s known ski runs in %.2fs",
-            len(known_run_osm),
+            "Found %s known ski runs across %s resorts in %.2fs",
+            known_run_count,
+            len(known_run_osm_by_resort),
             perf_counter() - started_at,
         )
     except (ValueError, KeyError, DatabaseUndefinedRelation) as e:
@@ -684,10 +831,12 @@ def run_pipeline(logger):
     try:
         logger.info("Trying to access table: ski_lifts")
         started_at = perf_counter()
-        known_lift_osm = _load_known_osm_ids(pipeline, "ski_lifts")
+        known_lift_osm_by_resort = _load_known_osm_ids_by_resort(pipeline, "ski_lifts")
+        known_lift_count = sum(len(osm_ids) for osm_ids in known_lift_osm_by_resort.values())
         logger.info(
-            "Found %s known ski lifts in %.2fs",
-            len(known_lift_osm),
+            "Found %s known ski lifts across %s resorts in %.2fs",
+            known_lift_count,
+            len(known_lift_osm_by_resort),
             perf_counter() - started_at,
         )
     except (ValueError, KeyError, DatabaseUndefinedRelation) as e:
@@ -697,11 +846,11 @@ def run_pipeline(logger):
 
     logger.info("Bootstrap summary | known_id_load_s=%.2f", perf_counter() - bootstrap_started_at)
 
-    if not known_run_osm and not known_lift_osm:
+    if not known_run_osm_by_resort and not known_lift_osm_by_resort:
         logger.info("No existing ski runs/lifts data found, treating as first run")
 
     try:
-        pipeline.run(ski_source(known_run_osm, known_lift_osm))
+        pipeline.run(ski_source(known_run_osm_by_resort, known_lift_osm_by_resort))
     except Exception as e:
         logger.error(f"❌ Pipeline run failed: {e}")
         return False

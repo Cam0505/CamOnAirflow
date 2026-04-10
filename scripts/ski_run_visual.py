@@ -6,6 +6,11 @@ import duckdb
 from dotenv import load_dotenv
 from project_path import get_project_paths, set_dlt_env_vars
 
+try:
+    import japanize_matplotlib  # noqa: F401
+except ImportError:
+    japanize_matplotlib = None
+
 # --- ENV, DuckDB connection ---
 paths = get_project_paths()
 set_dlt_env_vars(paths)

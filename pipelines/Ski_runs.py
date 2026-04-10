@@ -109,6 +109,7 @@ DESTINATION_DATABASE = "camonairflow"
 MIN_LIFT_LENGTH_M = 100
 PISTE_TYPE_REGEX = "^(downhill|nordic|skitour|snow_park|sled|connection)$"
 IGNORED_AERIALWAY_REGEX = "^(station|goods)$"
+SMOOTHING_GRADE_THRESHOLD = math.tan(math.radians(50)) 
 
 
 def _post_overpass_query(query, field_name, timeout=90, stats=None, time_key=None):
@@ -326,7 +327,7 @@ def get_elevations_batch(coords_list, stats=None):
         results.extend(elevations)
     return results
 
-def smooth_steep_gradients(elevs, dists, threshold=0.80, window=7):
+def smooth_steep_gradients(elevs, dists, threshold=SMOOTHING_GRADE_THRESHOLD, window=7):
     elevs = np.array(elevs, dtype=float)
     dists = np.array(dists, dtype=float)
     if len(elevs) < 4:
@@ -557,7 +558,7 @@ def ski_source(known_run_osm_by_resort: dict, known_lift_osm_by_resort: dict):
                 # Smooth elevations if needed
                 if len(elevations) >= 3:
                     elevations_smooth, gradients_smooth = smooth_steep_gradients(
-                        elevations, cum_distances, threshold=0.80, window=7
+                        elevations, cum_distances, threshold=SMOOTHING_GRADE_THRESHOLD, window=7
                     )
                 else:
                     elevations_smooth = elevations

@@ -11,13 +11,19 @@ WITH segs AS (
         s.length_m,
         -- vertical drop per segment (to_node minus from_node)
         (tp.elevation_m - fp.elevation_m) AS vertical_drop_m,
-        -- gradient as % slope = (rise/run)*100
         fp.elevation_m AS from_elev_m,  -- ✅ NEW
         tp.elevation_m AS to_elev_m,     -- ✅ NEW
         CASE
-            WHEN s.length_m IS NULL OR s.length_m = 0 THEN 0.0
-            ELSE ((tp.elevation_m - fp.elevation_m) / s.length_m) * 100.0
+          WHEN fp.gradient_smoothed IS NOT NULL AND tp.gradient_smoothed IS NOT NULL
+            THEN ((fp.gradient_smoothed + tp.gradient_smoothed) / 2.0) * 100.0
+          WHEN fp.gradient_smoothed IS NOT NULL
+            THEN fp.gradient_smoothed * 100.0
+          WHEN tp.gradient_smoothed IS NOT NULL
+            THEN tp.gradient_smoothed * 100.0
+          WHEN s.length_m IS NULL OR s.length_m <= 0 THEN 0.0
+          ELSE ((tp.elevation_m - fp.elevation_m) / s.length_m) * 100.0
         END AS gradient,
+        s.gradient AS original_gradient,  -- ✅ NEW: keep original gradient for reference
         r.resort,
         r.country_code,
         r.run_name,     -- ✅ corrected run names from base_filtered_ski_runs
@@ -54,6 +60,7 @@ SELECT
     0.0 AS from_elev_m,
     0.0 AS to_elev_m,
     0.0 AS gradient,  -- flat connector
+    0.0 AS original_gradient,  -- flat connector
     'Cardrona Alpine Resort' AS resort,
     'NZ' AS country_code,
     'manual_connector' AS run_name,

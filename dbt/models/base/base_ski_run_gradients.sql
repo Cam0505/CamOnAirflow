@@ -11,7 +11,7 @@ WITH points AS (
         r.difficulty
     FROM {{ ref('base_filtered_ski_points') }} AS p
     INNER JOIN {{ ref('base_filtered_ski_runs') }} AS r ON p.osm_id = r.osm_id
-    where r.n_points > 3
+    where r.n_points >= 3
 )
 
 , first_last_points AS (
@@ -40,12 +40,12 @@ WITH points AS (
 
 ,segments AS (
     SELECT
-        case when curr.difficulty = 'novice' then 30
-            when curr.difficulty = 'easy' then 35
-            when curr.difficulty = 'intermediate' then 65
-            when curr.difficulty = 'advanced' then 90
-            when curr.difficulty = 'freeride' then 90
-            else 90
+        case when curr.difficulty = 'novice' then TAN(RADIANS(15)) * 100.0
+            when curr.difficulty = 'easy' then TAN(RADIANS(25)) * 100.0
+            when curr.difficulty = 'intermediate' then TAN(RADIANS(35)) * 100.0
+            when curr.difficulty = 'advanced' then TAN(RADIANS(50)) * 100.0
+            when curr.difficulty = 'freeride' then TAN(RADIANS(50)) * 100.0
+            else TAN(RADIANS(50)) * 100.0
         end as steepest_gradient_threshold,
         curr.osm_id,
         curr.resort,
@@ -57,10 +57,10 @@ WITH points AS (
         (curr.elevation_m - next.elevation_m) * 100.0 / NULLIF(next.distance_along_run_m - curr.distance_along_run_m, 0) AS segment_gradient,
         (curr.elevation_smoothed_m - next.elevation_smoothed_m) * 100.0 / NULLIF(next.distance_along_run_m - curr.distance_along_run_m, 0) AS smooth_segment_gradient,
         CASE
-            WHEN ABS((curr.elevation_m - next.elevation_m) * 100.0 / NULLIF(next.distance_along_run_m - curr.distance_along_run_m, 0)) > 90
+            WHEN ABS((curr.elevation_m - next.elevation_m) * 100.0 / NULLIF(next.distance_along_run_m - curr.distance_along_run_m, 0)) > 100
                  OR (curr.elevation_m - next.elevation_m) * 100.0 / NULLIF(next.distance_along_run_m - curr.distance_along_run_m, 0) = 0
                 THEN CASE
-                    WHEN ABS((curr.elevation_smoothed_m - next.elevation_smoothed_m) * 100.0 / NULLIF(next.distance_along_run_m - curr.distance_along_run_m, 0)) > 100
+                    WHEN ABS((curr.elevation_smoothed_m - next.elevation_smoothed_m) * 100.0 / NULLIF(next.distance_along_run_m - curr.distance_along_run_m, 0)) > 110
                         THEN 0
                     ELSE (curr.elevation_smoothed_m - next.elevation_smoothed_m) * 100.0 / NULLIF(next.distance_along_run_m - curr.distance_along_run_m, 0)
                 END
@@ -76,8 +76,7 @@ WITH points AS (
 ,filtered_segments AS (
     SELECT *
     FROM segments
-    WHERE segment_length >= 30 -- filter out very short segments
-      AND ABS(final_segment_gradient) < steepest_gradient_threshold -- filter out extreme gradients
+    WHERE ABS(final_segment_gradient) < steepest_gradient_threshold -- filter out extreme gradients
 )
 
 ,steepest_segment AS (
@@ -94,17 +93,6 @@ SELECT
     r.difficulty,
     r.run_name,
     (re.start_elev - re.end_elev) * 100.0 / NULLIF(re.end_dist - re.start_dist, 0) AS avg_gradient,
-    -- COALESCE(
-    --     s.steepest_gradient,
-    --     CASE r.difficulty
-    --         WHEN 'novice' THEN 10
-    --         WHEN 'easy' THEN 15
-    --         WHEN 'intermediate' THEN 25
-    --         WHEN 'advanced' THEN 35
-    --         WHEN 'freeride' THEN 40
-    --         ELSE 20
-    --     END
-    -- ) AS steepest_gradient
     steepest_gradient
 FROM run_elevations AS re
 INNER JOIN {{ ref('base_filtered_ski_runs') }} AS r ON re.osm_id = r.osm_id

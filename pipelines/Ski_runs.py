@@ -40,6 +40,14 @@ AVERAGE_LIFT_SPEEDS = {
 
 
 SKI_FIELDS = [
+    # Chinese Ski Resorts
+    {"name": "雪如意滑雪场", "country": "CN", "region": "Hebei"},
+    {"name": "太舞滑雪场", "country": "CN", "region": "Hebei"},
+    {"name": "Yunding Resort Secret Garden", "country": "CN", "region": "Hebei"},
+    {"name": "Wanlong Paradise Resort", "country": "CN", "region": "Hebei"},
+    {"name": "富龙滑雪场", "country": "CN", "region": "Hebei"},
+    {"name": "National Alpine Skiing Centre", "country": "CN", "region": "Hebei"},
+
     # Japanese Ski Resorts
     {"name": "Kiroro Resort", "country": "JP", "region": "Hokkaido"},
     {"name": "Rusutsu Resort Ski Area", "country": "JP", "region": "Hokkaido"},
@@ -129,31 +137,22 @@ def _escape_overpass_string(value):
     return value.replace("\\", "\\\\").replace('"', '\\"')
 
 
-def _get_resort_lookup_names(field):
-    names = [field["name"]]
-    names.extend(field.get("lookup_names", []))
-    # Preserve order while removing duplicates.
-    return list(dict.fromkeys(name for name in names if name))
-
-
 def _build_resort_match_clauses(field):
-    lookup_names = _get_resort_lookup_names(field)
     area_seed_clauses = []
     relation_seed_clauses = []
-    for lookup_name in lookup_names:
-        escaped_name = _escape_overpass_string(lookup_name)
-        area_seed_clauses.extend([
-            f'  area["landuse"="winter_sports"]["name"="{escaped_name}"];',
-            f'  area["landuse"="winter_sports"]["name:en"="{escaped_name}"];',
-            f'  way["landuse"="winter_sports"]["name"="{escaped_name}"];',
-            f'  way["landuse"="winter_sports"]["name:en"="{escaped_name}"];',
-            f'  rel["landuse"="winter_sports"]["name"="{escaped_name}"];',
-            f'  rel["landuse"="winter_sports"]["name:en"="{escaped_name}"];',
-        ])
-        relation_seed_clauses.extend([
-            f'  rel["site"="piste"]["name"="{escaped_name}"];',
-            f'  rel["site"="piste"]["name:en"="{escaped_name}"];',
-        ])
+    escaped_name = _escape_overpass_string(field["name"])
+    area_seed_clauses.extend([
+        f'  area["landuse"="winter_sports"]["name"="{escaped_name}"];',
+        f'  area["landuse"="winter_sports"]["name:en"="{escaped_name}"];',
+        f'  way["landuse"="winter_sports"]["name"="{escaped_name}"];',
+        f'  way["landuse"="winter_sports"]["name:en"="{escaped_name}"];',
+        f'  rel["landuse"="winter_sports"]["name"="{escaped_name}"];',
+        f'  rel["landuse"="winter_sports"]["name:en"="{escaped_name}"];',
+    ])
+    relation_seed_clauses.extend([
+        f'  rel["site"="piste"]["name"="{escaped_name}"];',
+        f'  rel["site"="piste"]["name:en"="{escaped_name}"];',
+    ])
     return area_seed_clauses, relation_seed_clauses
 
 

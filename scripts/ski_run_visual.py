@@ -2,6 +2,7 @@ import argparse
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.font_manager as fm
 from scipy.signal import savgol_filter
 import duckdb
 from dotenv import load_dotenv
@@ -13,6 +14,28 @@ try:
 except ImportError:
     japanize_matplotlib = None
 
+
+DISPLAY_NAME_OVERRIDES = {
+    "太舞滑雪场": "Thaiwoo Ski Resort",
+    "雪如意滑雪场": "Snow Ruyi Ski Resort",
+    "富龙滑雪场": "Fulong Ski Resort",
+    "密苑云顶乐园": "Yunding Resort Secret Garden",
+    "国家高山滑雪中心": "National Alpine Skiing Centre",
+}
+
+CJK_FONT_CANDIDATES = [
+    "Noto Sans CJK SC",
+    "Noto Sans CJK JP",
+    "Source Han Sans SC",
+    "Source Han Sans CN",
+    "WenQuanYi Zen Hei",
+    "SimHei",
+    "Microsoft YaHei",
+    "Arial Unicode MS",
+    "Sarasa Gothic SC",
+    "Sarasa UI SC",
+]
+
 # --- Difficulty color palette ---
 difficulty_colors = {
     "novice": "#4daf4a",
@@ -23,6 +46,21 @@ difficulty_colors = {
     None: "#999999",
     "nan": "#999999"
 }
+
+
+def configure_matplotlib_fonts():
+    available_fonts = {font.name for font in fm.fontManager.ttflist}
+    for font_name in CJK_FONT_CANDIDATES:
+        if font_name in available_fonts:
+            plt.rcParams["font.family"] = font_name
+            plt.rcParams["axes.unicode_minus"] = False
+            return True
+    plt.rcParams["font.family"] = "DejaVu Sans"
+    plt.rcParams["axes.unicode_minus"] = False
+    return False
+
+
+HAS_CJK_FONT = configure_matplotlib_fonts()
 
 # --- Smoothing function ---
 def smooth_elevation(y, window=9, poly=2):
@@ -44,6 +82,24 @@ def normalize_region(value):
 
 def slugify_region(region):
     return normalize_region(region).lower().replace(' ', '_').replace('/', '_')
+
+
+def has_non_ascii_text(value):
+    if value is None:
+        return False
+    return any(ord(char) > 127 for char in str(value))
+
+
+def get_display_text(value, fallback=None):
+    if value is None:
+        return fallback or ""
+    text = str(value).strip()
+    if not text:
+        return fallback or ""
+    text = DISPLAY_NAME_OVERRIDES.get(text, text)
+    if HAS_CJK_FONT or not has_non_ascii_text(text):
+        return text
+    return fallback or text.encode("ascii", errors="ignore").decode("ascii").strip()
 
 
 def parse_args():
@@ -224,10 +280,11 @@ def generate_region_plots(runs, points, gradient_stats):
                     ax.text(
                         pts_long['distance_along_run_m'].iloc[-1],
                         pts_long['elevation_m'].iloc[-1],
-                        longest['run_name'], fontsize=11, fontweight='bold', color='black',
+                        get_display_text(longest['run_name'], fallback=f"Run {longest['osm_id']}"),
+                        fontsize=11, fontweight='bold', color='black',
                         ha='right', va='bottom'
                     )
-                ax.set_title(resort, fontsize=20, fontweight='bold')
+                ax.set_title(get_display_text(resort, fallback="Unnamed Resort"), fontsize=20, fontweight='bold')
                 ax.set_xlabel("Run Distance Along Slope (meters)", fontsize=14)
                 ax.set_ylabel("Elevation (m)", fontsize=14)
                 ax.grid(True, linestyle='--', alpha=0.4)

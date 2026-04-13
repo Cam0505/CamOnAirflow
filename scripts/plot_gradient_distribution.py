@@ -4,6 +4,7 @@ import duckdb
 from dotenv import load_dotenv
 import matplotlib.pyplot as plt
 import matplotlib
+import matplotlib.font_manager as fm
 import numpy as np
 from matplotlib.patches import Patch
 from project_path import get_project_paths, set_dlt_env_vars
@@ -15,7 +16,44 @@ COUNTRIES = {
     "Australia": "AU",
     "Canada": "CA",
     "Japan": "JP",
+    "China": "CN",
 }
+
+DISPLAY_NAME_OVERRIDES = {
+    "太舞滑雪场": "Thaiwoo Ski Resort",
+    "雪如意滑雪场": "Snow Ruyi Ski Resort",
+    "富龙滑雪场": "Fulong Ski Resort",
+    "密苑云顶乐园": "Yunding Resort Secret Garden",
+    "国家高山滑雪中心": "National Alpine Skiing Centre",
+}
+
+CJK_FONT_CANDIDATES = [
+    "Noto Sans CJK SC",
+    "Noto Sans CJK JP",
+    "Source Han Sans SC",
+    "Source Han Sans CN",
+    "WenQuanYi Zen Hei",
+    "SimHei",
+    "Microsoft YaHei",
+    "Arial Unicode MS",
+    "Sarasa Gothic SC",
+    "Sarasa UI SC",
+]
+
+
+def configure_matplotlib_fonts():
+    available_fonts = {font.name for font in fm.fontManager.ttflist}
+    for font_name in CJK_FONT_CANDIDATES:
+        if font_name in available_fonts:
+            plt.rcParams["font.family"] = font_name
+            plt.rcParams["axes.unicode_minus"] = False
+            return True
+    plt.rcParams["font.family"] = "DejaVu Sans"
+    plt.rcParams["axes.unicode_minus"] = False
+    return False
+
+
+HAS_CJK_FONT = configure_matplotlib_fonts()
 
 
 def parse_args():
@@ -102,11 +140,29 @@ def load_plot_data(con, target_countries):
     ).df()
 
 # --- Plotting ---
+def has_non_ascii_text(value):
+    if value is None:
+        return False
+    return any(ord(char) > 127 for char in str(value))
+
+
+def get_display_text(value, fallback=None):
+    if value is None:
+        return fallback or ""
+    text = str(value).strip()
+    if not text:
+        return fallback or ""
+    text = DISPLAY_NAME_OVERRIDES.get(text, text)
+    if HAS_CJK_FONT or not has_non_ascii_text(text):
+        return text
+    return fallback or text.encode("ascii", errors="ignore").decode("ascii").strip()
+
+
 def short_resort_name(name: str) -> str:
     suffixes = [
         " Ski Area", " Ski Field", " Alpine Resort", " Valley Ski Area", " Resort"
     ]
-    short_name = name
+    short_name = get_display_text(name, fallback="Unnamed Resort")
     for suffix in suffixes:
         short_name = short_name.replace(suffix, "")
     return short_name.strip()
@@ -133,7 +189,7 @@ gradient_bands = [
     {"start": 5, "end": 15, "label": "Green", "color": "#57a773"},
     {"start": 15, "end": 25, "label": "Blue", "color": "#4c78a8"},
     {"start": 25, "end": 35, "label": "Red", "color": "#e45756"},
-    {"start": 35, "end": 50, "label": "Black", "color": "#3a3a3a"},
+    {"start": 35, "end": 55, "label": "Black", "color": "#3a3a3a"},
 ]
 
 colormap = matplotlib.colormaps["viridis"]
@@ -184,9 +240,9 @@ def generate_country_plots(df_all):
                 pad=8
             )
             ax.grid(True, axis="y", linestyle="--", alpha=0.35)
-            ax.set_xlim(5, 50)
+            ax.set_xlim(5, 55)
             ax.set_ylim(0, y_top)
-            ax.set_xticks(np.arange(5, 51, 5))
+            ax.set_xticks(np.arange(5, 56, 5))
             ax.tick_params(axis="x", labelrotation=45, labelsize=11, labelbottom=True)
             ax.tick_params(axis="y", labelsize=11)
             _apply_gradient_bands(ax)

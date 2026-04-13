@@ -23,7 +23,7 @@ WITH segs AS (
           WHEN s.length_m IS NULL OR s.length_m <= 0 THEN 0.0
           ELSE ((tp.elevation_m - fp.elevation_m) / s.length_m) * 100.0
         END AS gradient,
-        s.gradient AS original_gradient,  -- ✅ NEW: keep original gradient for reference
+        s.gradient*100 AS original_gradient,  -- ✅ NEW: keep original gradient for reference
         r.resort,
         r.country_code,
         r.run_name,     -- ✅ corrected run names from base_filtered_ski_runs

@@ -41,6 +41,14 @@ def get_ski_fields_with_timestamp():
             {"name": "Coronet Peak", "country": "NZ", "lat": -44.9206, "lon": 168.7349, "timezone": "Pacific/Auckland"},
             {"name": "Whakapapa", "country": "NZ", "lat": -39.2659, "lon": 175.5600, "timezone": "Pacific/Auckland"},
             {"name": "Turoa", "country": "NZ", "lat": -39.3002, "lon": 175.5525, "timezone": "Pacific/Auckland"},
+            # Japan (selected resorts with stronger spatial separation for distinct weather patterns)
+            {"name": "Niseko United", "country": "JP", "lat": 42.8625, "lon": 140.7042, "timezone": "Asia/Tokyo"},
+            {"name": "Hakodate Nanae Snowpark", "country": "JP", "lat": 41.9536, "lon": 140.7450, "timezone": "Asia/Tokyo"},
+            {"name": "Furano Ski Resort", "country": "JP", "lat": 43.3420, "lon": 142.3830, "timezone": "Asia/Tokyo"},
+            {"name": "Sahoro", "country": "JP", "lat": 43.1430, "lon": 142.9770, "timezone": "Asia/Tokyo"},
+            {"name": "Appi Kogen Ski Resort", "country": "JP", "lat": 40.0054, "lon": 140.9602, "timezone": "Asia/Tokyo"},
+            {"name": "Zao Onsen Ski Resort", "country": "JP", "lat": 38.1666, "lon": 140.4175, "timezone": "Asia/Tokyo"},
+            {"name": "Takasu Snow Park", "country": "JP", "lat": 35.9360, "lon": 136.8850, "timezone": "Asia/Tokyo"},
             # Australia
             {"name": "Thredbo", "country": "AU", "lat": -36.5040, "lon": 148.2987, "timezone": "Australia/Sydney"},
             {"name": "Perisher", "country": "AU", "lat": -36.4058, "lon": 148.4134, "timezone": "Australia/Sydney"},
@@ -48,24 +56,35 @@ def get_ski_fields_with_timestamp():
             {"name": "Falls Creek", "country": "AU", "lat": -36.8655, "lon": 147.2861, "timezone": "Australia/Melbourne"},
             {"name": "Mt Hotham", "country": "AU", "lat": -36.9762, "lon": 147.1359, "timezone": "Australia/Melbourne"},
             # Chile
-            # {"name": "Valle Nevado", "country": "CL", "lat": -33.3556, "lon": -70.2489, "timezone": "America/Santiago"},
-            # {"name": "Portillo", "country": "CL", "lat": -32.8352, "lon": -70.1309, "timezone": "America/Santiago"},
-            # {"name": "La Parva", "country": "CL", "lat": -33.3319, "lon": -70.2917, "timezone": "America/Santiago"},
-            # {"name": "El Colorado", "country": "CL", "lat": -33.3500, "lon": -70.2833, "timezone": "America/Santiago"},
-            # {"name": "Nevados de Chillan", "country": "CL", "lat": -36.9086, "lon": -71.4064, "timezone": "America/Santiago"},
+            {"name": "Valle Nevado", "country": "CL", "lat": -33.3556, "lon": -70.2489, "timezone": "America/Santiago"},
+            {"name": "Portillo", "country": "CL", "lat": -32.8352, "lon": -70.1309, "timezone": "America/Santiago"},
+            {"name": "La Parva", "country": "CL", "lat": -33.3319, "lon": -70.2917, "timezone": "America/Santiago"},
+            {"name": "El Colorado", "country": "CL", "lat": -33.3500, "lon": -70.2833, "timezone": "America/Santiago"},
+            {"name": "Nevados de Chillan", "country": "CL", "lat": -36.9086, "lon": -71.4064, "timezone": "America/Santiago"},
             # Argentina
-            # {"name": "Cerro Catedral", "country": "AR", "lat": -41.1739, "lon": -71.5489, "timezone": "America/Argentina/Buenos_Aires"},
-            # {"name": "Las Lenas", "country": "AR", "lat": -35.1500, "lon": -70.0833, "timezone": "America/Argentina/Buenos_Aires"},
-            # {"name": "Cerro Castor", "country": "AR", "lat": -54.7203, "lon": -68.0000, "timezone": "America/Argentina/Buenos_Aires"},
-            # {"name": "Chapelco", "country": "AR", "lat": -40.1622, "lon": -71.2106, "timezone": "America/Argentina/Buenos_Aires"},
-            # {"name": "Cerro Bayo", "country": "AR", "lat": -40.7500, "lon": -71.6000, "timezone": "America/Argentina/Buenos_Aires"},
+            {"name": "Cerro Catedral", "country": "AR", "lat": -41.1739, "lon": -71.5489, "timezone": "America/Argentina/Buenos_Aires"},
+            {"name": "Las Lenas", "country": "AR", "lat": -35.1500, "lon": -70.0833, "timezone": "America/Argentina/Buenos_Aires"},
+            {"name": "Cerro Castor", "country": "AR", "lat": -54.7203, "lon": -68.0000, "timezone": "America/Argentina/Buenos_Aires"},
+            {"name": "Chapelco", "country": "AR", "lat": -40.1622, "lon": -71.2106, "timezone": "America/Argentina/Buenos_Aires"},
+            {"name": "Cerro Bayo", "country": "AR", "lat": -40.7500, "lon": -71.6000, "timezone": "America/Argentina/Buenos_Aires"},
         ]
     ]
 
 SKI_FIELDS = get_ski_fields_with_timestamp()
 START_DATE = date(1978, 1, 1)
 BATCH_SIZE = 500  # Number of rows to yield at once
-FORCE_SNOW_DEPTH_RELOAD = False  # <-- Set to False after one-off load
+
+
+def get_winter_spring_months_for_lat(latitude: float) -> set[int]:
+    """Return winter and spring months for a latitude's hemisphere."""
+    return {12, 1, 2, 3, 4, 5} if latitude >= 0 else {6, 7, 8, 9, 10, 11}
+
+
+def get_winter_spring_season_year(day: date, latitude: float) -> int:
+    """Return a season year that keeps cross-year northern Dec-May seasons together."""
+    if latitude >= 0 and day.month == 12:
+        return day.year + 1
+    return day.year
 
 def get_all_missing_date_ranges_by_season(logger, locations, start_date, end_date, dataset, daily_default=False):
     """
@@ -73,11 +92,9 @@ def get_all_missing_date_ranges_by_season(logger, locations, start_date, end_dat
       missing_ranges_by_location: dict of location_name -> dict of season_year -> (min_date, max_date)
       table_truncated: bool, True if the table is empty (truncated)
       default_applied: dict of location_name -> bool, True if the 14-day default was applied or covered by a missing range
-    Only includes June-November dates.
+    Only includes hemisphere winter and spring dates.
     """
     try:
-        all_dates = pd.date_range(start_date, end_date)
-        winter_dates = [d.date() for d in all_dates if 6 <= d.month <= 11]
         table_truncated = dataset is None or dataset.empty
 
         missing_ranges = {}
@@ -90,6 +107,14 @@ def get_all_missing_date_ranges_by_season(logger, locations, start_date, end_dat
 
         for loc in locations:
             name = loc["name"]
+            latitude = loc["lat"]
+            winter_months = get_winter_spring_months_for_lat(latitude)
+            all_dates = pd.date_range(start_date, end_date)
+            winter_dates = [d.date() for d in all_dates if d.month in winter_months]
+            last_14_winter_set = {d for d in last_14_set if d.month in winter_months}
+            winter_14_start = min(last_14_winter_set) if last_14_winter_set else None
+            winter_14_end = max(last_14_winter_set) if last_14_winter_set else None
+
             if table_truncated or name not in dataset["location"].unique():
                 missing = set(winter_dates)
             else:
@@ -100,7 +125,8 @@ def get_all_missing_date_ranges_by_season(logger, locations, start_date, end_dat
             # Group missing dates by year and get min/max per year
             seasons = {}
             for d in sorted(missing):
-                seasons.setdefault(d.year, []).append(d)
+                season_year = get_winter_spring_season_year(d, latitude)
+                seasons.setdefault(season_year, []).append(d)
             # For each season, get min/max
             season_ranges = {
                 year: (min(ds), max(ds)) for year, ds in seasons.items()
@@ -112,22 +138,24 @@ def get_all_missing_date_ranges_by_season(logger, locations, start_date, end_dat
 
             # logger.info(f"Daily default for {name}: {daily_default}, last 14 days: {last_14_start} to {last_14_end}")
 
-            if daily_default:
+            if daily_default and last_14_winter_set:
+                if winter_14_start is None or winter_14_end is None:
+                    continue
                 for season, (rng_start, rng_end) in list(season_ranges.items()):
                     rng_set = set(pd.date_range(rng_start, rng_end).date)
-                    if last_14_set.issubset(rng_set):
+                    if last_14_winter_set.issubset(rng_set):
                         applied = True
                         break
-                    elif last_14_set & rng_set:
-                        new_start = min(rng_start, last_14_start)
-                        new_end = max(rng_end, last_14_end)
+                    elif last_14_winter_set & rng_set:
+                        new_start = min(rng_start, winter_14_start)
+                        new_end = max(rng_end, winter_14_end)
                         del season_ranges[season]
                         season_ranges["default_14d"] = (new_start, new_end)
                         applied = True
                         expanded = True
                         break
                 if not applied and not expanded:
-                    season_ranges["default_14d"] = (last_14_start, last_14_end)
+                    season_ranges["default_14d"] = (winter_14_start, winter_14_end)
                     applied = True
 
             missing_ranges[name] = season_ranges
@@ -137,12 +165,15 @@ def get_all_missing_date_ranges_by_season(logger, locations, start_date, end_dat
         return missing_ranges, table_truncated, default_applied
     except Exception as e:
         logger.error(f"Failed to retrieve missing date ranges from dataset: {e}")
-        # fallback: all winter dates for all locations, grouped by year
+        # fallback: all winter dates for all locations, grouped by season year
         missing_ranges = {}
         for loc in locations:
+            latitude = loc["lat"]
+            winter_months = get_winter_spring_months_for_lat(latitude)
             seasons = {}
-            for d in [d.date() for d in pd.date_range(start_date, end_date) if 6 <= d.month <= 11]:
-                seasons.setdefault(d.year, []).append(d)
+            for d in [d.date() for d in pd.date_range(start_date, end_date) if d.month in winter_months]:
+                season_year = get_winter_spring_season_year(d, latitude)
+                seasons.setdefault(season_year, []).append(d)
             season_ranges = {
                 year: (min(ds), max(ds)) for year, ds in seasons.items()
             }
@@ -150,7 +181,7 @@ def get_all_missing_date_ranges_by_season(logger, locations, start_date, end_dat
         return missing_ranges, False, {loc["name"]: False for loc in locations}
 
 def fetch_snowfall_data(location, start_date, end_date):
-    """Fetch historical snowfall and snow depth data for a specific location."""
+    """Fetch historical daily snowfall and temperature data for a specific location."""
     logger.debug(f"Fetching data for {location['name']} from {start_date} to {end_date}")
 
     url = "https://archive-api.open-meteo.com/v1/archive"
@@ -160,7 +191,6 @@ def fetch_snowfall_data(location, start_date, end_date):
         "start_date": start_date,
         "end_date": end_date,
         "daily": ",".join(["snowfall_sum", "temperature_2m_mean"]),
-        "hourly": "snow_depth",
         "timezone": location["timezone"]
     }
 
@@ -196,7 +226,7 @@ def ski_field_lookup_resource(new_locations):
 def snowfall_source(logger: logging.Logger, dataset, run_from_date: date | None = None):
     """
     DLT source for snow data from ski fields in NZ and Australia.
-    Fetches daily snowfall and snow depth data for all locations, June-Nov only.
+    Fetches daily snowfall and temperature data for all locations, winter and spring months only.
     Uses row_max_min to avoid reprocessing existing data.
     """
     @dlt.resource(write_disposition="merge", name="ski_field_snowfall", 
@@ -223,16 +253,13 @@ def snowfall_source(logger: logging.Logger, dataset, run_from_date: date | None 
 
         # Pass the boolean for today to the missing range function
         if run_from_date is not None:
-            # Bypass the normal "missing date" logic and request from the provided start date
-            logger.info(f"Bypassing missing-date logic: forcing run from {run_from_date} to {end_date} for all locations")
-            # Build a simple mapping { location_name: {"manual": (run_from_date, end_date)} }
-            missing_ranges_by_location = {
-                loc["name"]: {"manual": (run_from_date, end_date)}
-                for loc in SKI_FIELDS
-            }
-            # Treat dataset as truncated for the purposes of downstream state handling
-            table_truncated = True
-            default_applied = False
+            logger.info(
+                f"Start date provided: collecting winter+spring-only data from {run_from_date} to {end_date} for all locations"
+            )
+            # Force a winter+spring-only reload for the specified date window.
+            missing_ranges_by_location, table_truncated, default_applied = get_all_missing_date_ranges_by_season(
+                logger, SKI_FIELDS, run_from_date, end_date, None, daily_default=False
+            )
         else:
             missing_ranges_by_location, table_truncated, default_applied = get_all_missing_date_ranges_by_season(
                 logger, SKI_FIELDS, START_DATE, end_date, dataset, daily_default=state["Daily_default"][today_str]
@@ -269,29 +296,11 @@ def snowfall_source(logger: logging.Logger, dataset, run_from_date: date | None 
 
                     # --- Process daily snowfall/temperature ---
                     daily_data = data["daily"]
-                    daily_df = pd.DataFrame({
+                    merged = pd.DataFrame({
                         "date": pd.to_datetime(daily_data["time"]).date,
                         "snowfall": daily_data["snowfall_sum"],
                         "temperature_mean": daily_data["temperature_2m_mean"]
                     })
-
-                    # --- Process hourly snow depth ---
-                    if "hourly" in data and data["hourly"].get("time"):
-                        hourly_df = pd.DataFrame({
-                            "datetime": pd.to_datetime(data["hourly"]["time"]),
-                            "snow_depth": data["hourly"]["snow_depth"]
-                        })
-                        hourly_df["date"] = hourly_df["datetime"].dt.date
-                        # Only keep June-Nov
-                        hourly_df = hourly_df[hourly_df["datetime"].dt.month.between(6, 11)]
-                        # Average over all hours for each day
-                        avg_depth = hourly_df.groupby("date")["snow_depth"].mean().reset_index()
-                        avg_depth.rename(columns={"snow_depth": "avg_snow_depth"}, inplace=True)
-                    else:
-                        avg_depth = pd.DataFrame(columns=["date", "avg_snow_depth"])
-
-                    # --- Merge daily and snow depth ---
-                    merged = pd.merge(daily_df, avg_depth, on="date", how="left")
                     merged["location"] = location_name
                     merged["country"] = country
 

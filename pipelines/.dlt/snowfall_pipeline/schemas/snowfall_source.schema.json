@@ -1,6 +1,6 @@
 {
-  "version": 6,
-  "version_hash": "UYtqc+MysA5LyvTppxgV2LvwP4MtDgSoqv0UW0ocj3s=",
+  "version": 4,
+  "version_hash": "2q99ZIkPNFDWP/8q5Kmoc7f6MD4iBby05ODlWl7QH0M=",
   "engine_version": 11,
   "name": "snowfall_source",
   "tables": {
@@ -83,12 +83,6 @@
           "primary_key": true,
           "data_type": "date"
         },
-        "location": {
-          "name": "location",
-          "nullable": false,
-          "primary_key": true,
-          "data_type": "text"
-        },
         "snowfall": {
           "name": "snowfall",
           "data_type": "double",
@@ -97,6 +91,17 @@
         "temperature_mean": {
           "name": "temperature_mean",
           "data_type": "double",
+          "nullable": true
+        },
+        "location": {
+          "name": "location",
+          "nullable": false,
+          "primary_key": true,
+          "data_type": "text"
+        },
+        "country": {
+          "name": "country",
+          "data_type": "text",
           "nullable": true
         },
         "_dlt_load_id": {
@@ -110,16 +115,6 @@
           "nullable": false,
           "unique": true,
           "row_key": true
-        },
-        "country": {
-          "name": "country",
-          "data_type": "text",
-          "nullable": true
-        },
-        "avg_snow_depth": {
-          "name": "avg_snow_depth",
-          "data_type": "double",
-          "nullable": true
         }
       },
       "write_disposition": "merge",
@@ -281,10 +276,8 @@
     }
   },
   "previous_hashes": [
-    "EO9ebWlaA71Br+gdJzTXRdPJhEsgXlppKgNsa5OTBCg=",
-    "rDhh1XWuwPHuHLspn45exGoiCXJY8ur4T5EIiv6s4Qo=",
-    "OWMCtI/ZAh5iV2Itef1ED98pC3knIpeVWEm0AzjOARc=",
-    "2UsRsh8xSyScok896BzwtRqtkXUZXROfSlV9VBEz1Jg=",
+    "K7ANiz3VxwQbaohcHz+C3BdXnsdgcIR8jbPE0x3CMKw=",
+    "FOOzq7F+ui/eyESMca9fn6SSGgJpiQXkRyB7Ehtb+pI=",
     "fAQpY26aNZ3Yuir2781vGPznD0F7pmne3Je+xTQz3oo=",
     "vy39yzEHY2qxiw+bFF+uPbfXLVkW4cavadpf/S0uGCI="
   ]

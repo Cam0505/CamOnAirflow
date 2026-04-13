@@ -1,5 +1,6 @@
 import duckdb
 import os
+import math
 from dotenv import load_dotenv
 from project_path import get_project_paths, set_dlt_env_vars
 import pandas as pd
@@ -8,7 +9,6 @@ from plotnine import (
     element_text, element_rect, element_line, scale_x_continuous,
     geom_point, geom_text
 )
-from datetime import date
 import matplotlib.colors as mcolors
 import numpy as np
 
@@ -34,146 +34,194 @@ df = con.execute("""
         cumulative_snowfall_cm
     FROM camonairflow.public_analysis.snowfall_cumulative_daily
     WHERE year_col >= 1990
-    and country in ('NZ', 'AU')
 """).df()
 
+if df.empty:
+    raise ValueError("No snowfall data returned from snowfall_cumulative_daily.")
+
+df['datecol'] = pd.to_datetime(df['datecol'])
+df['month_col'] = df['datecol'].dt.month
+
+
+def get_facet_layout(n_facets):
+    """Return (ncol, nrow, width, height) for readable country facet charts."""
+    if n_facets <= 4:
+        ncol = 2
+    elif n_facets <= 9:
+        ncol = 3
+    else:
+        ncol = 4
+
+    nrow = max(1, math.ceil(n_facets / ncol))
+    width = min(24, max(12, ncol * 4.8))
+    height = min(24, max(8, nrow * 3.8 + 2.2))
+    return ncol, nrow, width, height
+
+
+def season_month_ticks_for_country(country_df):
+    """Build month ticks/labels per country season (NH Dec-May, SH Jun-Nov)."""
+    month_name_map = {
+        1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
+        7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'
+    }
+    nh_months = {12, 1, 2, 3, 4, 5}
+    sh_months = {6, 7, 8, 9, 10, 11}
+    months_present = set(country_df['month_col'].dropna().astype(int).unique())
+
+    if months_present & nh_months and not (months_present & sh_months):
+        month_order = [12, 1, 2, 3, 4, 5]
+    elif months_present & sh_months and not (months_present & nh_months):
+        month_order = [6, 7, 8, 9, 10, 11]
+    else:
+        # Fallback when data contains both sets.
+        month_order = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+
+    tick_days = []
+    tick_labels = []
+    for month in month_order:
+        month_rows = country_df[country_df['month_col'] == month]
+        if month_rows.empty:
+            continue
+        tick_days.append(int(month_rows['day_of_season'].min()))
+        tick_labels.append(month_name_map[month])
+
+    return tick_days, tick_labels
+
 # --- Assign Colors: grey (oldest) to black (newest, except latest) ---
-latest_year = df['year_col'].max()
-df['is_latest'] = df['year_col'] == latest_year
-past_years = sorted([y for y in df['year_col'].unique() if y != latest_year])
-n_past = len(past_years)
 def grey_to_black_gradient(n):
     # Light grey (0.80, 0.80, 0.80) to black (0,0,0)
     return [
         mcolors.to_hex((v, v, v))
         for v in np.linspace(0.8, 0.05, n)
     ] if n > 1 else ["#cccccc"]
-gradient = grey_to_black_gradient(n_past)
-year2color = dict(zip(past_years, gradient))
-df['year_color'] = df['year_col'].map(lambda y: 'red' if y == latest_year else year2color.get(y, "#000000"))
+output_dir = "/workspaces/CamOnAirFlow/charts"
+os.makedirs(output_dir, exist_ok=True)
 
-# For latest year label at right edge
-df_ends = df[df['is_latest']].groupby(['facet_label', 'year_col']).last().reset_index()
-
-# --- X Axis: Month ticks ---
-def season_month_ticks(year=2022):
-    months = [6, 7, 8, 9, 10, 11]
-    tick_days = []
-    tick_labels = []
-    start = date(year, 6, 1)
-    for m in months:
-        first = date(year, m, 1)
-        tick_day = (first - start).days + 1
-        tick_days.append(tick_day)
-        tick_labels.append(first.strftime('%b'))
-    return tick_days, tick_labels
-month_ticks, month_labels = season_month_ticks()
-
-df = df.sort_values(['facet_label', 'is_latest', 'year_col'])
-
-# --- Build the plot with individual geom_line for each past year ---
-p_cum = ggplot()
-for y in past_years:
-    p_cum += geom_line(
-        data=df[df['year_col'] == y],
-        mapping=aes(x="day_of_season", y="cumulative_snowfall_cm"),
-        color=year2color[y], size=1.3, alpha=0.93
-    )
-# Add latest year as thick red line, label its end
-p_cum += geom_line(
-    data=df[df['is_latest']],
-    mapping=aes(x="day_of_season", y="cumulative_snowfall_cm"),
-    color='red', size=2.7, alpha=0.99
-)
-p_cum += geom_point(
-    data=df_ends,
-    mapping=aes(x='day_of_season', y='cumulative_snowfall_cm'),
-    size=6, color='red', fill='white'
-)
-p_cum += geom_text(
-    data=df_ends,
-    mapping=aes(x='day_of_season', y='cumulative_snowfall_cm', label='year_col'),
-    color='red', size=9, fontweight='bold', nudge_x=4
-)
-
-# ---- PERCENTILE LABEL PER FACET (BELOW X AXIS) ----
-percentile_labels = []
-for facet in df['facet_label'].unique():
-    df_latest_facet = df[(df['year_col'] == latest_year) & (df['facet_label'] == facet)]
-    if df_latest_facet.empty:
+for country in sorted(df['country'].dropna().unique()):
+    country_df = df[df['country'] == country].copy()
+    if country_df.empty:
         continue
-    max_day = df_latest_facet['day_of_season'].max()
-    cum_value = df_latest_facet.loc[df_latest_facet['day_of_season'] == max_day, 'cumulative_snowfall_cm'].iloc[0]
 
-    # For each past year, get value at same day, or last available
-    facet_past = []
+    country_df['facet_label'] = country_df['ski_field'].astype(str)
+    latest_year = country_df['year_col'].max()
+    country_df['is_latest'] = country_df['year_col'] == latest_year
+
+    past_years = sorted([y for y in country_df['year_col'].unique() if y != latest_year])
+    gradient = grey_to_black_gradient(len(past_years))
+    year2color = dict(zip(past_years, gradient))
+
+    country_df = country_df.sort_values(['facet_label', 'is_latest', 'year_col', 'day_of_season'])
+    df_ends = country_df[country_df['is_latest']].groupby(['facet_label', 'year_col']).last().reset_index()
+
+    month_ticks, month_labels = season_month_ticks_for_country(country_df)
+    ski_fields = sorted(country_df['ski_field'].dropna().unique())
+    ncol, _, fig_width, fig_height = get_facet_layout(len(ski_fields))
+
+    p_cum = ggplot()
     for y in past_years:
-        row = df[(df['year_col'] == y) & (df['facet_label'] == facet) & (df['day_of_season'] == max_day)]
-        if not row.empty:
-            facet_past.append(row['cumulative_snowfall_cm'].iloc[0])
-        else:
-            # Use last available (season might have ended early)
-            prev = df[(df['year_col'] == y) & (df['facet_label'] == facet)]['cumulative_snowfall_cm']
-            if not prev.empty:
-                facet_past.append(prev.iloc[-1])
-    if facet_past:
-        pct = 100 * sum(x < cum_value for x in facet_past) / len(facet_past)
-    else:
-        pct = 0
+        p_cum += geom_line(
+            data=country_df[country_df['year_col'] == y],
+            mapping=aes(x="day_of_season", y="cumulative_snowfall_cm"),
+            color=year2color[y], size=1.3, alpha=0.93
+        )
 
-    # compute facet x-range and place label at its center (clamped away from edges)
-    facet_days = df[df['facet_label'] == facet]['day_of_season']
-    min_day = int(facet_days.min())
-    max_day_overall = int(facet_days.max())
-    # center and margin (at least 3 days)
-    raw_center = (min_day + max_day_overall) / 2
-    margin = max(3, int(0.05 * (max_day_overall - min_day)))
-    x_center = float(min(max(raw_center, min_day + margin), max_day_overall - margin))
-
-    # vertical placement below plot
-    min_y = df[df['facet_label'] == facet]['cumulative_snowfall_cm'].min()
-    y_below = min_y - 0.12 * (df[df['facet_label'] == facet]['cumulative_snowfall_cm'].max() - min_y)
-
-    percentile_labels.append({
-        'facet_label': facet,
-        'day_of_season': x_center,
-        'cumulative_snowfall_cm': y_below,
-        'percent_label': f"{pct:.0f}th Percentile"
-    })
-
-df_percent = pd.DataFrame(percentile_labels)
-if not df_percent.empty:
+    p_cum += geom_line(
+        data=country_df[country_df['is_latest']],
+        mapping=aes(x="day_of_season", y="cumulative_snowfall_cm"),
+        color='red', size=2.7, alpha=0.99
+    )
+    p_cum += geom_point(
+        data=df_ends,
+        mapping=aes(x='day_of_season', y='cumulative_snowfall_cm'),
+        size=6, color='red', fill='white'
+    )
     p_cum += geom_text(
-        data=df_percent,
-        mapping=aes(x='day_of_season', y='cumulative_snowfall_cm', label='percent_label'),
-        color='red', size=7.5, fontweight='bold'
+        data=df_ends,
+        mapping=aes(x='day_of_season', y='cumulative_snowfall_cm', label='year_col'),
+        color='red', size=9, fontweight='bold', nudge_x=4
     )
 
-p_cum += labs(
-    title=f"Cumulative Daily Snowfall: Last {len(past_years)} Years + (Red = {latest_year})",
-    subtitle="Grey = oldest, black = most recent, red = latest",
-    x="Month (Season starts in June)", y="Cumulative Snowfall (cm)"
-)
-p_cum += scale_x_continuous(
-    breaks=month_ticks,
-    labels=month_labels,
-    expand=(0.01, 0)
-)
-p_cum += facet_wrap('~facet_label', scales='free', ncol=3)
-p_cum += theme_light(base_size=16)
-p_cum += theme(
-    legend_position='none',
-    axis_text_x=element_text(size=10),
-    axis_title_x=element_text(size=14, weight='bold'),
-    plot_title=element_text(weight='bold', size=18),
-    plot_subtitle=element_text(size=12),
-    panel_spacing=0.07,
-    strip_text_x=element_text(color="black", weight="bold", size=12),
-    strip_background=element_rect(fill="#e0e0e0", color="#888888"),
-    panel_grid_major_x=element_line(color="#343434", size=0.5, linetype='dashed')
-)
+    percentile_labels = []
+    for facet in country_df['facet_label'].unique():
+        df_latest_facet = country_df[(country_df['year_col'] == latest_year) & (country_df['facet_label'] == facet)]
+        if df_latest_facet.empty:
+            continue
 
-# Save
-out_path = "/workspaces/CamOnAirFlow/charts/cumulative_daily_snowfall.png"
-p_cum.save(out_path, width=12, height=14, dpi=240, limitsize=False)
-print("✅ Saved chart: cumulative_daily_snowfall.png")
+        max_day = df_latest_facet['day_of_season'].max()
+        cum_value = df_latest_facet.loc[
+            df_latest_facet['day_of_season'] == max_day,
+            'cumulative_snowfall_cm'
+        ].iloc[0]
+
+        facet_past = []
+        for y in past_years:
+            row = country_df[
+                (country_df['year_col'] == y)
+                & (country_df['facet_label'] == facet)
+                & (country_df['day_of_season'] == max_day)
+            ]
+            if not row.empty:
+                facet_past.append(row['cumulative_snowfall_cm'].iloc[0])
+            else:
+                prev = country_df[
+                    (country_df['year_col'] == y)
+                    & (country_df['facet_label'] == facet)
+                ]['cumulative_snowfall_cm']
+                if not prev.empty:
+                    facet_past.append(prev.iloc[-1])
+
+        pct = 100 * sum(x < cum_value for x in facet_past) / len(facet_past) if facet_past else 0
+
+        facet_days = country_df[country_df['facet_label'] == facet]['day_of_season']
+        min_day = int(facet_days.min())
+        max_day_overall = int(facet_days.max())
+        raw_center = (min_day + max_day_overall) / 2
+        margin = max(3, int(0.05 * (max_day_overall - min_day)))
+        x_center = float(min(max(raw_center, min_day + margin), max_day_overall - margin))
+
+        min_y = country_df[country_df['facet_label'] == facet]['cumulative_snowfall_cm'].min()
+        max_y = country_df[country_df['facet_label'] == facet]['cumulative_snowfall_cm'].max()
+        y_below = min_y - 0.12 * (max_y - min_y)
+
+        percentile_labels.append({
+            'facet_label': facet,
+            'day_of_season': x_center,
+            'cumulative_snowfall_cm': y_below,
+            'percent_label': f"{pct:.0f}th Percentile"
+        })
+
+    df_percent = pd.DataFrame(percentile_labels)
+    if not df_percent.empty:
+        p_cum += geom_text(
+            data=df_percent,
+            mapping=aes(x='day_of_season', y='cumulative_snowfall_cm', label='percent_label'),
+            color='red', size=7.5, fontweight='bold'
+        )
+
+    p_cum += labs(
+        title=f"Cumulative Daily Snowfall ({country}): Last {len(past_years)} Years + (Red = {latest_year})",
+        subtitle="Grey = oldest, black = most recent, red = latest",
+        x="Month (country season)", y="Cumulative Snowfall (cm)"
+    )
+    p_cum += scale_x_continuous(
+        breaks=month_ticks,
+        labels=month_labels,
+        expand=(0.01, 0)
+    )
+    p_cum += facet_wrap('~facet_label', scales='fixed', ncol=ncol)
+    p_cum += theme_light(base_size=16)
+    p_cum += theme(
+        legend_position='none',
+        axis_text_x=element_text(size=10),
+        axis_title_x=element_text(size=14, weight='bold'),
+        plot_title=element_text(weight='bold', size=18),
+        plot_subtitle=element_text(size=12),
+        panel_spacing=0.07,
+        strip_text_x=element_text(color="black", weight="bold", size=12),
+        strip_background=element_rect(fill="#e0e0e0", color="#888888"),
+        panel_grid_major_x=element_line(color="#343434", size=0.5, linetype='dashed')
+    )
+
+    out_path = os.path.join(output_dir, f"cumulative_daily_snowfall_{country}.png")
+    p_cum.save(out_path, width=fig_width, height=fig_height, dpi=220, limitsize=False)
+    print(f"Saved chart: {out_path}")

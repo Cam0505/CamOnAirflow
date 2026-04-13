@@ -1,17 +1,38 @@
-WITH daily_winter_snowfall AS (
+WITH ski_lookup AS (
     SELECT
-        location AS ski_field
-        , date AS datecol
-        , snowfall AS daily_snowfall_cm
+        name
         , country
-        , EXTRACT(YEAR FROM date) AS year_col
-        , EXTRACT(MONTH FROM date) AS month_col
-    FROM {{ source('snowfall', 'ski_field_snowfall') }}
-    WHERE
-        EXTRACT(MONTH FROM date) IN (6, 7, 8, 9, 10, 11)
+        , lat
+    FROM {{ source('snowfall', 'ski_field_lookup') }}
 )
 
--- Assign a "season" (snow year) for faceting (you can adjust to June–May if needed)
+, daily_winter_snowfall AS (
+    SELECT
+        snowfall.location AS ski_field
+        , date AS datecol
+        , snowfall.snowfall AS daily_snowfall_cm
+        , snowfall.country
+        , CASE
+            WHEN lookup.lat >= 0 AND EXTRACT(MONTH FROM date) = 12
+                THEN EXTRACT(YEAR FROM date) + 1
+            ELSE EXTRACT(YEAR FROM date)
+        END AS year_col
+        , EXTRACT(MONTH FROM date) AS month_col
+    FROM {{ source('snowfall', 'ski_field_snowfall') }} AS snowfall
+    LEFT JOIN ski_lookup AS lookup
+        ON snowfall.location = lookup.name
+        AND snowfall.country = lookup.country
+    WHERE
+        CASE
+            WHEN lookup.lat >= 0
+                THEN EXTRACT(MONTH FROM date) IN (12, 1, 2, 3, 4, 5)
+            WHEN lookup.lat < 0
+                THEN EXTRACT(MONTH FROM date) IN (6, 7, 8, 9, 10, 11)
+            ELSE EXTRACT(MONTH FROM date) IN (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
+        END
+)
+
+-- Assign season-aware daily order for each ski field.
 , labelled AS (
     SELECT
         *

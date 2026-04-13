@@ -13,7 +13,7 @@ WITH ski_lookup AS (
         , snowfall.snowfall AS daily_snowfall_cm
         , snowfall.country
         , CASE
-            WHEN lookup.lat >= 0 AND EXTRACT(MONTH FROM date) = 12
+            WHEN lookup.lat >= 0 AND EXTRACT(MONTH FROM date) IN (11, 12)
                 THEN EXTRACT(YEAR FROM date) + 1
             ELSE EXTRACT(YEAR FROM date)
         END AS year_col
@@ -25,7 +25,7 @@ WITH ski_lookup AS (
     WHERE
         CASE
             WHEN lookup.lat >= 0
-                THEN EXTRACT(MONTH FROM date) IN (12, 1, 2, 3, 4, 5)
+                THEN EXTRACT(MONTH FROM date) IN (11, 12, 1, 2, 3, 4)
             WHEN lookup.lat < 0
                 THEN EXTRACT(MONTH FROM date) IN (6, 7, 8, 9, 10, 11)
             ELSE EXTRACT(MONTH FROM date) IN (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)

@@ -77,12 +77,12 @@ BATCH_SIZE = 500  # Number of rows to yield at once
 
 def get_winter_spring_months_for_lat(latitude: float) -> set[int]:
     """Return winter and spring months for a latitude's hemisphere."""
-    return {12, 1, 2, 3, 4, 5} if latitude >= 0 else {6, 7, 8, 9, 10, 11}
+    return {11, 12, 1, 2, 3, 4} if latitude >= 0 else {6, 7, 8, 9, 10, 11}
 
 
 def get_winter_spring_season_year(day: date, latitude: float) -> int:
-    """Return a season year that keeps cross-year northern Dec-May seasons together."""
-    if latitude >= 0 and day.month == 12:
+    """Return a season year that keeps cross-year northern Nov-Apr seasons together."""
+    if latitude >= 0 and day.month in (11, 12):
         return day.year + 1
     return day.year
 

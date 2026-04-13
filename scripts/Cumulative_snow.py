@@ -7,6 +7,7 @@ import pandas as pd
 from plotnine import (
     ggplot, aes, geom_line, labs, facet_wrap, theme_light, theme,
     element_text, element_rect, element_line, scale_x_continuous,
+    scale_color_manual, guides, guide_legend,
     geom_point, geom_text
 )
 import matplotlib.colors as mcolors
@@ -59,22 +60,23 @@ def get_facet_layout(n_facets):
 
 
 def season_month_ticks_for_country(country_df):
-    """Build month ticks/labels per country season (NH Dec-May, SH Jun-Nov)."""
+    """Build month ticks/labels per country season (NH Nov-Apr, SH Jun-Nov)."""
     month_name_map = {
         1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
         7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'
     }
-    nh_months = {12, 1, 2, 3, 4, 5}
-    sh_months = {6, 7, 8, 9, 10, 11}
+    # Nov is shared by both hemispheres — detect via unambiguous core months.
+    nh_core = {12, 1, 2, 3, 4}   # exclusively NH season
+    sh_core = {6, 7, 8, 9, 10}   # exclusively SH season
     months_present = set(country_df['month_col'].dropna().astype(int).unique())
 
-    if months_present & nh_months and not (months_present & sh_months):
-        month_order = [12, 1, 2, 3, 4, 5]
-    elif months_present & sh_months and not (months_present & nh_months):
+    if months_present & nh_core and not (months_present & sh_core):
+        month_order = [11, 12, 1, 2, 3, 4]
+    elif months_present & sh_core and not (months_present & nh_core):
         month_order = [6, 7, 8, 9, 10, 11]
     else:
         # Fallback when data contains both sets.
-        month_order = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+        month_order = [11, 12, 1, 2, 3, 4, 6, 7, 8, 9, 10]
 
     tick_days = []
     tick_labels = []
@@ -87,9 +89,25 @@ def season_month_ticks_for_country(country_df):
 
     return tick_days, tick_labels
 
-# --- Assign Colors: grey (oldest) to black (newest, except latest) ---
+def ordinal_suffix(n: int) -> str:
+    """Return the correct English ordinal suffix for n (1st, 2nd, 3rd, 4th…)."""
+    n = abs(int(n))
+    if 11 <= (n % 100) <= 13:   # 11th, 12th, 13th — special cases
+        return "th"
+    return {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
+
+
+# --- Colors matching seasonal_var_daily.py ---
+CURRENT_YEAR_COLOR = "#e41a1c"   # red
+HIGHLIGHT_COLORS = [
+    "#377eb8",  # blue  (2nd most recent past year)
+    "#4daf4a",  # green (most recent past year)
+]
+OLDER_YEARS_COLOR = "#888888"
+
+
 def grey_to_black_gradient(n):
-    # Light grey (0.80, 0.80, 0.80) to black (0,0,0)
+    """Light grey to near-black for oldest years, giving clear depth gradient."""
     return [
         mcolors.to_hex((v, v, v))
         for v in np.linspace(0.8, 0.05, n)
@@ -107,8 +125,24 @@ for country in sorted(df['country'].dropna().unique()):
     country_df['is_latest'] = country_df['year_col'] == latest_year
 
     past_years = sorted([y for y in country_df['year_col'].unique() if y != latest_year])
-    gradient = grey_to_black_gradient(len(past_years))
-    year2color = dict(zip(past_years, gradient))
+
+    # Last 2 past years get distinct highlight colors; older years get grey gradient.
+    highlight_years = past_years[-2:]   # most recent 2, ascending
+    older_years = past_years[:-2]
+    gradient = grey_to_black_gradient(len(older_years))
+    year2color = dict(zip(older_years, gradient))
+    for i, y in enumerate(highlight_years):
+        year2color[y] = HIGHLIGHT_COLORS[i % len(HIGHLIGHT_COLORS)]
+
+    # Build legend entries for labeled years (highlight + latest), newest first.
+    labeled_years = highlight_years + [latest_year]
+    legend_labels = [str(latest_year)] + [str(y) for y in reversed(highlight_years)]
+    legend_colors_map = {str(latest_year): CURRENT_YEAR_COLOR}
+    for i, y in enumerate(highlight_years):
+        legend_colors_map[str(y)] = HIGHLIGHT_COLORS[i % len(HIGHLIGHT_COLORS)]
+
+    labeled_df = country_df[country_df['year_col'].isin(labeled_years)].copy()
+    labeled_df['legend_label'] = labeled_df['year_col'].astype(str)
 
     country_df = country_df.sort_values(['facet_label', 'is_latest', 'year_col', 'day_of_season'])
     df_ends = country_df[country_df['is_latest']].groupby(['facet_label', 'year_col']).last().reset_index()
@@ -118,17 +152,25 @@ for country in sorted(df['country'].dropna().unique()):
     ncol, _, fig_width, fig_height = get_facet_layout(len(ski_fields))
 
     p_cum = ggplot()
-    for y in past_years:
+    # Draw older grey-to-black years first so highlights paint on top.
+    for y in older_years:
         p_cum += geom_line(
             data=country_df[country_df['year_col'] == y],
             mapping=aes(x="day_of_season", y="cumulative_snowfall_cm"),
-            color=year2color[y], size=1.3, alpha=0.93
+            color=year2color[y], size=1.0, alpha=0.7
         )
-
+    # Draw highlight years + latest via aes(color) so they appear in the legend.
+    p_cum += geom_line(
+        data=labeled_df,
+        mapping=aes(x="day_of_season", y="cumulative_snowfall_cm",
+                    group="year_col", color="legend_label"),
+        size=1.6, alpha=0.97
+    )
+    # Latest year also drawn thick on top for visual emphasis (no legend duplicate).
     p_cum += geom_line(
         data=country_df[country_df['is_latest']],
         mapping=aes(x="day_of_season", y="cumulative_snowfall_cm"),
-        color='red', size=2.7, alpha=0.99
+        color=CURRENT_YEAR_COLOR, size=2.7, alpha=0.99
     )
     p_cum += geom_point(
         data=df_ends,
@@ -187,7 +229,7 @@ for country in sorted(df['country'].dropna().unique()):
             'facet_label': facet,
             'day_of_season': x_center,
             'cumulative_snowfall_cm': y_below,
-            'percent_label': f"{pct:.0f}th Percentile"
+            'percent_label': f"{pct:.0f}{ordinal_suffix(int(round(pct)))} Percentile"
         })
 
     df_percent = pd.DataFrame(percentile_labels)
@@ -198,20 +240,29 @@ for country in sorted(df['country'].dropna().unique()):
             color='red', size=7.5, fontweight='bold'
         )
 
+    p_cum += scale_color_manual(
+        name="Year",
+        values=legend_colors_map,
+        breaks=legend_labels
+    )
+    p_cum += guides(color=guide_legend(title="Year", override_aes={'alpha': 1, 'size': 2}))
     p_cum += labs(
         title=f"Cumulative Daily Snowfall ({country}): Last {len(past_years)} Years + (Red = {latest_year})",
-        subtitle="Grey = oldest, black = most recent, red = latest",
-        x="Month (country season)", y="Cumulative Snowfall (cm)"
+        subtitle=(
+            f"Grey→black = older years | blue/green = previous 2 years"
+            f" | red = {latest_year}"
+        ),
+        x="Month (season)", y="Cumulative Snowfall (cm)"
     )
     p_cum += scale_x_continuous(
         breaks=month_ticks,
         labels=month_labels,
         expand=(0.01, 0)
     )
-    p_cum += facet_wrap('~facet_label', scales='fixed', ncol=ncol)
+    p_cum += facet_wrap('~facet_label', scales='free_x', ncol=ncol)
     p_cum += theme_light(base_size=16)
     p_cum += theme(
-        legend_position='none',
+        legend_position='right',
         axis_text_x=element_text(size=10),
         axis_title_x=element_text(size=14, weight='bold'),
         plot_title=element_text(weight='bold', size=18),

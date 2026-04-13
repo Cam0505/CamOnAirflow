@@ -1,5 +1,6 @@
 import duckdb
 import os
+import pandas as pd
 from dotenv import load_dotenv
 from project_path import get_project_paths, set_dlt_env_vars
 from plotnine import (
@@ -46,6 +47,39 @@ df = con.execute("""
 if df.empty:
     raise ValueError("No snowfall data returned from snowfall_cumulative_daily.")
 
+df['datecol'] = pd.to_datetime(df['datecol'])
+df['month_col'] = df['datecol'].dt.month
+
+
+def season_month_ticks_for_country(country_df):
+    """Build month ticks/labels per country season (NH Nov-Apr, SH Jun-Nov)."""
+    month_name_map = {
+        1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
+        7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'
+    }
+    # Nov is shared by both hemispheres — detect via unambiguous core months.
+    nh_core = {12, 1, 2, 3, 4}   # exclusively NH season
+    sh_core = {6, 7, 8, 9, 10}   # exclusively SH season
+    months_present = set(country_df['month_col'].dropna().astype(int).unique())
+
+    if months_present & nh_core and not (months_present & sh_core):
+        month_order = [11, 12, 1, 2, 3, 4]
+    elif months_present & sh_core and not (months_present & nh_core):
+        month_order = [6, 7, 8, 9, 10, 11]
+    else:
+        month_order = [11, 12, 1, 2, 3, 4, 6, 7, 8, 9, 10]
+
+    tick_days = []
+    tick_labels = []
+    for month in month_order:
+        month_rows = country_df[country_df['month_col'] == month]
+        if month_rows.empty:
+            continue
+        tick_days.append(int(month_rows['day_of_season'].min()))
+        tick_labels.append(month_name_map[month])
+
+    return tick_days, tick_labels
+
 output_dir = "/workspaces/CamOnAirFlow/charts"
 os.makedirs(output_dir, exist_ok=True)
 
@@ -88,6 +122,7 @@ for country in sorted(df['country'].dropna().unique()):
         return older_years_label
 
     country_df['legend_label'] = country_df.apply(legend_label, axis=1)
+    month_ticks, month_labels = season_month_ticks_for_country(country_df)
 
     legend_labels = [str(current_year)] + [str(y) for y in last4_years]
     if older_years:
@@ -101,8 +136,8 @@ for country in sorted(df['country'].dropna().unique()):
         + geom_line(size=1.3, alpha=0.98)
         + facet_wrap('~facet_label', scales='free', ncol=3)
         + scale_x_continuous(
-            breaks=[1, 31, 62, 93, 124, 155],
-            labels=['Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov'],
+            breaks=month_ticks,
+            labels=month_labels,
             expand=(0.01, 0)
         )
         + scale_color_manual(
@@ -117,7 +152,7 @@ for country in sorted(df['country'].dropna().unique()):
                 + (f", grey = {older_years_label}" if older_years else "")
                 + "\nAnomaly = Cumulative snowfall minus daily mean (1990–present)"
             ),
-            x="Month (Season starts in June)", y="Cumulative Snowfall Anomaly (cm)"
+            x="Month (season)", y="Cumulative Snowfall Anomaly (cm)"
         )
         + theme_light(base_size=16)
         + theme(

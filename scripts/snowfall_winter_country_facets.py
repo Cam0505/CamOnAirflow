@@ -53,6 +53,8 @@ def calculate_year_breaks(year_series):
         step = 6
 
     breaks = list(range(min_year, max_year + 1, step))
+    if breaks[-1] != max_year:
+        breaks.append(max_year)
     return breaks
 
 
@@ -77,7 +79,7 @@ month_labels = {
     7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'
 }
 # Winter+spring across both hemispheres: NH (Dec-May), SH (Jun-Nov).
-season_month_order = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+season_month_order = [12, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11]
 df['month_name'] = df['month_col'].map(month_labels)
 df['month_name'] = pd.Categorical(
     df['month_name'],
@@ -91,7 +93,6 @@ month_color_map = {
     'Feb': '#2E2A8A',
     'Mar': '#006DCC',
     'Apr': '#0096C7',
-    'May': '#00B4D8',
     'Jun': '#48CAE4',
     'Jul': '#2A9D8F',
     'Aug': '#52B788',
@@ -150,7 +151,7 @@ for country in sorted(df['country'].dropna().unique()):
         + scale_x_continuous(breaks=yearly_breaks)
         + scale_fill_manual(values={True: '#1f77b4', False: '#ff7f0e'})
         + scale_color_manual(values=color_map)
-        + facet_wrap('~facet_label', scales='fixed', ncol=ncol)
+        + facet_wrap('~facet_label', scales='free_x', ncol=ncol)
         + theme_light(base_size=14)
         + theme(
             legend_position='right',
@@ -176,7 +177,7 @@ for country in sorted(df['country'].dropna().unique()):
     p_monthly = (
         ggplot(country_monthly_df, aes('year_col', 'total_monthly_snowfall', fill='month_name'))
         + geom_bar(stat='identity', position='stack')
-        + facet_wrap('~facet_label', scales='fixed', ncol=ncol)
+        + facet_wrap('~facet_label', scales='free_x', ncol=ncol)
         + labs(
             title=f'Total Winter Snowfall per Month ({country})',
             subtitle='Each bar shows total snowfall (cm) by month',

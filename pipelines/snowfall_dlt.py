@@ -33,40 +33,40 @@ def get_ski_fields_with_timestamp():
         {**field, "last_updated": now}
         for field in [
             # New Zealand 
-            {"name": "Remarkables", "country": "NZ", "lat": -45.0661, "lon": 168.8196, "timezone": "Pacific/Auckland"},
-            {"name": "Cardrona", "country": "NZ", "lat": -44.8746, "lon": 168.9481, "timezone": "Pacific/Auckland"},
-            {"name": "Treble Cone", "country": "NZ", "lat": -44.6301, "lon": 168.8806, "timezone": "Pacific/Auckland"},
-            {"name": "Mount Hutt", "country": "NZ", "lat": -43.4707, "lon": 171.5306, "timezone": "Pacific/Auckland"},
-            {"name": "Ohau", "country": "NZ", "lat": -44.2157, "lon": 169.7711, "timezone": "Pacific/Auckland"},
-            {"name": "Coronet Peak", "country": "NZ", "lat": -44.9206, "lon": 168.7349, "timezone": "Pacific/Auckland"},
-            {"name": "Whakapapa", "country": "NZ", "lat": -39.2659, "lon": 175.5600, "timezone": "Pacific/Auckland"},
-            {"name": "Turoa", "country": "NZ", "lat": -39.3002, "lon": 175.5525, "timezone": "Pacific/Auckland"},
+            {"name": "Remarkables", "country": "NZ", "lat": -45.0661, "lon": 168.8196, "timezone": "Pacific/Auckland", "resort_elevation": 1700},
+            {"name": "Cardrona", "country": "NZ", "lat": -44.8746, "lon": 168.9481, "timezone": "Pacific/Auckland", "resort_elevation": 1850},
+            {"name": "Treble Cone", "country": "NZ", "lat": -44.6301, "lon": 168.8806, "timezone": "Pacific/Auckland", "resort_elevation": 1900},
+            {"name": "Mount Hutt", "country": "NZ", "lat": -43.4707, "lon": 171.5306, "timezone": "Pacific/Auckland", "resort_elevation": 1750},
+            {"name": "Ohau", "country": "NZ", "lat": -44.2157, "lon": 169.7711, "timezone": "Pacific/Auckland", "resort_elevation": 1650},
+            {"name": "Coronet Peak", "country": "NZ", "lat": -44.9206, "lon": 168.7349, "timezone": "Pacific/Auckland", "resort_elevation": 1350},
+            {"name": "Whakapapa", "country": "NZ", "lat": -39.2659, "lon": 175.5600, "timezone": "Pacific/Auckland", "resort_elevation": 2300},
+            {"name": "Turoa", "country": "NZ", "lat": -39.3002, "lon": 175.5525, "timezone": "Pacific/Auckland", "resort_elevation": 2150},
             # Japan (selected resorts with stronger spatial separation for distinct weather patterns)
-            {"name": "Niseko United", "country": "JP", "lat": 42.8625, "lon": 140.7042, "timezone": "Asia/Tokyo"},
-            {"name": "Hakodate Nanae Snowpark", "country": "JP", "lat": 41.9536, "lon": 140.7450, "timezone": "Asia/Tokyo"},
-            {"name": "Furano Ski Resort", "country": "JP", "lat": 43.3420, "lon": 142.3830, "timezone": "Asia/Tokyo"},
-            {"name": "Sahoro", "country": "JP", "lat": 43.1430, "lon": 142.9770, "timezone": "Asia/Tokyo"},
-            {"name": "Appi Kogen Ski Resort", "country": "JP", "lat": 40.0054, "lon": 140.9602, "timezone": "Asia/Tokyo"},
-            {"name": "Zao Onsen Ski Resort", "country": "JP", "lat": 38.1666, "lon": 140.4175, "timezone": "Asia/Tokyo"},
-            {"name": "Takasu Snow Park", "country": "JP", "lat": 35.9360, "lon": 136.8850, "timezone": "Asia/Tokyo"},
+            {"name": "Niseko United", "country": "JP", "lat": 42.8625, "lon": 140.7042, "timezone": "Asia/Tokyo", "resort_elevation": 1280},
+            {"name": "Hakodate Nanae Snowpark", "country": "JP", "lat": 41.9536, "lon": 140.7450, "timezone": "Asia/Tokyo", "resort_elevation": 1240},
+            {"name": "Furano Ski Resort", "country": "JP", "lat": 43.3420, "lon": 142.3830, "timezone": "Asia/Tokyo", "resort_elevation": 950},
+            {"name": "Sahoro", "country": "JP", "lat": 43.1430, "lon": 142.9770, "timezone": "Asia/Tokyo", "resort_elevation": 1200},
+            {"name": "Appi Kogen Ski Resort", "country": "JP", "lat": 40.0054, "lon": 140.9602, "timezone": "Asia/Tokyo", "resort_elevation": 1180},
+            {"name": "Zao Onsen Ski Resort", "country": "JP", "lat": 38.1666, "lon": 140.4175, "timezone": "Asia/Tokyo", "resort_elevation": 1550},
+            {"name": "Takasu Snow Park", "country": "JP", "lat": 35.9360, "lon": 136.8850, "timezone": "Asia/Tokyo", "resort_elevation": 1700},
             # Australia
-            {"name": "Thredbo", "country": "AU", "lat": -36.5040, "lon": 148.2987, "timezone": "Australia/Sydney"},
-            {"name": "Perisher", "country": "AU", "lat": -36.4058, "lon": 148.4134, "timezone": "Australia/Sydney"},
-            {"name": "Mt Buller", "country": "AU", "lat": -37.1467, "lon": 146.4473, "timezone": "Australia/Melbourne"},
-            {"name": "Falls Creek", "country": "AU", "lat": -36.8655, "lon": 147.2861, "timezone": "Australia/Melbourne"},
-            {"name": "Mt Hotham", "country": "AU", "lat": -36.9762, "lon": 147.1359, "timezone": "Australia/Melbourne"},
+            {"name": "Thredbo", "country": "AU", "lat": -36.5040, "lon": 148.2987, "timezone": "Australia/Sydney", "resort_elevation": 1980},
+            {"name": "Perisher", "country": "AU", "lat": -36.4058, "lon": 148.4134, "timezone": "Australia/Sydney", "resort_elevation": 1920},
+            {"name": "Mt Buller", "country": "AU", "lat": -37.1467, "lon": 146.4473, "timezone": "Australia/Melbourne", "resort_elevation": 1700},
+            {"name": "Falls Creek", "country": "AU", "lat": -36.8655, "lon": 147.2861, "timezone": "Australia/Melbourne", "resort_elevation": 1750},
+            {"name": "Mt Hotham", "country": "AU", "lat": -36.9762, "lon": 147.1359, "timezone": "Australia/Melbourne", "resort_elevation": 1980},
             # Chile
-            {"name": "Valle Nevado", "country": "CL", "lat": -33.3556, "lon": -70.2489, "timezone": "America/Santiago"},
-            {"name": "Portillo", "country": "CL", "lat": -32.8352, "lon": -70.1309, "timezone": "America/Santiago"},
-            {"name": "La Parva", "country": "CL", "lat": -33.3319, "lon": -70.2917, "timezone": "America/Santiago"},
-            {"name": "El Colorado", "country": "CL", "lat": -33.3500, "lon": -70.2833, "timezone": "America/Santiago"},
-            {"name": "Nevados de Chillan", "country": "CL", "lat": -36.9086, "lon": -71.4064, "timezone": "America/Santiago"},
+            {"name": "Valle Nevado", "country": "CL", "lat": -33.3556, "lon": -70.2489, "timezone": "America/Santiago", "resort_elevation": 3200},
+            {"name": "Portillo", "country": "CL", "lat": -32.8352, "lon": -70.1309, "timezone": "America/Santiago", "resort_elevation": 3050},
+            {"name": "La Parva", "country": "CL", "lat": -33.3319, "lon": -70.2917, "timezone": "America/Santiago", "resort_elevation": 3150},
+            {"name": "El Colorado", "country": "CL", "lat": -33.3500, "lon": -70.2833, "timezone": "America/Santiago", "resort_elevation": 2900},
+            {"name": "Nevados de Chillan", "country": "CL", "lat": -36.9086, "lon": -71.4064, "timezone": "America/Santiago", "resort_elevation": 2750},
             # Argentina
-            {"name": "Cerro Catedral", "country": "AR", "lat": -41.1739, "lon": -71.5489, "timezone": "America/Argentina/Buenos_Aires"},
-            {"name": "Las Lenas", "country": "AR", "lat": -35.1500, "lon": -70.0833, "timezone": "America/Argentina/Buenos_Aires"},
-            {"name": "Cerro Castor", "country": "AR", "lat": -54.7203, "lon": -68.0000, "timezone": "America/Argentina/Buenos_Aires"},
-            {"name": "Chapelco", "country": "AR", "lat": -40.1622, "lon": -71.2106, "timezone": "America/Argentina/Buenos_Aires"},
-            {"name": "Cerro Bayo", "country": "AR", "lat": -40.7500, "lon": -71.6000, "timezone": "America/Argentina/Buenos_Aires"},
+            {"name": "Cerro Catedral", "country": "AR", "lat": -41.1739, "lon": -71.5489, "timezone": "America/Argentina/Buenos_Aires", "resort_elevation": 2050},
+            {"name": "Las Lenas", "country": "AR", "lat": -35.1500, "lon": -70.0833, "timezone": "America/Argentina/Buenos_Aires", "resort_elevation": 3050},
+            {"name": "Cerro Castor", "country": "AR", "lat": -54.7203, "lon": -68.0000, "timezone": "America/Argentina/Buenos_Aires", "resort_elevation": 1750},
+            {"name": "Chapelco", "country": "AR", "lat": -40.1622, "lon": -71.2106, "timezone": "America/Argentina/Buenos_Aires", "resort_elevation": 1980},
+            {"name": "Cerro Bayo", "country": "AR", "lat": -40.7500, "lon": -71.6000, "timezone": "America/Argentina/Buenos_Aires", "resort_elevation": 1600},
         ]
     ]
 
@@ -181,8 +181,9 @@ def get_all_missing_date_ranges_by_season(logger, locations, start_date, end_dat
         return missing_ranges, False, {loc["name"]: False for loc in locations}
 
 def fetch_snowfall_data(location, start_date, end_date):
-    """Fetch historical daily snowfall and temperature data for a specific location."""
-    logger.debug(f"Fetching data for {location['name']} from {start_date} to {end_date}")
+    """Fetch historical daily snowfall and temperature data for a specific location at resort elevation."""
+    resort_elevation = location.get("resort_elevation")
+    logger.debug(f"Fetching data for {location['name']} from {start_date} to {end_date} at resort elevation {resort_elevation}m")
 
     url = "https://archive-api.open-meteo.com/v1/archive"
     params = {
@@ -190,9 +191,12 @@ def fetch_snowfall_data(location, start_date, end_date):
         "longitude": location["lon"],
         "start_date": start_date,
         "end_date": end_date,
-        "daily": ",".join(["snowfall_sum", "temperature_2m_mean"]),
-        "timezone": location["timezone"]
+        "daily": ",".join(["snowfall_sum", "temperature_2m_mean", "snow_depth_max"]),
+        "timezone": location["timezone"],
+        "cell_selection": "land",
     }
+    if resort_elevation is not None:
+        params["elevation"] = resort_elevation
 
     try:
         response = requests.get(url, params=params, timeout=30)
@@ -201,7 +205,7 @@ def fetch_snowfall_data(location, start_date, end_date):
         response.raise_for_status()
         data = response.json()
 
-        logger.info(f"Received data for {location['name']}: {len(data.get('daily', {}).get('time', []))} daily records")
+        logger.info(f"Received data for {location['name']} (resort {resort_elevation}m): {len(data.get('daily', {}).get('time', []))} daily records")
         if "error" in data:
             logger.error(f"API error: {data.get('reason')}")
             return None
@@ -209,10 +213,10 @@ def fetch_snowfall_data(location, start_date, end_date):
         return data
 
     except requests.RequestException as e:
-        logger.error(f"Request failed for {location['name']}: {e}")
+        logger.error(f"Request failed for {location['name']} ({resort_elevation}m): {e}")
         return None
     except Exception as e:
-        logger.error(f"Unexpected error for {location['name']}: {e}")
+        logger.error(f"Unexpected error for {location['name']} ({resort_elevation}m): {e}")
         return None
 
 @dlt.resource(write_disposition="merge", name="ski_field_lookup", primary_key=["name"])
@@ -294,12 +298,13 @@ def snowfall_source(logger: logging.Logger, dataset, run_from_date: date | None 
                         logger.warning(f"No data returned for {location_name} ({start_date} to {end_date})")
                         continue
 
-                    # --- Process daily snowfall/temperature ---
+                    # --- Process daily snowfall/temperature at resort elevation ---
                     daily_data = data["daily"]
                     merged = pd.DataFrame({
                         "date": pd.to_datetime(daily_data["time"]).date,
                         "snowfall": daily_data["snowfall_sum"],
-                        "temperature_mean": daily_data["temperature_2m_mean"]
+                        "temperature_mean": daily_data["temperature_2m_mean"],
+                        "snow_depth": [x * 100.0 for x in daily_data["snow_depth_max"]]
                     })
                     merged["location"] = location_name
                     merged["country"] = country

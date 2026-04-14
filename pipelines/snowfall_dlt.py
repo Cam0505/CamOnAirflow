@@ -27,45 +27,47 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 logger = logging.getLogger(__name__)
 
 # Ski field locations with dynamic last_updated
+# resort_elevation values are approximate representative on-mountain elevations for weather modeling,
+# not exact summit elevations.
 def get_ski_fields_with_timestamp():
     now = datetime.now(timezone.utc).isoformat()
     return [
         {**field, "last_updated": now}
         for field in [
             # New Zealand 
-            {"name": "Remarkables", "country": "NZ", "lat": -45.0661, "lon": 168.8196, "timezone": "Pacific/Auckland", "resort_elevation": 1700},
-            {"name": "Cardrona", "country": "NZ", "lat": -44.8746, "lon": 168.9481, "timezone": "Pacific/Auckland", "resort_elevation": 1850},
-            {"name": "Treble Cone", "country": "NZ", "lat": -44.6301, "lon": 168.8806, "timezone": "Pacific/Auckland", "resort_elevation": 1900},
-            {"name": "Mount Hutt", "country": "NZ", "lat": -43.4707, "lon": 171.5306, "timezone": "Pacific/Auckland", "resort_elevation": 1750},
-            {"name": "Ohau", "country": "NZ", "lat": -44.2157, "lon": 169.7711, "timezone": "Pacific/Auckland", "resort_elevation": 1650},
-            {"name": "Coronet Peak", "country": "NZ", "lat": -44.9206, "lon": 168.7349, "timezone": "Pacific/Auckland", "resort_elevation": 1350},
+            {"name": "Remarkables", "country": "NZ", "lat": -45.0661, "lon": 168.8196, "timezone": "Pacific/Auckland", "resort_elevation": 1650},
+            {"name": "Cardrona", "country": "NZ", "lat": -44.8746, "lon": 168.9481, "timezone": "Pacific/Auckland", "resort_elevation": 1650},
+            {"name": "Treble Cone", "country": "NZ", "lat": -44.6301, "lon": 168.8806, "timezone": "Pacific/Auckland", "resort_elevation": 1300},
+            {"name": "Mount Hutt", "country": "NZ", "lat": -43.4707, "lon": 171.5306, "timezone": "Pacific/Auckland", "resort_elevation": 1600},
+            {"name": "Ohau", "country": "NZ", "lat": -44.2157, "lon": 169.7711, "timezone": "Pacific/Auckland", "resort_elevation": 1500}, 
+            {"name": "Coronet Peak", "country": "NZ", "lat": -44.9206, "lon": 168.7349, "timezone": "Pacific/Auckland", "resort_elevation": 1350}, 
             {"name": "Whakapapa", "country": "NZ", "lat": -39.2659, "lon": 175.5600, "timezone": "Pacific/Auckland", "resort_elevation": 2300},
             {"name": "Turoa", "country": "NZ", "lat": -39.3002, "lon": 175.5525, "timezone": "Pacific/Auckland", "resort_elevation": 2150},
             # Japan (selected resorts with stronger spatial separation for distinct weather patterns)
-            {"name": "Niseko United", "country": "JP", "lat": 42.8625, "lon": 140.7042, "timezone": "Asia/Tokyo", "resort_elevation": 1280},
-            {"name": "Hakodate Nanae Snowpark", "country": "JP", "lat": 41.9536, "lon": 140.7450, "timezone": "Asia/Tokyo", "resort_elevation": 1240},
+            {"name": "Niseko United", "country": "JP", "lat": 42.8625, "lon": 140.7042, "timezone": "Asia/Tokyo", "resort_elevation": 1100},
+            {"name": "Hakodate Nanae Snowpark", "country": "JP", "lat": 41.9536, "lon": 140.7450, "timezone": "Asia/Tokyo", "resort_elevation": 950},
             {"name": "Furano Ski Resort", "country": "JP", "lat": 43.3420, "lon": 142.3830, "timezone": "Asia/Tokyo", "resort_elevation": 950},
-            {"name": "Sahoro", "country": "JP", "lat": 43.1430, "lon": 142.9770, "timezone": "Asia/Tokyo", "resort_elevation": 1200},
+            {"name": "Sahoro", "country": "JP", "lat": 43.1430, "lon": 142.9770, "timezone": "Asia/Tokyo", "resort_elevation": 1000},
             {"name": "Appi Kogen Ski Resort", "country": "JP", "lat": 40.0054, "lon": 140.9602, "timezone": "Asia/Tokyo", "resort_elevation": 1180},
             {"name": "Zao Onsen Ski Resort", "country": "JP", "lat": 38.1666, "lon": 140.4175, "timezone": "Asia/Tokyo", "resort_elevation": 1550},
-            {"name": "Takasu Snow Park", "country": "JP", "lat": 35.9360, "lon": 136.8850, "timezone": "Asia/Tokyo", "resort_elevation": 1700},
+            {"name": "Takasu Snow Park", "country": "JP", "lat": 35.9360, "lon": 136.8850, "timezone": "Asia/Tokyo", "resort_elevation": 1500},
             # Australia
-            {"name": "Thredbo", "country": "AU", "lat": -36.5040, "lon": 148.2987, "timezone": "Australia/Sydney", "resort_elevation": 1980},
-            {"name": "Perisher", "country": "AU", "lat": -36.4058, "lon": 148.4134, "timezone": "Australia/Sydney", "resort_elevation": 1920},
-            {"name": "Mt Buller", "country": "AU", "lat": -37.1467, "lon": 146.4473, "timezone": "Australia/Melbourne", "resort_elevation": 1700},
-            {"name": "Falls Creek", "country": "AU", "lat": -36.8655, "lon": 147.2861, "timezone": "Australia/Melbourne", "resort_elevation": 1750},
-            {"name": "Mt Hotham", "country": "AU", "lat": -36.9762, "lon": 147.1359, "timezone": "Australia/Melbourne", "resort_elevation": 1980},
+            {"name": "Thredbo", "country": "AU", "lat": -36.5040, "lon": 148.2987, "timezone": "Australia/Sydney", "resort_elevation": 1550},
+            {"name": "Perisher", "country": "AU", "lat": -36.4058, "lon": 148.4134, "timezone": "Australia/Sydney", "resort_elevation": 1700},
+            {"name": "Mt Buller", "country": "AU", "lat": -37.1467, "lon": 146.4473, "timezone": "Australia/Melbourne", "resort_elevation": 1650},
+            {"name": "Falls Creek", "country": "AU", "lat": -36.8655, "lon": 147.2861, "timezone": "Australia/Melbourne", "resort_elevation": 1700},
+            {"name": "Mt Hotham", "country": "AU", "lat": -36.9762, "lon": 147.1359, "timezone": "Australia/Melbourne", "resort_elevation": 1750},
             # Chile
             {"name": "Valle Nevado", "country": "CL", "lat": -33.3556, "lon": -70.2489, "timezone": "America/Santiago", "resort_elevation": 3200},
             {"name": "Portillo", "country": "CL", "lat": -32.8352, "lon": -70.1309, "timezone": "America/Santiago", "resort_elevation": 3050},
             {"name": "La Parva", "country": "CL", "lat": -33.3319, "lon": -70.2917, "timezone": "America/Santiago", "resort_elevation": 3150},
             {"name": "El Colorado", "country": "CL", "lat": -33.3500, "lon": -70.2833, "timezone": "America/Santiago", "resort_elevation": 2900},
-            {"name": "Nevados de Chillan", "country": "CL", "lat": -36.9086, "lon": -71.4064, "timezone": "America/Santiago", "resort_elevation": 2750},
+            {"name": "Nevados de Chillan", "country": "CL", "lat": -36.9086, "lon": -71.4064, "timezone": "America/Santiago", "resort_elevation": 2300},
             # Argentina
             {"name": "Cerro Catedral", "country": "AR", "lat": -41.1739, "lon": -71.5489, "timezone": "America/Argentina/Buenos_Aires", "resort_elevation": 2050},
             {"name": "Las Lenas", "country": "AR", "lat": -35.1500, "lon": -70.0833, "timezone": "America/Argentina/Buenos_Aires", "resort_elevation": 3050},
-            {"name": "Cerro Castor", "country": "AR", "lat": -54.7203, "lon": -68.0000, "timezone": "America/Argentina/Buenos_Aires", "resort_elevation": 1750},
-            {"name": "Chapelco", "country": "AR", "lat": -40.1622, "lon": -71.2106, "timezone": "America/Argentina/Buenos_Aires", "resort_elevation": 1980},
+            {"name": "Cerro Castor", "country": "AR", "lat": -54.7203, "lon": -68.0000, "timezone": "America/Argentina/Buenos_Aires", "resort_elevation": 950},
+            {"name": "Chapelco", "country": "AR", "lat": -40.1622, "lon": -71.2106, "timezone": "America/Argentina/Buenos_Aires", "resort_elevation": 1750},
             {"name": "Cerro Bayo", "country": "AR", "lat": -40.7500, "lon": -71.6000, "timezone": "America/Argentina/Buenos_Aires", "resort_elevation": 1600},
         ]
     ]

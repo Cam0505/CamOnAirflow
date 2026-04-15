@@ -1,6 +1,6 @@
 {
-  "version": 6,
-  "version_hash": "8rg9GL0odro9TJySfSqBZ6Ga/mH9uOVs8nDQyCVmG7o=",
+  "version": 4,
+  "version_hash": "AV9amkexfzqmdWuXVglFp/CgENvu22m4GMoHEles0Vw=",
   "engine_version": 11,
   "name": "snowfall_source",
   "tables": {
@@ -88,8 +88,48 @@
           "data_type": "double",
           "nullable": true
         },
+        "precipitation_sum": {
+          "name": "precipitation_sum",
+          "data_type": "double",
+          "nullable": true
+        },
+        "rain_sum": {
+          "name": "rain_sum",
+          "data_type": "double",
+          "nullable": true
+        },
+        "precipitation_hours": {
+          "name": "precipitation_hours",
+          "data_type": "double",
+          "nullable": true
+        },
         "temperature_mean": {
           "name": "temperature_mean",
+          "data_type": "double",
+          "nullable": true
+        },
+        "temperature_min": {
+          "name": "temperature_min",
+          "data_type": "double",
+          "nullable": true
+        },
+        "temperature_max": {
+          "name": "temperature_max",
+          "data_type": "double",
+          "nullable": true
+        },
+        "relative_humidity_mean": {
+          "name": "relative_humidity_mean",
+          "data_type": "bigint",
+          "nullable": true
+        },
+        "snow_depth_m": {
+          "name": "snow_depth_m",
+          "data_type": "double",
+          "nullable": true
+        },
+        "snow_depth": {
+          "name": "snow_depth",
           "data_type": "double",
           "nullable": true
         },
@@ -104,6 +144,16 @@
           "data_type": "text",
           "nullable": true
         },
+        "region_profile": {
+          "name": "region_profile",
+          "data_type": "text",
+          "nullable": true
+        },
+        "resort_elevation": {
+          "name": "resort_elevation",
+          "data_type": "bigint",
+          "nullable": true
+        },
         "_dlt_load_id": {
           "name": "_dlt_load_id",
           "data_type": "text",
@@ -115,11 +165,6 @@
           "nullable": false,
           "unique": true,
           "row_key": true
-        },
-        "snow_depth": {
-          "name": "snow_depth",
-          "data_type": "double",
-          "nullable": true
         }
       },
       "write_disposition": "merge",
@@ -210,6 +255,11 @@
           "data_type": "text",
           "nullable": true
         },
+        "resort_elevation": {
+          "name": "resort_elevation",
+          "data_type": "bigint",
+          "nullable": true
+        },
         "last_updated": {
           "name": "last_updated",
           "data_type": "timestamp",
@@ -226,11 +276,6 @@
           "nullable": false,
           "unique": true,
           "row_key": true
-        },
-        "resort_elevation": {
-          "name": "resort_elevation",
-          "data_type": "bigint",
-          "nullable": true
         }
       },
       "write_disposition": "merge",
@@ -286,10 +331,8 @@
     }
   },
   "previous_hashes": [
-    "7jcPShDdOdKnolz31Ipp4tWRtWUTvrePJ+FcH2QUS44=",
-    "2q99ZIkPNFDWP/8q5Kmoc7f6MD4iBby05ODlWl7QH0M=",
-    "K7ANiz3VxwQbaohcHz+C3BdXnsdgcIR8jbPE0x3CMKw=",
-    "FOOzq7F+ui/eyESMca9fn6SSGgJpiQXkRyB7Ehtb+pI=",
+    "mme3BfPVAhJUyEpchO8t6F139/SAzGbGvKwljA77juc=",
+    "kTUIzX9Ddrw+eAWrAROIUYWdNlIym9nK1X+SPKOmmFc=",
     "fAQpY26aNZ3Yuir2781vGPznD0F7pmne3Je+xTQz3oo=",
     "vy39yzEHY2qxiw+bFF+uPbfXLVkW4cavadpf/S0uGCI="
   ]

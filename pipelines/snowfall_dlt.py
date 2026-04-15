@@ -57,18 +57,17 @@ def get_ski_fields_with_timestamp():
             {"name": "Mt Buller", "country": "AU", "lat": -37.1467, "lon": 146.4473, "timezone": "Australia/Melbourne", "resort_elevation": 1650},
             {"name": "Falls Creek", "country": "AU", "lat": -36.8655, "lon": 147.2861, "timezone": "Australia/Melbourne", "resort_elevation": 1700},
             {"name": "Mt Hotham", "country": "AU", "lat": -36.9762, "lon": 147.1359, "timezone": "Australia/Melbourne", "resort_elevation": 1750},
-            # Chile
-            {"name": "Valle Nevado", "country": "CL", "lat": -33.3556, "lon": -70.2489, "timezone": "America/Santiago", "resort_elevation": 3200},
-            {"name": "Portillo", "country": "CL", "lat": -32.8352, "lon": -70.1309, "timezone": "America/Santiago", "resort_elevation": 3050},
-            {"name": "La Parva", "country": "CL", "lat": -33.3319, "lon": -70.2917, "timezone": "America/Santiago", "resort_elevation": 3150},
-            {"name": "El Colorado", "country": "CL", "lat": -33.3500, "lon": -70.2833, "timezone": "America/Santiago", "resort_elevation": 2900},
-            {"name": "Nevados de Chillan", "country": "CL", "lat": -36.9086, "lon": -71.4064, "timezone": "America/Santiago", "resort_elevation": 2300},
-            # Argentina
-            {"name": "Cerro Catedral", "country": "AR", "lat": -41.1739, "lon": -71.5489, "timezone": "America/Argentina/Buenos_Aires", "resort_elevation": 2050},
-            {"name": "Las Lenas", "country": "AR", "lat": -35.1500, "lon": -70.0833, "timezone": "America/Argentina/Buenos_Aires", "resort_elevation": 3050},
-            {"name": "Cerro Castor", "country": "AR", "lat": -54.7203, "lon": -68.0000, "timezone": "America/Argentina/Buenos_Aires", "resort_elevation": 950},
-            {"name": "Chapelco", "country": "AR", "lat": -40.1622, "lon": -71.2106, "timezone": "America/Argentina/Buenos_Aires", "resort_elevation": 1750},
-            {"name": "Cerro Bayo", "country": "AR", "lat": -40.7500, "lon": -71.6000, "timezone": "America/Argentina/Buenos_Aires", "resort_elevation": 1600},
+            # Unsupported until regional snowpack profiles are calibrated:
+            # {"name": "Valle Nevado", "country": "CL", "lat": -33.3556, "lon": -70.2489, "timezone": "America/Santiago", "resort_elevation": 3200},
+            # {"name": "Portillo", "country": "CL", "lat": -32.8352, "lon": -70.1309, "timezone": "America/Santiago", "resort_elevation": 3050},
+            # {"name": "La Parva", "country": "CL", "lat": -33.3319, "lon": -70.2917, "timezone": "America/Santiago", "resort_elevation": 3150},
+            # {"name": "El Colorado", "country": "CL", "lat": -33.3500, "lon": -70.2833, "timezone": "America/Santiago", "resort_elevation": 2900},
+            # {"name": "Nevados de Chillan", "country": "CL", "lat": -36.9086, "lon": -71.4064, "timezone": "America/Santiago", "resort_elevation": 2300},
+            # {"name": "Cerro Catedral", "country": "AR", "lat": -41.1739, "lon": -71.5489, "timezone": "America/Argentina/Buenos_Aires", "resort_elevation": 2050},
+            # {"name": "Las Lenas", "country": "AR", "lat": -35.1500, "lon": -70.0833, "timezone": "America/Argentina/Buenos_Aires", "resort_elevation": 3050},
+            # {"name": "Cerro Castor", "country": "AR", "lat": -54.7203, "lon": -68.0000, "timezone": "America/Argentina/Buenos_Aires", "resort_elevation": 950},
+            # {"name": "Chapelco", "country": "AR", "lat": -40.1622, "lon": -71.2106, "timezone": "America/Argentina/Buenos_Aires", "resort_elevation": 1750},
+            # {"name": "Cerro Bayo", "country": "AR", "lat": -40.7500, "lon": -71.6000, "timezone": "America/Argentina/Buenos_Aires", "resort_elevation": 1600},
         ]
     ]
 
@@ -87,6 +86,15 @@ def get_winter_spring_season_year(day: date, latitude: float) -> int:
     if latitude >= 0 and day.month in (11, 12):
         return day.year + 1
     return day.year
+
+
+def get_region_profile(country: str) -> str | None:
+    """Map supported countries to the calibrated regional snowpack profile."""
+    return {
+        "NZ": "nz_maritime_alpine",
+        "AU": "australian_alps",
+        "JP": "japan_maritime_powder",
+    }.get(country)
 
 def get_all_missing_date_ranges_by_season(logger, locations, start_date, end_date, dataset, daily_default=False):
     """
@@ -193,7 +201,17 @@ def fetch_snowfall_data(location, start_date, end_date):
         "longitude": location["lon"],
         "start_date": start_date,
         "end_date": end_date,
-        "daily": ",".join(["snowfall_sum", "temperature_2m_mean", "snow_depth_max"]),
+        "daily": ",".join([
+            "snowfall_sum",
+            "precipitation_sum",
+            "rain_sum",
+            "precipitation_hours",
+            "temperature_2m_mean",
+            "temperature_2m_min",
+            "temperature_2m_max",
+            "relative_humidity_2m_mean",
+            "snow_depth_max",
+        ]),
         "timezone": location["timezone"],
         "cell_selection": "land",
     }
@@ -300,16 +318,26 @@ def snowfall_source(logger: logging.Logger, dataset, run_from_date: date | None 
                         logger.warning(f"No data returned for {location_name} ({start_date} to {end_date})")
                         continue
 
-                    # --- Process daily snowfall/temperature at resort elevation ---
+                    # --- Process raw daily snowpack-model inputs at resort elevation ---
                     daily_data = data["daily"]
+                    record_count = len(daily_data["time"])
                     merged = pd.DataFrame({
                         "date": pd.to_datetime(daily_data["time"]).date,
-                        "snowfall": daily_data["snowfall_sum"],
-                        "temperature_mean": daily_data["temperature_2m_mean"],
-                        "snow_depth": [x * 100.0 for x in daily_data["snow_depth_max"]]
+                        "snowfall": pd.to_numeric(pd.Series(daily_data.get("snowfall_sum", [0.0] * record_count)), errors="coerce").fillna(0.0),
+                        "precipitation_sum": pd.to_numeric(pd.Series(daily_data.get("precipitation_sum", [0.0] * record_count)), errors="coerce").fillna(0.0),
+                        "rain_sum": pd.to_numeric(pd.Series(daily_data.get("rain_sum", [0.0] * record_count)), errors="coerce").fillna(0.0),
+                        "precipitation_hours": pd.to_numeric(pd.Series(daily_data.get("precipitation_hours", [0.0] * record_count)), errors="coerce").fillna(0.0),
+                        "temperature_mean": pd.to_numeric(pd.Series(daily_data.get("temperature_2m_mean", [0.0] * record_count)), errors="coerce").fillna(0.0),
+                        "temperature_min": pd.to_numeric(pd.Series(daily_data.get("temperature_2m_min", [0.0] * record_count)), errors="coerce").fillna(0.0),
+                        "temperature_max": pd.to_numeric(pd.Series(daily_data.get("temperature_2m_max", [0.0] * record_count)), errors="coerce").fillna(0.0),
+                        "relative_humidity_mean": pd.to_numeric(pd.Series(daily_data.get("relative_humidity_2m_mean", [0.0] * record_count)), errors="coerce").fillna(0.0),
+                        "snow_depth_m": pd.to_numeric(pd.Series(daily_data.get("snow_depth_max", [0.0] * record_count)), errors="coerce").fillna(0.0),
                     })
+                    merged["snow_depth"] = merged["snow_depth_m"] * 100.0
                     merged["location"] = location_name
                     merged["country"] = country
+                    merged["region_profile"] = get_region_profile(country)
+                    merged["resort_elevation"] = location.get("resort_elevation")
 
                     # Yield in batches using the range approach
                     for i in range(0, len(merged), BATCH_SIZE):

@@ -1,0 +1,8 @@
+version: 2
+
+seeds:
+  - name: snowfall_profile_constants
+    description: Regional constants used by the snowpack-adjusted snowfall model.
+    columns:
+      - name: region_profile
+        description: Regional snowfall modeling profile key.

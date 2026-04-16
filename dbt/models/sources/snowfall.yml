@@ -1,66 +1,22 @@
 version: 2
 
 sources:
-  - name: snowfall
+
+  - name: weather_jp
     database: camonairflow
-    schema: skifields
+    schema: weather_jp
 
     tables:
-      - name: ski_field_snowfall_hourly
-      - name: ski_field_snowfall
-        description: Raw daily Open-Meteo snowfall and supporting meteorology used by the dbt snowpack model.
+      - name: jp_ski_field_weather
+        description: Raw daily JMA observations matched to Japanese ski resorts. Ski-season filtering and elevation-adjusted snowfall estimation are handled downstream in dbt.
         data_tests:
           - dbt_utils.unique_combination_of_columns:
-              combination_of_columns:
-                - date
-                - location
+              arguments:
+                combination_of_columns:
+                  - date
+                  - location
         config:
           freshness:
             warn_after: {count: 6, period: day}
             error_after: {count: 14, period: day}
         loaded_at_field: CAST(date AS TIMESTAMP)
-        columns:
-          - name: date
-            description: Observation date.
-          - name: location
-            description: Ski Field.
-          - name: country
-            description: Country code.
-          - name: region_profile
-            description: Regional snowpack model profile.
-          - name: snowfall
-            description: Direct Open-Meteo daily snowfall total in centimeters.
-          - name: precipitation_sum
-            description: Daily total precipitation in millimeters.
-          - name: rain_sum
-            description: Daily rain component in millimeters.
-          - name: precipitation_hours
-            description: Hours with measurable precipitation.
-          - name: temperature_mean
-            description: Mean daily 2m temperature in Celsius.
-          - name: temperature_min
-            description: Minimum daily 2m temperature in Celsius.
-          - name: temperature_max
-            description: Maximum daily 2m temperature in Celsius.
-          - name: relative_humidity_mean
-            description: Mean daily 2m relative humidity percentage.
-          - name: snow_depth_m
-            description: Maximum daily snow depth in meters.
-          - name: snow_depth
-            description: Maximum daily snow depth in centimeters.
-          - name: resort_elevation
-            description: Resort modeling elevation in meters.
-      - name: ski_field_lookup
-        columns:
-          - name: name
-            description: "Ski Field"
-          - name: country
-            description: "{{ doc('country') }}"
-          - name: lat
-            description: "{{ doc('latitude') }}"
-          - name: lon
-            description: "{{ doc('longitude') }}"
-          - name: timezone
-            description: ''
-          - name: last_updated
-            description: ''

@@ -35,4 +35,7 @@ models:
     common:
       +schema: common
       +materialized: table
+    analysis:
+      +schema: analysis
+      +materialized: view
 

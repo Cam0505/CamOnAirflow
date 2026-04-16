@@ -42,7 +42,7 @@ It is deliberately over-engineered for a hobby project, because the point is to 
 
 | Source | Description | Pipeline |
 |---|---|---|
-| [Open-Meteo](https://open-meteo.com/) | Free weather API — hourly snowfall, temperature, wind for NZ & AU ski fields | `snowfall_dlt.py`, `ice_climbing_hourly.py` |
+| [Open-Meteo](https://open-meteo.com/) | Free weather API — hourly temperature, wind, and humidity for mountain weather analysis | `ice_climbing_hourly.py` |
 | [OpenAQ](https://openaq.org/) | Open air quality sensor data across European cities | `openaq_dlt.py` |
 | [GeoNames](https://www.geonames.org/) | Geographic metadata — cities, elevations, regions | `GeoAPI.py` |
 | [OpenStreetMap](https://www.openstreetmap.org/) (via Overpass) | Ski runs, lifts, pistes — geometry, tags, gradients | `Ski_runs.py` |
@@ -55,7 +55,6 @@ It is deliberately over-engineered for a hobby project, because the point is to 
 ```
 CamOnAirFlow/
 ├── pipelines/          # dlt ingestion pipelines (raw → MotherDuck)
-│   ├── snowfall_dlt.py         # Weather & snowfall for ski fields (NZ, AU, CL, JP)
 │   ├── ice_climbing_hourly.py  # Hourly weather at NZ ice climbing spots
 │   ├── openaq_dlt.py           # Air quality sensors across European cities
 │   ├── GeoAPI.py               # GeoNames geographic data
@@ -120,9 +119,6 @@ cd dbt && dbt deps
 ### Run a pipeline
 
 ```bash
-# Ingest snowfall data
-python pipelines/snowfall_dlt.py
-
 # Ingest ice climbing weather
 python pipelines/ice_climbing_hourly.py
 
@@ -193,7 +189,6 @@ Scheduled weekly — **Thursdays at 9:00 pm Melbourne time** (AEST, `0 11 * * 4`
 
 ## Example Questions This Explores
 
-- **"Which NZ ski field had the most snowfall in the last 30 days?"** — `snowfall_dlt.py` → `base_simple_snow_decay` → `snowfall_cumulative_daily`
 - **"What's the steepest legal ski run in the South Island?"** — `Ski_runs.py` → `base_ski_run_gradients` → `staging_ski_gradient_distribution`
 - **"Are ice climbing routes at Wye Creek likely to be in condition?"** — `ice_climbing_hourly.py` → `base_weather_daily_ice_features` → `staging_nz_ice_quality_estimate`
 - **"How do Sentinel-2 spectral bands change at ice climbing locations over winter?"** — `Spectral_Analysis.py` → `base_spectral_daily_features`

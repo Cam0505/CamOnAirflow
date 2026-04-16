@@ -15,7 +15,8 @@ models:
         data_tests:
           - not_null
           - accepted_values:
-              values: [1,2,3,4,5,6,7,8,9,10,11,12]
+              arguments:
+                values: [1,2,3,4,5,6,7,8,9,10,11,12]
       - name: country
         description: Country code of the sensor.
         data_tests:
@@ -39,13 +40,15 @@ models:
         data_tests:
           - not_null
           - dbt_utils.expression_is_true:
-              expression: "{{ column_name }} >= 0"
+              arguments:
+                expression: "{{ column_name }} >= 0"
       - name: days_reported
         description: Number of unique days with data in this group.
         data_tests:
           - not_null
           - dbt_utils.expression_is_true:
-              expression: "{{ column_name }} >= 0"
+              arguments:
+                expression: "{{ column_name }} >= 0"
       - name: avg_value
         description: Average value for the parameter.
       - name: min_value
@@ -59,7 +62,8 @@ models:
         data_tests:
           - not_null
           - dbt_utils.expression_is_true:
-              expression: "{{ column_name }} >= 0"
+              arguments:
+                expression: "{{ column_name }} >= 0"
       # Summary statistics
       - name: avg_min
         description: Average of summary__min.

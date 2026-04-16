@@ -35,12 +35,4 @@ models:
     common:
       +schema: common
       +materialized: table
-    analysis:
-      +materialized: view
-      +schema: analysis
 
-
-snapshots:
-  camonairflow:
-    path: snapshots
-    +tags: snapshot_dependencies

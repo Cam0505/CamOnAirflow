@@ -10,8 +10,9 @@ sources:
         description: Raw hourly weather data from Open-Meteo API
         data_tests:
           - dbt_utils.unique_combination_of_columns:
-              combination_of_columns:
-                - datetime
-                - location
+              arguments:
+                combination_of_columns:
+                  - datetime
+                  - location
       - name: location_metadata
         description: Configuration parameters for ice formation calculations

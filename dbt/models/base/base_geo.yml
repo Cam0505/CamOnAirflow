@@ -20,24 +20,27 @@ models:
     data_type: double precision
     data_tests:
     - dbt_expectations.expect_column_values_to_be_between:
-        min_value: -90
-        max_value: 90
-        strictly: false
+        arguments:
+          min_value: -90
+          max_value: 90
+          strictly: false
   - name: longitude
     description: "{{ doc('longitude') }}"
     data_type: double precision
     data_tests:
     - dbt_expectations.expect_column_values_to_be_between:
-        min_value: -180
-        max_value: 180
-        strictly: false
+        arguments:
+          min_value: -180
+          max_value: 180
+          strictly: false
   - name: country_code
     description: ''
     data_type: varchar
     data_tests:
     - accepted_values:
-        values: ['AU', 'NZ', 'CA', 'GB']
-        quote: true
+        arguments:
+          values: ['AU', 'NZ', 'CA', 'GB']
+          quote: true
   - name: country
     description: "{{ doc('country') }}"
     data_type: varchar

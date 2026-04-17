@@ -2,6 +2,15 @@ version: 2
 
 sources:
 
+  - name: snowfall
+    database: camonairflow
+    schema: skifields
+    
+    tables:
+      - name: ski_field_snowfall
+        description: Raw daily Open-Meteo snowfall and supporting meteorology used by the dbt snowpack model.
+
+
   - name: weather_jp
     database: camonairflow
     schema: weather_jp

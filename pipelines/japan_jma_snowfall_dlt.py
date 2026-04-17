@@ -77,6 +77,39 @@ def coerce_float(value: object, default: float = 0.0) -> float:
     return parsed if parsed is not None else default
 
 
+WIND_DIRECTION_MAP = {
+    "北": "North",
+    "北北東": "North-Northeast",
+    "北東": "Northeast",
+    "東北東": "East-Northeast",
+    "東": "East",
+    "東南東": "East-Southeast",
+    "南東": "Southeast",
+    "南南東": "South-Southeast",
+    "南": "South",
+    "南南西": "South-Southwest",
+    "南西": "Southwest",
+    "西南西": "West-Southwest",
+    "西": "West",
+    "西北西": "West-Northwest",
+    "北西": "Northwest",
+    "北北西": "North-Northwest",
+    "静穏": "Calm",
+}
+
+
+def translate_wind_direction(value: object) -> str | None:
+    if value is None:
+        return None
+
+    text = str(value).strip()
+    if text in {"", "nan", "///", "--", "×"}:
+        return None
+
+    normalized = re.sub(r"\s+", "", text)
+    return WIND_DIRECTION_MAP.get(normalized, text)
+
+
 def get_request_year(day: date) -> int:
     """Return the ski season year so Nov-Dec and Jan-Apr are grouped together."""
     return day.year + 1 if day.month in {11, 12} else day.year
@@ -327,6 +360,8 @@ def fetch_jma_month(location: dict[str, object], year: int, month: int) -> pd.Da
     temp_max_col = find_column(columns, ["気温", "最高"])
     temp_min_col = find_column(columns, ["気温", "最低"])
     humidity_mean_col = find_column(columns, ["湿度", "平均"])
+    wind_speed_col = find_column(columns, ["風速", "平均"])
+    wind_dir_col = find_column(columns, ["風向", "最多"])
     snowfall_col = (
         find_column(columns, ["降雪の深さ", "合計"])
         or find_column(columns, ["雪", "降雪", "合計"])
@@ -353,8 +388,14 @@ def fetch_jma_month(location: dict[str, object], year: int, month: int) -> pd.Da
     data["temperature_max"] = map_column(temp_max_col)
     data["temperature_min"] = map_column(temp_min_col)
     data["relative_humidity_mean"] = map_column(humidity_mean_col)
+    data["wind_speed_mean"] = map_column(wind_speed_col)
     data["snowfall"] = map_column(snowfall_col).fillna(0.0)
     data["snow_depth"] = map_column(snow_depth_col).fillna(0.0)
+    # Translate JMA wind direction labels from Japanese to English
+    if wind_dir_col is not None:
+        data["wind_direction_dominant"] = table.loc[data.index, wind_dir_col].map(translate_wind_direction)
+    else:
+        data["wind_direction_dominant"] = None
 
     return data[[
         "date",
@@ -365,6 +406,8 @@ def fetch_jma_month(location: dict[str, object], year: int, month: int) -> pd.Da
         "relative_humidity_mean",
         "snowfall",
         "snow_depth",
+        "wind_speed_mean",
+        "wind_direction_dominant",
     ]]
 
 

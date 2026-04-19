@@ -34,14 +34,14 @@ def get_ski_fields_with_timestamp():
         {**field, "last_updated": now}
         for field in [
             # New Zealand 
-            # {"name": "Remarkables", "country": "NZ", "lat": -45.0661, "lon": 168.8196, "timezone": "Pacific/Auckland", "resort_elevation": 1650},
-            # {"name": "Cardrona", "country": "NZ", "lat": -44.8746, "lon": 168.9481, "timezone": "Pacific/Auckland", "resort_elevation": 1650},
-            # {"name": "Treble Cone", "country": "NZ", "lat": -44.6301, "lon": 168.8806, "timezone": "Pacific/Auckland", "resort_elevation": 1300},
-            # {"name": "Mount Hutt", "country": "NZ", "lat": -43.4707, "lon": 171.5306, "timezone": "Pacific/Auckland", "resort_elevation": 1600},
-            # {"name": "Ohau", "country": "NZ", "lat": -44.2157, "lon": 169.7711, "timezone": "Pacific/Auckland", "resort_elevation": 1500}, 
-            # {"name": "Coronet Peak", "country": "NZ", "lat": -44.9206, "lon": 168.7349, "timezone": "Pacific/Auckland", "resort_elevation": 1350}, 
-            # {"name": "Whakapapa", "country": "NZ", "lat": -39.2659, "lon": 175.5600, "timezone": "Pacific/Auckland", "resort_elevation": 2300},
-            # {"name": "Turoa", "country": "NZ", "lat": -39.3002, "lon": 175.5525, "timezone": "Pacific/Auckland", "resort_elevation": 2150},
+            {"name": "Remarkables", "country": "NZ", "lat": -45.0661, "lon": 168.8196, "timezone": "Pacific/Auckland", "resort_elevation": 1650},
+            {"name": "Cardrona", "country": "NZ", "lat": -44.8746, "lon": 168.9481, "timezone": "Pacific/Auckland", "resort_elevation": 1650},
+            {"name": "Treble Cone", "country": "NZ", "lat": -44.6301, "lon": 168.8806, "timezone": "Pacific/Auckland", "resort_elevation": 1300},
+            {"name": "Mount Hutt", "country": "NZ", "lat": -43.4707, "lon": 171.5306, "timezone": "Pacific/Auckland", "resort_elevation": 1600},
+            {"name": "Ohau", "country": "NZ", "lat": -44.2157, "lon": 169.7711, "timezone": "Pacific/Auckland", "resort_elevation": 1500}, 
+            {"name": "Coronet Peak", "country": "NZ", "lat": -44.9206, "lon": 168.7349, "timezone": "Pacific/Auckland", "resort_elevation": 1350}, 
+            {"name": "Whakapapa", "country": "NZ", "lat": -39.2659, "lon": 175.5600, "timezone": "Pacific/Auckland", "resort_elevation": 2300},
+            {"name": "Turoa", "country": "NZ", "lat": -39.3002, "lon": 175.5525, "timezone": "Pacific/Auckland", "resort_elevation": 2150},
             # Japan (selected resorts with stronger spatial separation for distinct weather patterns)
             {"name": "Kiroro Resort", "country": "JP", "lat": 43.0795, "lon": 140.9866, "timezone": "Asia/Tokyo", "resort_elevation": 1180},
             {"name": "Rusutsu Resort Ski Area", "country": "JP", "lat": 42.7380, "lon": 140.8048, "timezone": "Asia/Tokyo", "resort_elevation": 994},
@@ -57,11 +57,12 @@ def get_ski_fields_with_timestamp():
             {"name": "Zao Onsen Ski Resort", "country": "JP", "lat": 38.1666, "lon": 140.4175, "timezone": "Asia/Tokyo", "resort_elevation": 1550},
             {"name": "Miyagi Zao Eboshi Resort", "country": "JP", "lat": 38.1368, "lon": 140.5317, "timezone": "Asia/Tokyo", "resort_elevation": 1350},
             # Australia
-            # {"name": "Thredbo", "country": "AU", "lat": -36.5040, "lon": 148.2987, "timezone": "Australia/Sydney", "resort_elevation": 1550},
-            # {"name": "Perisher", "country": "AU", "lat": -36.4058, "lon": 148.4134, "timezone": "Australia/Sydney", "resort_elevation": 1700},
-            # {"name": "Mt Buller", "country": "AU", "lat": -37.1467, "lon": 146.4473, "timezone": "Australia/Melbourne", "resort_elevation": 1650},
-            # {"name": "Falls Creek", "country": "AU", "lat": -36.8655, "lon": 147.2861, "timezone": "Australia/Melbourne", "resort_elevation": 1700},
-            # {"name": "Mt Hotham", "country": "AU", "lat": -36.9762, "lon": 147.1359, "timezone": "Australia/Melbourne", "resort_elevation": 1750},
+            {"name": "Thredbo", "country": "AU", "lat": -36.5040, "lon": 148.2987, "timezone": "Australia/Sydney", "resort_elevation": 1550},
+            {"name": "Perisher", "country": "AU", "lat": -36.4058, "lon": 148.4134, "timezone": "Australia/Sydney", "resort_elevation": 1700},
+            {"name": "Mt Buller", "country": "AU", "lat": -37.1467, "lon": 146.4473, "timezone": "Australia/Melbourne", "resort_elevation": 1650},
+            {"name": "Falls Creek", "country": "AU", "lat": -36.8655, "lon": 147.2861, "timezone": "Australia/Melbourne", "resort_elevation": 1700},
+            {"name": "Mt Hotham", "country": "AU", "lat": -36.9762, "lon": 147.1359, "timezone": "Australia/Melbourne", "resort_elevation": 1750},
+            
             # Unsupported until regional snowpack profiles are calibrated:
             # {"name": "Valle Nevado", "country": "CL", "lat": -33.3556, "lon": -70.2489, "timezone": "America/Santiago", "resort_elevation": 3200},
             # {"name": "Portillo", "country": "CL", "lat": -32.8352, "lon": -70.1309, "timezone": "America/Santiago", "resort_elevation": 3050},
@@ -80,6 +81,78 @@ SKI_FIELDS = get_ski_fields_with_timestamp()
 START_DATE = date(2023, 11, 1)
 BATCH_SIZE = 500  # Number of rows to yield at once
 
+GLOBAL_COMPARISON_MODELS = [
+    "ecmwf_ifs04", # European Centre for Medium-Range Weather Forecasts (ECMWF) Integrated Forecasting System (IFS) 0.4° grid
+    "gfs_seamless", # US Model 25km grid
+    "gem_seamless", # German Model 25km grid
+    "cma_grapes_global", # China Meteorological Administration (CMA) GRAPES Global 0.25° grid
+    "icon_seamless", # German Weather Service (DWD) ICON Seamless 0.0625° grid
+
+]
+
+COUNTRY_MODEL_PRIORITY = {
+    "JP": ["jma_seamless"],
+    "AU": ["bom_access_global"],
+    "NZ": ["bom_access_global"],
+}
+
+DAILY_VARIABLE_CONFIG = {
+    "snowfall_sum": {
+        "default_column": "snowfall_default_open_meteo_cm",
+        "model_column_template": "snowfall_{model}_cm",
+    },
+    "precipitation_sum": {
+        "default_column": "precipitation_sum_default_open_meteo_mm",
+        "model_column_template": "precipitation_sum_{model}_mm",
+    },
+    "rain_sum": {
+        "default_column": "rain_sum_default_open_meteo_mm",
+        "model_column_template": "rain_sum_{model}_mm",
+    },
+    "temperature_2m_mean": {
+        "default_column": "temperature_mean_default_open_meteo_c",
+        "model_column_template": "temperature_mean_{model}_c",
+    },
+    "snow_depth_max": {
+        "default_column": "snow_depth_default_open_meteo_m",
+        "model_column_template": "snow_depth_{model}_m",
+    },
+}
+
+REQUESTED_DAILY_VARIABLES = list(DAILY_VARIABLE_CONFIG.keys())
+OPEN_METEO_DEFAULT_MODEL = "best_match"
+OPEN_METEO_DEFAULT_SUFFIX = "archive_best_match"
+
+
+def _to_numeric_series(values, record_count: int) -> pd.Series:
+    return pd.to_numeric(
+        pd.Series(values if values is not None else [0.0] * record_count),
+        errors="coerce",
+    ).fillna(0.0)
+
+
+def build_daily_weather_frame(daily_data: dict, models: list[str]) -> pd.DataFrame:
+    """Build a daily dataframe with both default and model-specific Open-Meteo fields."""
+    record_count = len(daily_data["time"])
+    df_dict = {
+        "date": pd.to_datetime(daily_data["time"]).date,
+    }
+
+    for api_var, config in DAILY_VARIABLE_CONFIG.items():
+        default_key = api_var if api_var in daily_data else f"{api_var}_{OPEN_METEO_DEFAULT_SUFFIX}"
+        default_values = daily_data.get(default_key)
+        df_dict[config["default_column"]] = _to_numeric_series(default_values, record_count)
+
+        for model in models:
+            model_key = f"{api_var}_{model}"
+            if model_key not in daily_data:
+                continue
+
+            model_column = config["model_column_template"].format(model=model)
+            df_dict[model_column] = _to_numeric_series(daily_data.get(model_key), record_count)
+
+    return pd.DataFrame(df_dict)
+
 
 def get_winter_spring_months_for_lat(latitude: float) -> set[int]:
     """Return winter and spring months for a latitude's hemisphere."""
@@ -92,14 +165,6 @@ def get_winter_spring_season_year(day: date, latitude: float) -> int:
         return day.year + 1
     return day.year
 
-
-def get_region_profile(country: str) -> str | None:
-    """Map supported countries to the calibrated regional snowpack profile."""
-    return {
-        "NZ": "nz_maritime_alpine",
-        "AU": "australian_alps",
-        "JP": "japan_maritime_powder",
-    }.get(country)
 
 def get_all_missing_date_ranges_by_season(logger, locations, start_date, end_date, dataset, daily_default=False):
     """
@@ -195,10 +260,25 @@ def get_all_missing_date_ranges_by_season(logger, locations, start_date, end_dat
             missing_ranges[loc["name"]] = season_ranges
         return missing_ranges, False, {loc["name"]: False for loc in locations}
 
+
+def get_relevant_models(country: str) -> list[str]:
+    """Return only the model set needed for each country comparison."""
+    comparison_pool = list(GLOBAL_COMPARISON_MODELS)
+    comparison_pool.extend(COUNTRY_MODEL_PRIORITY.get(country, []))
+
+    deduped_models = []
+    for model in comparison_pool:
+        if model not in deduped_models:
+            deduped_models.append(model)
+
+    return deduped_models
+
 def fetch_snowfall_data(location, start_date, end_date):
-    """Fetch historical daily snowfall and temperature data for a specific location at resort elevation."""
+    """Fetch default and model-specific Open-Meteo daily fields in a single request."""
     resort_elevation = location.get("resort_elevation")
     logger.debug(f"Fetching data for {location['name']} from {start_date} to {end_date} at resort elevation {resort_elevation}m")
+    country = location.get("country")
+    models = [OPEN_METEO_DEFAULT_MODEL, *get_relevant_models(country)]
 
     url = "https://archive-api.open-meteo.com/v1/archive"
     params = {
@@ -206,25 +286,13 @@ def fetch_snowfall_data(location, start_date, end_date):
         "longitude": location["lon"],
         "start_date": start_date,
         "end_date": end_date,
-        "daily": ",".join([
-            "snowfall_sum",
-            "precipitation_sum",
-            "rain_sum",
-            "precipitation_hours",
-            "temperature_2m_mean",
-            "temperature_2m_min",
-            "temperature_2m_max",
-            "relative_humidity_2m_mean",
-            "snow_depth_max",
-            "wind_speed_10m_max",
-            "wind_direction_10m_dominant"
-        ]),
+        "daily": ",".join(REQUESTED_DAILY_VARIABLES),
+        "models": ",".join(models),
         "timezone": location["timezone"],
-        "cell_selection": "land",
-        "elevation": "nan"
+        "cell_selection": "land"
     }
-    # if resort_elevation is not None:
-    #     params["elevation"] = resort_elevation
+    if resort_elevation is not None:
+        params["elevation"] = resort_elevation
 
     try:
         response = requests.get(url, params=params, timeout=30)
@@ -329,25 +397,10 @@ def snowfall_source(logger: logging.Logger, dataset, run_from_date: date | None 
                     # --- Process raw daily snowpack-model inputs at resort elevation ---
                     grid_elevation = data.get("elevation")
                     daily_data = data["daily"]
-                    record_count = len(daily_data["time"])
-                    merged = pd.DataFrame({
-                        "date": pd.to_datetime(daily_data["time"]).date,
-                        "snowfall": pd.to_numeric(pd.Series(daily_data.get("snowfall_sum", [0.0] * record_count)), errors="coerce").fillna(0.0),
-                        "precipitation_sum": pd.to_numeric(pd.Series(daily_data.get("precipitation_sum", [0.0] * record_count)), errors="coerce").fillna(0.0),
-                        "rain_sum": pd.to_numeric(pd.Series(daily_data.get("rain_sum", [0.0] * record_count)), errors="coerce").fillna(0.0),
-                        "precipitation_hours": pd.to_numeric(pd.Series(daily_data.get("precipitation_hours", [0.0] * record_count)), errors="coerce").fillna(0.0),
-                        "temperature_mean": pd.to_numeric(pd.Series(daily_data.get("temperature_2m_mean", [0.0] * record_count)), errors="coerce").fillna(0.0),
-                        "temperature_min": pd.to_numeric(pd.Series(daily_data.get("temperature_2m_min", [0.0] * record_count)), errors="coerce").fillna(0.0),
-                        "temperature_max": pd.to_numeric(pd.Series(daily_data.get("temperature_2m_max", [0.0] * record_count)), errors="coerce").fillna(0.0),
-                        "relative_humidity_mean": pd.to_numeric(pd.Series(daily_data.get("relative_humidity_2m_mean", [0.0] * record_count)), errors="coerce").fillna(0.0),
-                        "snow_depth_m": pd.to_numeric(pd.Series(daily_data.get("snow_depth_max", [0.0] * record_count)), errors="coerce").fillna(0.0),
-                        "wind_speed_max": pd.to_numeric(pd.Series(daily_data.get("wind_speed_10m_max", [0.0] * record_count)), errors="coerce").fillna(0.0),
-                        "wind_direction_dominant": pd.to_numeric(pd.Series(daily_data.get("wind_direction_10m_dominant", [0.0] * record_count)), errors="coerce").fillna(0.0)
-                    })
-                    merged["snow_depth"] = merged["snow_depth_m"] * 100.0
+                    models = get_relevant_models(country)
+                    merged = build_daily_weather_frame(daily_data, models)
                     merged["location"] = location_name
                     merged["country"] = country
-                    merged["region_profile"] = get_region_profile(country)
                     merged["resort_elevation"] = location.get("resort_elevation")
                     merged["grid_elevation"] = grid_elevation
 

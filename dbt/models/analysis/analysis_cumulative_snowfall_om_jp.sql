@@ -1,3 +1,13 @@
+{% set snowfall_models = [
+    ('Default Open-Meteo', 'snowfall_default_open_meteo_cm'),
+    ('ECMWF IFS04', 'snowfall_ecmwf_ifs04_cm'),
+    ('GFS Seamless', 'snowfall_gfs_seamless_cm'),
+    ('GEM Seamless', 'snowfall_gem_seamless_cm'),
+    ('JMA Seamless', 'snowfall_jma_seamless_cm'),
+    ('CMA GRAPES Global', 'snowfall_cma_grapes_global_cm'),
+    ('ICON Seamless', 'snowfall_icon_seamless_cm')
+] %}
+
 with daily_winter_snowfall as (
     select
         ski_field
@@ -8,11 +18,33 @@ with daily_winter_snowfall as (
             when extract(month from date) in (11, 12) then extract(year from date) + 1
             else extract(year from date)
         end as year_col
-        , coalesce(om_direct_snowfall_cm, 0.0) as om_direct_daily_snowfall_cm
-        , coalesce(depth_precip_blend_cm, 0.0) as depth_precip_blend_daily_snowfall_cm
+        , snowfall_default_open_meteo_cm
+        , snowfall_ecmwf_ifs04_cm
+        , snowfall_gfs_seamless_cm
+        , snowfall_gem_seamless_cm
+        , snowfall_jma_seamless_cm
+        , snowfall_cma_grapes_global_cm
+        , snowfall_icon_seamless_cm
     from {{ ref('base_ski_field_snowfall_modeled') }}
     where country = 'JP'
       and extract(month from date) in (11, 12, 1, 2, 3, 4)
+)
+
+, model_daily as (
+    {% for model_name, column_name in snowfall_models %}
+    select
+        ski_field
+        , country
+        , year_col
+        , month_col
+        , datecol
+        , '{{ model_name }}' as model_name
+        , coalesce({{ column_name }}, 0.0) as daily_snowfall_cm
+    from daily_winter_snowfall
+    {% if not loop.last %}
+    union all
+    {% endif %}
+    {% endfor %}
 )
 
 , labelled as (
@@ -20,10 +52,10 @@ with daily_winter_snowfall as (
         *
         , concat(country, ' - ', ski_field) as facet_label
         , row_number() over (
-            partition by ski_field, year_col
+            partition by ski_field, year_col, model_name
             order by datecol
         ) as day_of_season
-    from daily_winter_snowfall
+    from model_daily
 )
 
 , cumulative as (
@@ -35,18 +67,13 @@ with daily_winter_snowfall as (
         , datecol
         , facet_label
         , day_of_season
-        , om_direct_daily_snowfall_cm
-        , depth_precip_blend_daily_snowfall_cm
-        , sum(om_direct_daily_snowfall_cm) over (
-            partition by ski_field, year_col
+        , model_name
+        , daily_snowfall_cm
+        , sum(daily_snowfall_cm) over (
+            partition by ski_field, year_col, model_name
             order by datecol
             rows between unbounded preceding and current row
-        ) as om_direct_cumulative_snowfall_cm
-        , sum(depth_precip_blend_daily_snowfall_cm) over (
-            partition by ski_field, year_col
-            order by datecol
-            rows between unbounded preceding and current row
-        ) as depth_precip_blend_cumulative_snowfall_cm
+        ) as cumulative_snowfall_cm
     from labelled
 )
 
@@ -58,9 +85,8 @@ select
     , datecol
     , day_of_season
     , facet_label
-    , om_direct_daily_snowfall_cm
-    , depth_precip_blend_daily_snowfall_cm
-    , om_direct_cumulative_snowfall_cm
-    , depth_precip_blend_cumulative_snowfall_cm
+    , model_name
+    , daily_snowfall_cm
+    , cumulative_snowfall_cm
 from cumulative
-order by ski_field, year_col, datecol
+order by ski_field, year_col, model_name, datecol

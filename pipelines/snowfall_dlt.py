@@ -82,12 +82,14 @@ START_DATE = date(2023, 11, 1)
 BATCH_SIZE = 500  # Number of rows to yield at once
 
 GLOBAL_COMPARISON_MODELS = [
-    "ecmwf_ifs04", # European Centre for Medium-Range Weather Forecasts (ECMWF) Integrated Forecasting System (IFS) 0.4° grid
-    "gfs_seamless", # US Model 25km grid
-    "gem_seamless", # German Model 25km grid
-    "cma_grapes_global", # China Meteorological Administration (CMA) GRAPES Global 0.25° grid
-    "icon_seamless", # German Weather Service (DWD) ICON Seamless 0.0625° grid
-
+    "era5",  # Reanalysis gold standard for long-term consistency
+    "ecmwf_ifs",  # Native ECMWF HRES model (~9 km)
+    "ukmo_seamless",  # UK Met Office Unified Model (~10 km)
+    "icon_seamless",  # German Model (~11 km)
+    "gem_seamless",  # Canadian Model (~15 km)
+    "cma_grapes_global",  # Chinese Model (~15 km)
+    "gfs_seamless",  # US Model (~25 km)
+    "meteofrance_seamless",  # French ARPEGE Model (~25 km)
 ]
 
 COUNTRY_MODEL_PRIORITY = {
@@ -341,7 +343,7 @@ def snowfall_source(logger: logging.Logger, dataset, run_from_date: date | None 
 
         today = date.today()
         today_str = str(today)
-        end_date = today - timedelta(days=2)
+        end_date = today - timedelta(days=5)
         state["Daily_Requests"] = {today_str: state.get("Daily_Requests", {}).get(today_str, 0)}
 
         # Reset Daily_default to only today

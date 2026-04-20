@@ -42,13 +42,15 @@ COUNTRY_MONTH_ORDER = {
 }
 
 MODEL_DISPLAY_ORDER = [
-    "Default Open-Meteo",
-    "ECMWF IFS04",
-    "GFS Seamless",
-    "GEM Seamless",
-    "JMA Seamless",
-    "CMA GRAPES Global",
+    "ERA5",
+    "ECMWF IFS",
+    "UKMO Seamless",
     "ICON Seamless",
+    "GEM Seamless",
+    "CMA GRAPES Global",
+    "GFS Seamless",
+    "Meteo-France Seamless",
+    "JMA Seamless",
     "BOM ACCESS Global",
 ]
 
@@ -212,7 +214,7 @@ def main(selected_countries: list[str] | None = None):
             + facet_wrap("~ski_field", scales="free_y", ncol=ncol)
             + labs(
                 title=f"{COUNTRY_LABELS.get(country, country)} Snowfall Model Comparison — Season {latest_year} ({country})",
-                subtitle="Cumulative snowfall using direct Open-Meteo default and model-specific series",
+                subtitle="Cumulative snowfall using model-specific Open-Meteo series",
                 x="Month",
                 y="Cumulative snowfall (cm)",
                 color="Model",

@@ -1,6 +1,6 @@
 {
   "version": 4,
-  "version_hash": "06cCKZHfrxwW2gsuwV5FVQ7Ucc+wcdb5Gr3fy4yx1ec=",
+  "version_hash": "R4HbCzOqJHpYACAevBBFPwfqpt0cgjFgngx5PM0RnRE=",
   "engine_version": 11,
   "name": "snowfall_source",
   "tables": {
@@ -88,13 +88,23 @@
           "data_type": "double",
           "nullable": true
         },
-        "snowfall_ecmwf_ifs04_cm": {
-          "name": "snowfall_ecmwf_ifs04_cm",
+        "snowfall_era5_cm": {
+          "name": "snowfall_era5_cm",
           "data_type": "double",
           "nullable": true
         },
-        "snowfall_gfs_seamless_cm": {
-          "name": "snowfall_gfs_seamless_cm",
+        "snowfall_ecmwf_ifs_cm": {
+          "name": "snowfall_ecmwf_ifs_cm",
+          "data_type": "double",
+          "nullable": true
+        },
+        "snowfall_ukmo_seamless_cm": {
+          "name": "snowfall_ukmo_seamless_cm",
+          "data_type": "double",
+          "nullable": true
+        },
+        "snowfall_icon_seamless_cm": {
+          "name": "snowfall_icon_seamless_cm",
           "data_type": "double",
           "nullable": true
         },
@@ -108,8 +118,13 @@
           "data_type": "double",
           "nullable": true
         },
-        "snowfall_icon_seamless_cm": {
-          "name": "snowfall_icon_seamless_cm",
+        "snowfall_gfs_seamless_cm": {
+          "name": "snowfall_gfs_seamless_cm",
+          "data_type": "double",
+          "nullable": true
+        },
+        "snowfall_meteofrance_seamless_cm": {
+          "name": "snowfall_meteofrance_seamless_cm",
           "data_type": "double",
           "nullable": true
         },
@@ -123,13 +138,23 @@
           "data_type": "double",
           "nullable": true
         },
-        "precipitation_sum_ecmwf_ifs04_mm": {
-          "name": "precipitation_sum_ecmwf_ifs04_mm",
+        "precipitation_sum_era5_mm": {
+          "name": "precipitation_sum_era5_mm",
           "data_type": "double",
           "nullable": true
         },
-        "precipitation_sum_gfs_seamless_mm": {
-          "name": "precipitation_sum_gfs_seamless_mm",
+        "precipitation_sum_ecmwf_ifs_mm": {
+          "name": "precipitation_sum_ecmwf_ifs_mm",
+          "data_type": "double",
+          "nullable": true
+        },
+        "precipitation_sum_ukmo_seamless_mm": {
+          "name": "precipitation_sum_ukmo_seamless_mm",
+          "data_type": "double",
+          "nullable": true
+        },
+        "precipitation_sum_icon_seamless_mm": {
+          "name": "precipitation_sum_icon_seamless_mm",
           "data_type": "double",
           "nullable": true
         },
@@ -143,8 +168,13 @@
           "data_type": "double",
           "nullable": true
         },
-        "precipitation_sum_icon_seamless_mm": {
-          "name": "precipitation_sum_icon_seamless_mm",
+        "precipitation_sum_gfs_seamless_mm": {
+          "name": "precipitation_sum_gfs_seamless_mm",
+          "data_type": "double",
+          "nullable": true
+        },
+        "precipitation_sum_meteofrance_seamless_mm": {
+          "name": "precipitation_sum_meteofrance_seamless_mm",
           "data_type": "double",
           "nullable": true
         },
@@ -158,13 +188,23 @@
           "data_type": "double",
           "nullable": true
         },
-        "rain_sum_ecmwf_ifs04_mm": {
-          "name": "rain_sum_ecmwf_ifs04_mm",
+        "rain_sum_era5_mm": {
+          "name": "rain_sum_era5_mm",
           "data_type": "double",
           "nullable": true
         },
-        "rain_sum_gfs_seamless_mm": {
-          "name": "rain_sum_gfs_seamless_mm",
+        "rain_sum_ecmwf_ifs_mm": {
+          "name": "rain_sum_ecmwf_ifs_mm",
+          "data_type": "double",
+          "nullable": true
+        },
+        "rain_sum_ukmo_seamless_mm": {
+          "name": "rain_sum_ukmo_seamless_mm",
+          "data_type": "double",
+          "nullable": true
+        },
+        "rain_sum_icon_seamless_mm": {
+          "name": "rain_sum_icon_seamless_mm",
           "data_type": "double",
           "nullable": true
         },
@@ -178,8 +218,13 @@
           "data_type": "double",
           "nullable": true
         },
-        "rain_sum_icon_seamless_mm": {
-          "name": "rain_sum_icon_seamless_mm",
+        "rain_sum_gfs_seamless_mm": {
+          "name": "rain_sum_gfs_seamless_mm",
+          "data_type": "double",
+          "nullable": true
+        },
+        "rain_sum_meteofrance_seamless_mm": {
+          "name": "rain_sum_meteofrance_seamless_mm",
           "data_type": "double",
           "nullable": true
         },
@@ -193,13 +238,23 @@
           "data_type": "double",
           "nullable": true
         },
-        "temperature_mean_ecmwf_ifs04_c": {
-          "name": "temperature_mean_ecmwf_ifs04_c",
+        "temperature_mean_era5_c": {
+          "name": "temperature_mean_era5_c",
           "data_type": "double",
           "nullable": true
         },
-        "temperature_mean_gfs_seamless_c": {
-          "name": "temperature_mean_gfs_seamless_c",
+        "temperature_mean_ecmwf_ifs_c": {
+          "name": "temperature_mean_ecmwf_ifs_c",
+          "data_type": "double",
+          "nullable": true
+        },
+        "temperature_mean_ukmo_seamless_c": {
+          "name": "temperature_mean_ukmo_seamless_c",
+          "data_type": "double",
+          "nullable": true
+        },
+        "temperature_mean_icon_seamless_c": {
+          "name": "temperature_mean_icon_seamless_c",
           "data_type": "double",
           "nullable": true
         },
@@ -213,8 +268,13 @@
           "data_type": "double",
           "nullable": true
         },
-        "temperature_mean_icon_seamless_c": {
-          "name": "temperature_mean_icon_seamless_c",
+        "temperature_mean_gfs_seamless_c": {
+          "name": "temperature_mean_gfs_seamless_c",
+          "data_type": "double",
+          "nullable": true
+        },
+        "temperature_mean_meteofrance_seamless_c": {
+          "name": "temperature_mean_meteofrance_seamless_c",
           "data_type": "double",
           "nullable": true
         },
@@ -228,13 +288,23 @@
           "data_type": "double",
           "nullable": true
         },
-        "snow_depth_ecmwf_ifs04_m": {
-          "name": "snow_depth_ecmwf_ifs04_m",
+        "snow_depth_era5_m": {
+          "name": "snow_depth_era5_m",
           "data_type": "double",
           "nullable": true
         },
-        "snow_depth_gfs_seamless_m": {
-          "name": "snow_depth_gfs_seamless_m",
+        "snow_depth_ecmwf_ifs_m": {
+          "name": "snow_depth_ecmwf_ifs_m",
+          "data_type": "double",
+          "nullable": true
+        },
+        "snow_depth_ukmo_seamless_m": {
+          "name": "snow_depth_ukmo_seamless_m",
+          "data_type": "double",
+          "nullable": true
+        },
+        "snow_depth_icon_seamless_m": {
+          "name": "snow_depth_icon_seamless_m",
           "data_type": "double",
           "nullable": true
         },
@@ -248,8 +318,13 @@
           "data_type": "double",
           "nullable": true
         },
-        "snow_depth_icon_seamless_m": {
-          "name": "snow_depth_icon_seamless_m",
+        "snow_depth_gfs_seamless_m": {
+          "name": "snow_depth_gfs_seamless_m",
+          "data_type": "double",
+          "nullable": true
+        },
+        "snow_depth_meteofrance_seamless_m": {
+          "name": "snow_depth_meteofrance_seamless_m",
           "data_type": "double",
           "nullable": true
         },
@@ -481,8 +556,8 @@
     }
   },
   "previous_hashes": [
-    "wOUuMO4gSItFEAipWCLBhngNcf0qkquJUsbRDq2H8xs=",
-    "xDWlqh6Cn0+3P0VDiUfnNII+U/vS6z5PVqRRkAKklHQ=",
+    "fOtpFjW8Ryxn+R8eKcj1WbydWP4/mVXcTywanV5CFTQ=",
+    "RANFIrvX8GUFz0etcT78SJmlWkYl6QNabh8IC6VMNXs=",
     "fAQpY26aNZ3Yuir2781vGPznD0F7pmne3Je+xTQz3oo=",
     "vy39yzEHY2qxiw+bFF+uPbfXLVkW4cavadpf/S0uGCI="
   ]

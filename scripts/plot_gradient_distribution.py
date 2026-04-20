@@ -1,5 +1,6 @@
 import argparse
 import os
+import unicodedata
 import duckdb
 from dotenv import load_dotenv
 import matplotlib.pyplot as plt
@@ -20,11 +21,14 @@ COUNTRIES = {
 }
 
 DISPLAY_NAME_OVERRIDES = {
+    "Tūroa Ski Area": "Turoa Ski Area",
     "太舞滑雪场": "Thaiwoo Ski Resort",
     "雪如意滑雪场": "Snow Ruyi Ski Resort",
     "富龙滑雪场": "Fulong Ski Resort",
     "密苑云顶乐园": "Yunding Resort Secret Garden",
     "国家高山滑雪中心": "National Alpine Skiing Centre",
+    "禾木（吉克普林）国际滑雪度假区": "Jikepulin Hemu Ski Resort",
+    "将军山滑雪场": "Jiangjunshan Ski Resort",
 }
 
 CJK_FONT_CANDIDATES = [
@@ -42,14 +46,13 @@ CJK_FONT_CANDIDATES = [
 
 
 def configure_matplotlib_fonts():
+    plt.rcParams["axes.unicode_minus"] = False
     available_fonts = {font.name for font in fm.fontManager.ttflist}
     for font_name in CJK_FONT_CANDIDATES:
         if font_name in available_fonts:
             plt.rcParams["font.family"] = font_name
-            plt.rcParams["axes.unicode_minus"] = False
             return True
     plt.rcParams["font.family"] = "DejaVu Sans"
-    plt.rcParams["axes.unicode_minus"] = False
     return False
 
 
@@ -155,7 +158,8 @@ def get_display_text(value, fallback=None):
     text = DISPLAY_NAME_OVERRIDES.get(text, text)
     if HAS_CJK_FONT or not has_non_ascii_text(text):
         return text
-    return fallback or text.encode("ascii", errors="ignore").decode("ascii").strip()
+    ascii_text = unicodedata.normalize("NFKD", text).encode("ascii", errors="ignore").decode("ascii").strip()
+    return ascii_text or fallback or ""
 
 
 def short_resort_name(name: str) -> str:

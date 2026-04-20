@@ -47,6 +47,8 @@ SKI_FIELDS = [
     {"name": "Wanlong Paradise Resort", "country": "CN", "region": "Hebei"},
     {"name": "富龙滑雪场", "country": "CN", "region": "Hebei"},
     {"name": "National Alpine Skiing Centre", "country": "CN", "region": "Hebei"},
+    {"name": "禾木（吉克普林）国际滑雪度假区", "country": "CN", "region": "Xinjiang"},
+    {"name": "将军山滑雪场", "country": "CN", "region": "Xinjiang"},
 
     # Japanese Ski Resorts
     {"name": "Kiroro Resort", "country": "JP", "region": "Hokkaido"},
@@ -118,6 +120,12 @@ MIN_LIFT_LENGTH_M = 100
 PISTE_TYPE_REGEX = "^(downhill|nordic|skitour|snow_park|sled|connection)$"
 IGNORED_AERIALWAY_REGEX = "^(station|goods)$"
 SMOOTHING_GRADE_THRESHOLD = math.tan(math.radians(50)) 
+MANUAL_QUARANTINED_OSM_IDS_BY_RESORT = {
+    "Wanlong Paradise Resort": {
+        "run_ids": [878706034, 1349252976],
+        "lift_ids": [],
+    },
+}
 
 
 def _post_overpass_query(query, field_name, timeout=90, stats=None, time_key=None):
@@ -135,6 +143,30 @@ def _post_overpass_query(query, field_name, timeout=90, stats=None, time_key=Non
 
 def _escape_overpass_string(value):
     return value.replace("\\", "\\\\").replace('"', '\\"')
+
+
+def _format_count_dict(counts):
+    if not counts:
+        return {}
+    return {
+        str(key): counts[key]
+        for key in sorted(counts, key=lambda value: str(value))
+    }
+
+
+def _get_quarantined_ids(quarantine_by_resort, resort_name):
+    manual_entry = MANUAL_QUARANTINED_OSM_IDS_BY_RESORT.get(resort_name, {})
+    state_entry = quarantine_by_resort.get(resort_name, {})
+    run_ids = set(manual_entry.get("run_ids", [])) | set(state_entry.get("run_ids", []))
+    lift_ids = set(manual_entry.get("lift_ids", [])) | set(state_entry.get("lift_ids", []))
+    return run_ids, lift_ids
+
+
+def _quarantine_resort_ids(quarantine_by_resort, resort_name, run_ids=None, lift_ids=None):
+    entry = quarantine_by_resort.setdefault(resort_name, {"run_ids": [], "lift_ids": []})
+    entry["run_ids"] = sorted(set(entry.get("run_ids", [])) | set(run_ids or []))
+    entry["lift_ids"] = sorted(set(entry.get("lift_ids", [])) | set(lift_ids or []))
+    return entry
 
 
 def _build_resort_match_clauses(field):
@@ -415,8 +447,17 @@ def ski_source(known_run_osm_by_resort: dict, known_lift_osm_by_resort: dict):
         "preflight_lift_ids_seen": 0,
         "preflight_new_run_ids": 0,
         "preflight_new_lift_ids": 0,
+        "preflight_quarantined_run_ids": 0,
+        "preflight_quarantined_lift_ids": 0,
         "resorts_skipped_geometry": 0,
         "resorts_with_new_ids": 0,
+        "new_ids_by_resort": {},
+        "accepted_run_count": 0,
+        "accepted_lift_count": 0,
+        "accepted_run_by_difficulty": defaultdict(int),
+        "accepted_run_by_piste_type": defaultdict(int),
+        "accepted_lift_by_type": defaultdict(int),
+        "accepted_by_resort": defaultdict(lambda: {"runs": 0, "lifts": 0}),
         "skipped_known_run": 0,
         "skipped_known_lift": 0,
         "skipped_unknown_type": 0,
@@ -424,6 +465,8 @@ def ski_source(known_run_osm_by_resort: dict, known_lift_osm_by_resort: dict):
         "skipped_filtered_lift_type": 0,
         "skipped_short_lift": 0,
     }
+    quarantine_state = dlt.current.source_state().setdefault("osm_id_quarantine", {"by_resort": {}})
+    quarantine_by_resort = quarantine_state.setdefault("by_resort", {})
     if should_preflight_ids:
         try:
             logger.info("Checking OSM ids across all configured resorts before geometry fetch ...")
@@ -440,14 +483,26 @@ def ski_source(known_run_osm_by_resort: dict, known_lift_osm_by_resort: dict):
                     resort_name,
                     {"run_ids": set(), "lift_ids": set()},
                 )
-                resort_run_ids = resort_candidates["run_ids"]
-                resort_lift_ids = resort_candidates["lift_ids"]
+                quarantined_run_ids, quarantined_lift_ids = _get_quarantined_ids(
+                    quarantine_by_resort,
+                    resort_name,
+                )
+                resort_run_ids = resort_candidates["run_ids"] - quarantined_run_ids
+                resort_lift_ids = resort_candidates["lift_ids"] - quarantined_lift_ids
                 run_ids.update(resort_run_ids)
                 lift_ids.update(resort_lift_ids)
+                stats["preflight_quarantined_run_ids"] += len(resort_candidates["run_ids"] & quarantined_run_ids)
+                stats["preflight_quarantined_lift_ids"] += len(resort_candidates["lift_ids"] & quarantined_lift_ids)
 
                 resort_new_run_ids = resort_run_ids - known_run_osm_by_resort.get(resort_name, set())
                 resort_new_lift_ids = resort_lift_ids - known_lift_osm_by_resort.get(resort_name, set())
                 if resort_new_run_ids or resort_new_lift_ids:
+                    stats["new_ids_by_resort"][resort_name] = {
+                        "run_ids": len(resort_new_run_ids),
+                        "lift_ids": len(resort_new_lift_ids),
+                        "run_id_values": sorted(resort_new_run_ids),
+                        "lift_id_values": sorted(resort_new_lift_ids),
+                    }
                     resorts_to_fetch.add(resort_name)
                     new_run_ids.update(resort_new_run_ids)
                     new_lift_ids.update(resort_new_lift_ids)
@@ -474,6 +529,19 @@ def ski_source(known_run_osm_by_resort: dict, known_lift_osm_by_resort: dict):
                     "New IDs found for %s resorts, fetching geometry only for those resorts",
                     len(resorts_to_fetch),
                 )
+                for resort_name, resort_counts in sorted(stats["new_ids_by_resort"].items()):
+                    logger.info(
+                        "Resort new-id summary | resort=%s | new_run_ids=%s | new_lift_ids=%s",
+                        resort_name,
+                        resort_counts["run_ids"],
+                        resort_counts["lift_ids"],
+                    )
+                    logger.info(
+                        "Resort new-id details | resort=%s | run_ids=%s | lift_ids=%s",
+                        resort_name,
+                        resort_counts.get("run_id_values", []),
+                        resort_counts.get("lift_id_values", []),
+                    )
         except Exception as e:
             logger.warning(
                 f"Global ID preflight failed, falling back to geometry fetch: {e}"
@@ -489,6 +557,20 @@ def ski_source(known_run_osm_by_resort: dict, known_lift_osm_by_resort: dict):
         try:
             elements = _fetch_resort_elements(field, stats=stats)
         except Exception as e:
+            resort_new_ids = stats["new_ids_by_resort"].get(field["name"], {})
+            if resort_new_ids:
+                quarantine_entry = _quarantine_resort_ids(
+                    quarantine_by_resort,
+                    field["name"],
+                    run_ids=resort_new_ids.get("run_id_values", []),
+                    lift_ids=resort_new_ids.get("lift_id_values", []),
+                )
+                logger.warning(
+                    "Added resort IDs to quarantine after geometry fetch failure | resort=%s | run_ids=%s | lift_ids=%s",
+                    field["name"],
+                    quarantine_entry.get("run_ids", []),
+                    quarantine_entry.get("lift_ids", []),
+                )
             logger.error(str(e))
             continue
 
@@ -568,6 +650,12 @@ def ski_source(known_run_osm_by_resort: dict, known_lift_osm_by_resort: dict):
                 
                 # Calculate turniness once
                 turniness_score = compute_turniness(coords)
+                run_difficulty = tags.get("piste:difficulty") or "unknown"
+                run_piste_type = tags.get("piste:type") or "unknown"
+                stats["accepted_run_count"] += 1
+                stats["accepted_run_by_difficulty"][run_difficulty] += 1
+                stats["accepted_run_by_piste_type"][run_piste_type] += 1
+                stats["accepted_by_resort"][field["name"]]["runs"] += 1
 
                 ski_runs_data.append({
                     "osm_id": run_id,
@@ -593,6 +681,9 @@ def ski_source(known_run_osm_by_resort: dict, known_lift_osm_by_resort: dict):
             elif is_lift:
                 # Calculate top/bottom coordinates ONCE with is_lift=True
                 top_lat, top_lon, top_elev, bottom_lat, bottom_lon, bottom_elev = get_top_bottom_coordinates(coords, elevations, is_lift=True)
+                stats["accepted_lift_count"] += 1
+                stats["accepted_lift_by_type"][aerialway_type or "unknown"] += 1
+                stats["accepted_by_resort"][field["name"]]["lifts"] += 1
 
                 ski_lifts.append({
                     "osm_id": run_id,
@@ -641,6 +732,12 @@ def ski_source(known_run_osm_by_resort: dict, known_lift_osm_by_resort: dict):
         stats["resorts_skipped_geometry"],
     )
     logger.info(
+        "Quarantine summary | blocked_run_ids=%s | blocked_lift_ids=%s | quarantined_resorts=%s",
+        stats["preflight_quarantined_run_ids"],
+        stats["preflight_quarantined_lift_ids"],
+        len(quarantine_by_resort),
+    )
+    logger.info(
         "Element summary | seen=%s | sent_to_elevation=%s | skipped_before_elevation=%s",
         stats["elements_seen"],
         stats["elements_sent_to_elevation"],
@@ -655,6 +752,28 @@ def ski_source(known_run_osm_by_resort: dict, known_lift_osm_by_resort: dict):
         stats["skipped_filtered_lift_type"],
         stats["skipped_short_lift"],
     )
+    logger.info(
+        "Accepted summary | runs=%s | lifts=%s",
+        stats["accepted_run_count"],
+        stats["accepted_lift_count"],
+    )
+    logger.info(
+        "Accepted run categories | difficulty=%s | piste_type=%s",
+        _format_count_dict(stats["accepted_run_by_difficulty"]),
+        _format_count_dict(stats["accepted_run_by_piste_type"]),
+    )
+    logger.info(
+        "Accepted lift categories | lift_type=%s",
+        _format_count_dict(stats["accepted_lift_by_type"]),
+    )
+    for resort_name in sorted(stats["accepted_by_resort"]):
+        resort_counts = stats["accepted_by_resort"][resort_name]
+        logger.info(
+            "Accepted per resort | resort=%s | runs=%s | lifts=%s",
+            resort_name,
+            resort_counts["runs"],
+            resort_counts["lifts"],
+        )
 
     @dlt.resource(write_disposition="merge", table_name="ski_runs", primary_key=["osm_id"])
     def ski_runs():

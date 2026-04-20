@@ -3,11 +3,8 @@ import os
 from datetime import date
 
 import duckdb
-import matplotlib
 import pandas as pd
 from dotenv import load_dotenv
-
-matplotlib.use("Agg")
 from matplotlib import pyplot as plt
 from plotnine import (
     aes,
@@ -27,6 +24,8 @@ from plotnine import (
 )
 
 from project_path import get_project_paths, set_dlt_env_vars
+
+plt.switch_backend("Agg")
 
 
 COUNTRY_LABELS = {

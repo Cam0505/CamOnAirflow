@@ -1,0 +1,26 @@
+version: 2
+
+models:
+  - name: base_ski_lift_times
+    description: "{{ doc('base_ski_lift_times_description') }}"
+    columns:
+      - name: osm_id
+        description: OSM identifier for the lift.
+        data_tests:
+          - not_null
+      - name: resort
+        description: Name of the ski resort.
+      - name: name
+        description: Display name of the lift.
+      - name: lift_type
+        description: Type of lift.
+      - name: lift_length_m
+        description: Length of the lift in metres.
+      - name: lift_speed_mps
+        description: Recorded line speed in metres per second.
+      - name: lift_time_sec
+        description: "{{ doc('lift_time_sec') }}"
+      - name: derived_speed_mps
+        description: Effective speed used to calculate lift_time_sec, sourced from actual or type-based defaults.
+      - name: time_calculation_method
+        description: "{{ doc('time_calculation_method') }}"

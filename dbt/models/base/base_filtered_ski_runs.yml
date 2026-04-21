@@ -1,0 +1,53 @@
+version: 2
+
+models:
+  - name: base_filtered_ski_runs
+    description: "{{ doc('base_filtered_ski_runs_description') }}"
+    columns:
+      - name: osm_id
+        description: OpenStreetMap identifier for the ski run.
+        data_tests:
+          - not_null
+          - unique
+      - name: resort
+        description: Name of the ski resort the run belongs to.
+        data_tests:
+          - not_null
+      - name: country_code
+        description: Two-letter country code for the resort.
+        data_tests:
+          - not_null
+      - name: run_name
+        description: Display name of the run, with unnamed runs assigned a generated label.
+      - name: region
+        description: "{{ doc('region') }}"
+      - name: area
+        description: Sub-area or zone within the resort. Lowercased and trimmed.
+      - name: piste_type
+        description: OpenStreetMap piste type (e.g. downhill, nordic).
+      - name: run_length_m
+        description: Total length of the run in metres.
+      - name: n_points
+        description: Number of GPS points recorded along the run.
+      - name: difficulty
+        description: Normalised difficulty rating (novice, easy, intermediate, advanced, freeride).
+      - name: turniness_score
+        description: "{{ doc('turniness_score') }}"
+      - name: top_lat
+        description: Latitude of the run's top point.
+      - name: top_lon
+        description: Longitude of the run's top point.
+      - name: top_elevation_m
+        description: Elevation at the top of the run in metres.
+      - name: bottom_lat
+        description: Latitude of the run's bottom point.
+      - name: bottom_lon
+        description: Longitude of the run's bottom point.
+      - name: bottom_elevation_m
+        description: Elevation at the bottom of the run in metres.
+      - name: ski_time_slow_sec
+        description: Estimated run time in seconds at a slow pace (4 m/s effective speed).
+      - name: ski_time_medium_sec
+        description: Estimated run time in seconds at a medium pace (7 m/s effective speed).
+      - name: ski_time_fast_sec
+        description: Estimated run time in seconds at a fast pace (10 m/s effective speed).

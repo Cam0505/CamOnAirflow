@@ -1,0 +1,24 @@
+version: 2
+
+models:
+  - name: base_ski_run_turniness
+    description: "{{ doc('base_ski_run_turniness_description') }}"
+    columns:
+      - name: osm_id
+        description: OSM identifier of the run.
+        data_tests:
+          - not_null
+      - name: resort
+        description: Name of the ski resort.
+      - name: run_name
+        description: Display name of the run.
+      - name: piste_type
+        description: OpenStreetMap piste type.
+      - name: difficulty
+        description: Difficulty rating of the run.
+      - name: run_length_m
+        description: Total run length in metres.
+      - name: turniness_score
+        description: "{{ doc('turniness_score') }}"
+      - name: turniness_per_meter
+        description: Turniness score divided by run length — a density measure of curvature.

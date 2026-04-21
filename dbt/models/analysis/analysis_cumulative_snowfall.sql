@@ -1,5 +1,4 @@
 {% set snowfall_models = [
-    ('Default Open-Meteo', 'snowfall_default_open_meteo_cm'),
     ('ERA5', 'snowfall_era5_cm'),
     ('ECMWF IFS', 'snowfall_ecmwf_ifs_cm'),
     ('UKMO Seamless', 'snowfall_ukmo_seamless_cm'),
@@ -23,7 +22,6 @@ with daily_seasonal_snowfall as (
             when extract(month from date) in (11, 12) then extract(year from date) + 1
             else extract(year from date)
         end as year_col
-        , snowfall_default_open_meteo_cm
         , snowfall_era5_cm
         , snowfall_ecmwf_ifs_cm
         , snowfall_ukmo_seamless_cm

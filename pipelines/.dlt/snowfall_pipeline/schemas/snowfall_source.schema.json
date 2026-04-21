@@ -1,6 +1,6 @@
 {
   "version": 4,
-  "version_hash": "R4HbCzOqJHpYACAevBBFPwfqpt0cgjFgngx5PM0RnRE=",
+  "version_hash": "RaTbanqlanVz/sqiFSJ+CnKYxfBnfJRZHFp8irrAIB8=",
   "engine_version": 11,
   "name": "snowfall_source",
   "tables": {
@@ -83,11 +83,6 @@
           "primary_key": true,
           "data_type": "date"
         },
-        "snowfall_default_open_meteo_cm": {
-          "name": "snowfall_default_open_meteo_cm",
-          "data_type": "double",
-          "nullable": true
-        },
         "snowfall_era5_cm": {
           "name": "snowfall_era5_cm",
           "data_type": "double",
@@ -130,11 +125,6 @@
         },
         "snowfall_bom_access_global_cm": {
           "name": "snowfall_bom_access_global_cm",
-          "data_type": "double",
-          "nullable": true
-        },
-        "precipitation_sum_default_open_meteo_mm": {
-          "name": "precipitation_sum_default_open_meteo_mm",
           "data_type": "double",
           "nullable": true
         },
@@ -183,61 +173,6 @@
           "data_type": "double",
           "nullable": true
         },
-        "rain_sum_default_open_meteo_mm": {
-          "name": "rain_sum_default_open_meteo_mm",
-          "data_type": "double",
-          "nullable": true
-        },
-        "rain_sum_era5_mm": {
-          "name": "rain_sum_era5_mm",
-          "data_type": "double",
-          "nullable": true
-        },
-        "rain_sum_ecmwf_ifs_mm": {
-          "name": "rain_sum_ecmwf_ifs_mm",
-          "data_type": "double",
-          "nullable": true
-        },
-        "rain_sum_ukmo_seamless_mm": {
-          "name": "rain_sum_ukmo_seamless_mm",
-          "data_type": "double",
-          "nullable": true
-        },
-        "rain_sum_icon_seamless_mm": {
-          "name": "rain_sum_icon_seamless_mm",
-          "data_type": "double",
-          "nullable": true
-        },
-        "rain_sum_gem_seamless_mm": {
-          "name": "rain_sum_gem_seamless_mm",
-          "data_type": "double",
-          "nullable": true
-        },
-        "rain_sum_cma_grapes_global_mm": {
-          "name": "rain_sum_cma_grapes_global_mm",
-          "data_type": "double",
-          "nullable": true
-        },
-        "rain_sum_gfs_seamless_mm": {
-          "name": "rain_sum_gfs_seamless_mm",
-          "data_type": "double",
-          "nullable": true
-        },
-        "rain_sum_meteofrance_seamless_mm": {
-          "name": "rain_sum_meteofrance_seamless_mm",
-          "data_type": "double",
-          "nullable": true
-        },
-        "rain_sum_bom_access_global_mm": {
-          "name": "rain_sum_bom_access_global_mm",
-          "data_type": "double",
-          "nullable": true
-        },
-        "temperature_mean_default_open_meteo_c": {
-          "name": "temperature_mean_default_open_meteo_c",
-          "data_type": "double",
-          "nullable": true
-        },
         "temperature_mean_era5_c": {
           "name": "temperature_mean_era5_c",
           "data_type": "double",
@@ -280,11 +215,6 @@
         },
         "temperature_mean_bom_access_global_c": {
           "name": "temperature_mean_bom_access_global_c",
-          "data_type": "double",
-          "nullable": true
-        },
-        "snow_depth_default_open_meteo_m": {
-          "name": "snow_depth_default_open_meteo_m",
           "data_type": "double",
           "nullable": true
         },
@@ -373,11 +303,6 @@
         },
         "precipitation_sum_jma_seamless_mm": {
           "name": "precipitation_sum_jma_seamless_mm",
-          "data_type": "double",
-          "nullable": true
-        },
-        "rain_sum_jma_seamless_mm": {
-          "name": "rain_sum_jma_seamless_mm",
           "data_type": "double",
           "nullable": true
         },
@@ -556,8 +481,8 @@
     }
   },
   "previous_hashes": [
-    "fOtpFjW8Ryxn+R8eKcj1WbydWP4/mVXcTywanV5CFTQ=",
-    "RANFIrvX8GUFz0etcT78SJmlWkYl6QNabh8IC6VMNXs=",
+    "Kw4Yus5o0n8WfLnt2xIQ5xrQygk6H6xthzPLYKvmnbs=",
+    "uK1BJSETuGngIXoMYIbGXzvtvsqgOLtO6l1U+lbnz5w=",
     "fAQpY26aNZ3Yuir2781vGPznD0F7pmne3Je+xTQz3oo=",
     "vy39yzEHY2qxiw+bFF+uPbfXLVkW4cavadpf/S0uGCI="
   ]

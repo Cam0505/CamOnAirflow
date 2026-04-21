@@ -1,0 +1,48 @@
+version: 2
+
+models:
+  - name: base_ski_field_snowfall_modeled
+    description: "{{ doc('base_ski_field_snowfall_modeled_description') }}"
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - date
+              - ski_field
+    columns:
+      - name: date
+        description: Calendar date of the observation.
+        data_tests:
+          - not_null
+      - name: ski_field
+        description: Name of the ski field or resort.
+        data_tests:
+          - not_null
+      - name: country
+        description: Two-letter country code (JP, NZ, AU).
+        data_tests:
+          - not_null
+      - name: resort_elevation_m
+        description: Representative on-mountain elevation for the resort in metres.
+      - name: grid_elevation_m
+        description: Elevation of the model grid cell matched to this resort in metres.
+      - name: snowfall_era5_cm
+        description: Daily snowfall from the ERA5 reanalysis model in centimetres.
+      - name: snowfall_ecmwf_ifs_cm
+        description: Daily snowfall from the ECMWF IFS model in centimetres.
+      - name: snowfall_ukmo_seamless_cm
+        description: Daily snowfall from the UKMO Seamless model in centimetres.
+      - name: snowfall_icon_seamless_cm
+        description: Daily snowfall from the ICON Seamless model in centimetres.
+      - name: snowfall_gem_seamless_cm
+        description: Daily snowfall from the GEM Seamless model in centimetres.
+      - name: snowfall_cma_grapes_global_cm
+        description: Daily snowfall from the CMA GRAPES Global model in centimetres.
+      - name: snowfall_gfs_seamless_cm
+        description: Daily snowfall from the GFS Seamless model in centimetres.
+      - name: snowfall_meteofrance_seamless_cm
+        description: Daily snowfall from the Meteo-France Seamless model in centimetres.
+      - name: snowfall_jma_seamless_cm
+        description: Daily snowfall from the JMA Seamless model in centimetres (Japan-priority).
+      - name: snowfall_bom_access_global_cm
+        description: Daily snowfall from the BOM ACCESS Global model in centimetres (AU/NZ-priority).

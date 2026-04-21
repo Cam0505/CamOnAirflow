@@ -42,7 +42,7 @@ def get_ski_fields_with_timestamp():
             {"name": "Coronet Peak", "country": "NZ", "lat": -44.9206, "lon": 168.7349, "timezone": "Pacific/Auckland", "resort_elevation": 1350}, 
             {"name": "Whakapapa", "country": "NZ", "lat": -39.2659, "lon": 175.5600, "timezone": "Pacific/Auckland", "resort_elevation": 2300},
             {"name": "Turoa", "country": "NZ", "lat": -39.3002, "lon": 175.5525, "timezone": "Pacific/Auckland", "resort_elevation": 2150},
-            # Japan (selected resorts with stronger spatial separation for distinct weather patterns)
+            # Japan
             {"name": "Kiroro Resort", "country": "JP", "lat": 43.0795, "lon": 140.9866, "timezone": "Asia/Tokyo", "resort_elevation": 1180},
             {"name": "Rusutsu Resort Ski Area", "country": "JP", "lat": 42.7380, "lon": 140.8048, "timezone": "Asia/Tokyo", "resort_elevation": 994},
             {"name": "Mount Racey", "country": "JP", "lat": 43.0567, "lon": 142.0017, "timezone": "Asia/Tokyo", "resort_elevation": 1135},
@@ -78,7 +78,7 @@ def get_ski_fields_with_timestamp():
     ]
 
 SKI_FIELDS = get_ski_fields_with_timestamp()
-START_DATE = date(2023, 11, 1)
+START_DATE = date(2022, 11, 1)
 BATCH_SIZE = 500  # Number of rows to yield at once
 
 GLOBAL_COMPARISON_MODELS = [
@@ -100,30 +100,35 @@ COUNTRY_MODEL_PRIORITY = {
 
 DAILY_VARIABLE_CONFIG = {
     "snowfall_sum": {
-        "default_column": "snowfall_default_open_meteo_cm",
         "model_column_template": "snowfall_{model}_cm",
     },
     "precipitation_sum": {
-        "default_column": "precipitation_sum_default_open_meteo_mm",
         "model_column_template": "precipitation_sum_{model}_mm",
     },
-    "rain_sum": {
-        "default_column": "rain_sum_default_open_meteo_mm",
-        "model_column_template": "rain_sum_{model}_mm",
-    },
     "temperature_2m_mean": {
-        "default_column": "temperature_mean_default_open_meteo_c",
         "model_column_template": "temperature_mean_{model}_c",
     },
     "snow_depth_max": {
-        "default_column": "snow_depth_default_open_meteo_m",
         "model_column_template": "snow_depth_{model}_m",
     },
 }
 
 REQUESTED_DAILY_VARIABLES = list(DAILY_VARIABLE_CONFIG.keys())
-OPEN_METEO_DEFAULT_MODEL = "best_match"
-OPEN_METEO_DEFAULT_SUFFIX = "archive_best_match"
+OPEN_METEO_ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/archive"
+OPEN_METEO_MAX_MODELS_PER_REQUEST = 5
+OPEN_METEO_RETRY_ATTEMPTS = 1
+OPEN_METEO_BACKOFF_SECONDS = 20
+OPEN_METEO_REQUEST_TIMEOUT = 15
+OPEN_METEO_MIN_REQUEST_SPACING_SECONDS = 1.0
+_LAST_OPEN_METEO_REQUEST_TS = 0.0
+
+# Global Retry limits
+GLOBAL_MAX_RETRIES = 5  # The absolute maximum number of retries across the entire script run
+_GLOBAL_RETRY_COUNT = 0
+
+class GlobalRateLimitReached(Exception):
+    """Raised when the global retry limit for API requests is exhausted."""
+    pass
 
 
 def _to_numeric_series(values, record_count: int) -> pd.Series:
@@ -134,17 +139,13 @@ def _to_numeric_series(values, record_count: int) -> pd.Series:
 
 
 def build_daily_weather_frame(daily_data: dict, models: list[str]) -> pd.DataFrame:
-    """Build a daily dataframe with both default and model-specific Open-Meteo fields."""
+    """Build a daily dataframe with only model-specific Open-Meteo fields."""
     record_count = len(daily_data["time"])
     df_dict = {
         "date": pd.to_datetime(daily_data["time"]).date,
     }
 
     for api_var, config in DAILY_VARIABLE_CONFIG.items():
-        default_key = api_var if api_var in daily_data else f"{api_var}_{OPEN_METEO_DEFAULT_SUFFIX}"
-        default_values = daily_data.get(default_key)
-        df_dict[config["default_column"]] = _to_numeric_series(default_values, record_count)
-
         for model in models:
             model_key = f"{api_var}_{model}"
             if model_key not in daily_data:
@@ -181,8 +182,7 @@ def get_all_missing_date_ranges_by_season(logger, locations, start_date, end_dat
 
         missing_ranges = {}
         default_applied = False
-        # Always define last_14_start and last_14_end before use
-
+        
         last_14_start = end_date - timedelta(days=13)
         last_14_end = end_date
         last_14_set = set(pd.date_range(last_14_start, last_14_end).date)
@@ -209,6 +209,7 @@ def get_all_missing_date_ranges_by_season(logger, locations, start_date, end_dat
             for d in sorted(missing):
                 season_year = get_winter_spring_season_year(d, latitude)
                 seasons.setdefault(season_year, []).append(d)
+            
             # For each season, get min/max
             season_ranges = {
                 year: (min(ds), max(ds)) for year, ds in seasons.items()
@@ -275,14 +276,52 @@ def get_relevant_models(country: str) -> list[str]:
 
     return deduped_models
 
-def fetch_snowfall_data(location, start_date, end_date):
-    """Fetch default and model-specific Open-Meteo daily fields in a single request."""
-    resort_elevation = location.get("resort_elevation")
-    logger.debug(f"Fetching data for {location['name']} from {start_date} to {end_date} at resort elevation {resort_elevation}m")
-    country = location.get("country")
-    models = [OPEN_METEO_DEFAULT_MODEL, *get_relevant_models(country)]
 
-    url = "https://archive-api.open-meteo.com/v1/archive"
+def _chunk_models(models: list[str], chunk_size: int) -> list[list[str]]:
+    return [models[i:i + chunk_size] for i in range(0, len(models), chunk_size)]
+
+
+def _wait_for_open_meteo_slot() -> None:
+    global _LAST_OPEN_METEO_REQUEST_TS
+    now = tyme.monotonic()
+    elapsed = now - _LAST_OPEN_METEO_REQUEST_TS
+    if elapsed < OPEN_METEO_MIN_REQUEST_SPACING_SECONDS:
+        tyme.sleep(OPEN_METEO_MIN_REQUEST_SPACING_SECONDS - elapsed)
+    _LAST_OPEN_METEO_REQUEST_TS = tyme.monotonic()
+
+
+def _merge_open_meteo_payload(combined: dict | None, new_data: dict) -> dict:
+    if combined is None:
+        return new_data
+
+    combined_daily = combined.setdefault("daily", {})
+    new_daily = new_data.get("daily", {})
+
+    if combined_daily.get("time") and new_daily.get("time") and combined_daily["time"] != new_daily["time"]:
+        raise ValueError("Open-Meteo daily time arrays did not match across model batches")
+
+    combined_daily.update(new_daily)
+    combined.setdefault("daily_units", {}).update(new_data.get("daily_units", {}))
+    return combined
+
+
+def _compute_retry_wait_seconds(response, attempt: int) -> int:
+    retry_after = None
+    if response is not None:
+        retry_after = response.headers.get("Retry-After")
+
+    if retry_after:
+        try:
+            return max(1, int(float(retry_after)))
+        except ValueError:
+            pass
+
+    return min(OPEN_METEO_BACKOFF_SECONDS * attempt, 300)
+
+
+def _request_open_meteo_batch(location, start_date, end_date, models: list[str]) -> dict | None:
+    global _GLOBAL_RETRY_COUNT
+    resort_elevation = location.get("resort_elevation")
     params = {
         "latitude": location["lat"],
         "longitude": location["lon"],
@@ -291,31 +330,132 @@ def fetch_snowfall_data(location, start_date, end_date):
         "daily": ",".join(REQUESTED_DAILY_VARIABLES),
         "models": ",".join(models),
         "timezone": location["timezone"],
-        "cell_selection": "land"
+        "cell_selection": "land",
     }
     if resort_elevation is not None:
         params["elevation"] = resort_elevation
 
-    try:
-        response = requests.get(url, params=params, timeout=30)
-        logger.debug(f"API request URL: {response.url}")
-        logger.debug(f"Response status code: {response.status_code}")
-        response.raise_for_status()
-        data = response.json()
+    for attempt in range(1, OPEN_METEO_RETRY_ATTEMPTS + 1):
+        response = None
+        try:
+            _wait_for_open_meteo_slot()
+            response = requests.get(OPEN_METEO_ARCHIVE_URL, params=params, timeout=OPEN_METEO_REQUEST_TIMEOUT)
+            logger.debug(f"API request URL: {response.url}")
+            logger.debug(f"Response status code: {response.status_code}")
 
-        logger.info(f"Received data for {location['name']} (resort {resort_elevation}m): {len(data.get('daily', {}).get('time', []))} daily records")
-        if "error" in data:
-            logger.error(f"API error: {data.get('reason')}")
+            if response.status_code == 429:
+                _GLOBAL_RETRY_COUNT += 1
+                if _GLOBAL_RETRY_COUNT > GLOBAL_MAX_RETRIES:
+                    logger.error("Global retry limit exceeded. Halting pipeline.")
+                    raise GlobalRateLimitReached("Too many 429 rate limits hit globally.")
+
+                wait_seconds = _compute_retry_wait_seconds(response, attempt)
+                logger.warning(
+                    "Open-Meteo rate limit hit | location=%s | models=%s | attempt=%s/%s | wait_s=%s",
+                    location["name"],
+                    ",".join(models),
+                    attempt,
+                    OPEN_METEO_RETRY_ATTEMPTS,
+                    wait_seconds,
+                )
+                tyme.sleep(wait_seconds)
+                continue
+
+            response.raise_for_status()
+            data = response.json()
+            if data.get("error"):
+                logger.error(
+                    "API error for %s | models=%s | reason=%s",
+                    location["name"],
+                    ",".join(models),
+                    data.get("reason"),
+                )
+                return None
+            return data
+
+        except requests.RequestException as e:
+            status_code = getattr(getattr(e, "response", None), "status_code", None)
+            if status_code == 429:
+                _GLOBAL_RETRY_COUNT += 1
+                if _GLOBAL_RETRY_COUNT > GLOBAL_MAX_RETRIES:
+                    logger.error("Global retry limit exceeded on RequestException. Halting pipeline.")
+                    raise GlobalRateLimitReached("Too many 429 rate limits hit globally.")
+                
+                if attempt < OPEN_METEO_RETRY_ATTEMPTS:
+                    wait_seconds = _compute_retry_wait_seconds(getattr(e, "response", None), attempt)
+                    logger.warning(
+                        "Open-Meteo 429 retry scheduled | location=%s | models=%s | attempt=%s/%s | wait_s=%s",
+                        location["name"],
+                        ",".join(models),
+                        attempt,
+                        OPEN_METEO_RETRY_ATTEMPTS,
+                        wait_seconds,
+                    )
+                    tyme.sleep(wait_seconds)
+                    continue
+
+            logger.error(
+                f"Request failed for {location['name']} ({resort_elevation}m) | models={','.join(models)}: {e}"
+            )
+            return None
+        except Exception as e:
+            logger.error(
+                f"Unexpected error for {location['name']} ({resort_elevation}m) | models={','.join(models)}: {e}"
+            )
             return None
 
-        return data
+    logger.error(
+        "Exceeded Open-Meteo retry limit | location=%s | models=%s | start_date=%s | end_date=%s",
+        location["name"],
+        ",".join(models),
+        start_date,
+        end_date,
+    )
+    return None
 
-    except requests.RequestException as e:
-        logger.error(f"Request failed for {location['name']} ({resort_elevation}m): {e}")
+
+def fetch_snowfall_data(location, start_date, end_date):
+    """Fetch comparison-model Open-Meteo daily fields with smaller batched requests."""
+    resort_elevation = location.get("resort_elevation")
+    logger.debug(
+        f"Fetching data for {location['name']} from {start_date} to {end_date} at resort elevation {resort_elevation}m"
+    )
+    country = location.get("country")
+    comparison_models = get_relevant_models(country)
+    model_batches = _chunk_models(comparison_models, OPEN_METEO_MAX_MODELS_PER_REQUEST)
+
+    combined_data = None
+    for batch_index, batch in enumerate(model_batches, start=1):
+        logger.info(
+            "Requesting Open-Meteo batch %s/%s for %s | models=%s | range=%s to %s",
+            batch_index,
+            len(model_batches),
+            location["name"],
+            ",".join(batch),
+            start_date,
+            end_date,
+        )
+        batch_data = _request_open_meteo_batch(location, start_date, end_date, batch)
+        if batch_data is None:
+            logger.warning(
+                "Skipping failed comparison-model batch for %s | models=%s",
+                location["name"],
+                ",".join(batch),
+            )
+            continue
+
+        combined_data = _merge_open_meteo_payload(combined_data, batch_data)
+
+    if combined_data is None:
         return None
-    except Exception as e:
-        logger.error(f"Unexpected error for {location['name']} ({resort_elevation}m): {e}")
-        return None
+
+    logger.info(
+        "Received data for %s (resort %sm): %s daily records",
+        location["name"],
+        resort_elevation,
+        len(combined_data.get("daily", {}).get("time", [])),
+    )
+    return combined_data
 
 @dlt.resource(write_disposition="merge", name="ski_field_lookup", primary_key=["name"])
 def ski_field_lookup_resource(new_locations):
@@ -372,7 +512,12 @@ def snowfall_source(logger: logging.Logger, dataset, run_from_date: date | None 
 
         logger.info("Starting snowfall data collection for ski fields")
 
+        abort_pipeline = False
+
         for location in SKI_FIELDS:
+            if abort_pipeline:
+                break
+                
             location_name = location["name"]
             country = location["country"]
 
@@ -410,6 +555,10 @@ def snowfall_source(logger: logging.Logger, dataset, run_from_date: date | None 
                     for i in range(0, len(merged), BATCH_SIZE):
                         yield merged.iloc[i:i+BATCH_SIZE].to_dict(orient="records")
 
+                except GlobalRateLimitReached as e:
+                    logger.error(f"Gracefully exiting generator to preserve yielded data: {e}")
+                    abort_pipeline = True
+                    break
                 except Exception as e:
                     logger.error(f"Error processing {start_date} to {end_date} for {location_name}: {e}")
                 tyme.sleep(1)

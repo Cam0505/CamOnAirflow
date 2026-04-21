@@ -26,6 +26,6 @@ sources:
                   - location
         config:
           freshness:
-            warn_after: {count: 6, period: day}
-            error_after: {count: 14, period: day}
+            warn_after: {count: 10, period: day}
+            error_after: {count: 20, period: day}
         loaded_at_field: CAST(date AS TIMESTAMP)

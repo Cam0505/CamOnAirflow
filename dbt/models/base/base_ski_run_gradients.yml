@@ -1,0 +1,20 @@
+version: 2
+
+models:
+  - name: base_ski_run_gradients
+    description: "{{ doc('base_ski_run_gradients_description') }}"
+    columns:
+      - name: osm_id
+        description: OSM identifier of the run.
+        data_tests:
+          - not_null
+      - name: resort
+        description: Name of the ski resort.
+        data_tests:
+          - not_null
+      - name: difficulty
+        description: Difficulty rating of the run.
+      - name: avg_gradient
+        description: Mean gradient across all segments of the run, in percent.
+      - name: steepest_gradient
+        description: Maximum segment gradient observed on the run, in percent, capped by difficulty threshold.

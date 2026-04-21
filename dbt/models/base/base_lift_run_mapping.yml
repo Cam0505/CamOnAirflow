@@ -1,0 +1,38 @@
+version: 2
+
+models:
+  - name: base_lift_run_mapping
+    description: "{{ doc('base_lift_run_mapping_description') }}"
+    columns:
+      - name: lift_osm_id
+        description: OSM identifier of the lift.
+        data_tests:
+          - not_null
+      - name: resort
+        description: Name of the ski resort.
+        data_tests:
+          - not_null
+      - name: lift_name
+        description: Display name of the lift.
+      - name: lift_type
+        description: Type of lift (gondola, chair_lift, t-bar, etc.).
+      - name: country_code
+        description: Two-letter country code.
+      - name: lift_length_m
+        description: Length of the lift in metres.
+      - name: lift_speed_mps
+        description: Operational speed of the lift in metres per second.
+      - name: run_osm_id
+        description: OSM identifier of the connected ski run.
+      - name: run_name
+        description: Display name of the connected run.
+      - name: difficulty
+        description: Difficulty rating of the connected run.
+      - name: run_length_m
+        description: Length of the connected run in metres.
+      - name: connection_type
+        description: Relationship type between lift and run (e.g. lift_services_run, lift_connects_to_run).
+      - name: run_start_point_index
+        description: Point index on the run where the connection begins (0 = top).
+      - name: run_start_distance_m
+        description: Distance along the run at the connection point in metres.

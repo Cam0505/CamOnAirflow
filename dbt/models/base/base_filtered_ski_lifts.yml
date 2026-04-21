@@ -1,0 +1,33 @@
+version: 2
+
+models:
+  - name: base_filtered_ski_lifts
+    description: "{{ doc('base_filtered_ski_lifts_description') }}"
+    columns:
+      - name: osm_id
+        description: OpenStreetMap identifier for the lift.
+        data_tests:
+          - not_null
+          - unique
+      - name: resort
+        description: Name of the ski resort the lift belongs to.
+        data_tests:
+          - not_null
+      - name: name
+        description: Display name of the lift.
+      - name: lift_type
+        description: Type of lift (e.g. gondola, chair_lift, t-bar).
+      - name: country_code
+        description: Two-letter country code for the resort.
+      - name: top_lat
+        description: Latitude of the lift's top terminal.
+      - name: top_lon
+        description: Longitude of the lift's top terminal.
+      - name: bottom_lat
+        description: Latitude of the lift's bottom terminal.
+      - name: bottom_lon
+        description: Longitude of the lift's bottom terminal.
+      - name: lift_length_m
+        description: Total cable/track length of the lift in metres.
+      - name: lift_speed_mps
+        description: Operational line speed in metres per second, when available.

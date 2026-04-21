@@ -1,0 +1,38 @@
+version: 2
+
+models:
+  - name: analysis_season_totals
+    description: "{{ doc('analysis_season_totals_description') }}"
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - ski_field
+              - country
+              - year_col
+              - model_name
+    columns:
+      - name: ski_field
+        description: Name of the ski field or resort.
+        data_tests:
+          - not_null
+      - name: country
+        description: Two-letter country code (JP, NZ, AU).
+        data_tests:
+          - not_null
+      - name: year_col
+        description: "{{ doc('season_year') }}"
+        data_tests:
+          - not_null
+      - name: model_name
+        description: "{{ doc('model_name') }}"
+        data_tests:
+          - not_null
+      - name: season_snowfall_cm
+        description: Total snowfall accumulated over the season window in centimetres.
+      - name: season_precip_mm
+        description: Total precipitation accumulated over the season window in millimetres.
+      - name: avg_temp_c
+        description: Mean daily temperature over the season window in degrees Celsius.
+      - name: temp_obs_count
+        description: Count of days with a non-null temperature observation within the season window.

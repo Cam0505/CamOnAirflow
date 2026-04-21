@@ -49,6 +49,8 @@ SKI_FIELDS = [
     {"name": "National Alpine Skiing Centre", "country": "CN", "region": "Hebei"},
     {"name": "禾木（吉克普林）国际滑雪度假区", "country": "CN", "region": "Xinjiang"},
     {"name": "将军山滑雪场", "country": "CN", "region": "Xinjiang"},
+    {"name": "Beidahu Ski Resort", "country": "CN", "region": "Jilin"},
+    {"name": "Songhua Lake Ski Resort", "country": "CN", "region": "Jilin"},
 
     # Japanese Ski Resorts
     {"name": "Kiroro Resort", "country": "JP", "region": "Hokkaido"},

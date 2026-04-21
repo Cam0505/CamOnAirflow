@@ -1,0 +1,22 @@
+version: 2
+
+models:
+  - name: base_ski_gradient_stats
+    description: "{{ doc('base_ski_gradient_stats_description') }}"
+    columns:
+      - name: resort
+        description: Name of the ski resort.
+        data_tests:
+          - not_null
+      - name: difficulty
+        description: Difficulty rating bucket.
+      - name: run_count
+        description: Number of runs in this resort/difficulty combination.
+      - name: mean_gradient_percent
+        description: Average gradient across all runs in this group, in percent.
+      - name: mean_gradient_degrees
+        description: Average gradient expressed in degrees.
+      - name: mean_steepest_percent
+        description: Maximum steepest segment gradient across runs in this group, in percent.
+      - name: mean_steepest_degrees
+        description: Maximum steepest segment gradient expressed in degrees.

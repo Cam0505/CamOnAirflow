@@ -1,0 +1,45 @@
+version: 2
+
+models:
+  - name: analysis_cumulative_snowfall
+    description: "{{ doc('analysis_cumulative_snowfall_description') }}"
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - ski_field
+              - country
+              - year_col
+              - model_name
+              - datecol
+    columns:
+      - name: ski_field
+        description: Name of the ski field or resort.
+        data_tests:
+          - not_null
+      - name: country
+        description: Two-letter country code (JP, NZ, AU).
+        data_tests:
+          - not_null
+      - name: year_col
+        description: "{{ doc('season_year') }}"
+        data_tests:
+          - not_null
+      - name: month_col
+        description: Calendar month number of the observation (1–12).
+      - name: datecol
+        description: Calendar date of the daily observation.
+        data_tests:
+          - not_null
+      - name: day_of_season
+        description: Ordinal day within the season (1 = first day of the season window for that ski field/year/model).
+      - name: facet_label
+        description: Combined country and ski field label for chart faceting.
+      - name: model_name
+        description: "{{ doc('model_name') }}"
+        data_tests:
+          - not_null
+      - name: daily_snowfall_cm
+        description: Snowfall for this date from the model in centimetres.
+      - name: cumulative_snowfall_cm
+        description: Running cumulative snowfall from season start to this date in centimetres.

@@ -1,5 +1,4 @@
 {% set snowfall_model_columns = [
-    'snowfall_default_open_meteo_cm',
     'snowfall_era5_cm',
     'snowfall_ecmwf_ifs_cm',
     'snowfall_ukmo_seamless_cm',

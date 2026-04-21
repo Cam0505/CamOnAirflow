@@ -1,0 +1,36 @@
+version: 2
+
+models:
+  - name: base_filtered_ski_points
+    description: "{{ doc('base_filtered_ski_points_description') }}"
+    columns:
+      - name: osm_id
+        description: OpenStreetMap identifier of the parent ski run.
+        data_tests:
+          - not_null
+      - name: resort
+        description: Name of the ski resort.
+        data_tests:
+          - not_null
+      - name: country_code
+        description: Two-letter country code.
+      - name: run_name
+        description: Name of the parent run.
+      - name: area
+        description: Sub-area or zone within the resort.
+      - name: point_index
+        description: Sequential position of the point along the run, re-indexed so index 0 is always the top.
+      - name: lat
+        description: Latitude of this GPS point.
+      - name: lon
+        description: Longitude of this GPS point.
+      - name: distance_along_run_m
+        description: Cumulative distance from the top of the run in metres, re-indexed to match point_index direction.
+      - name: elevation_m
+        description: Raw GPS elevation at this point in metres.
+      - name: elevation_smoothed_m
+        description: Smoothed elevation at this point in metres.
+      - name: gradient_smoothed
+        description: Smoothed gradient at this point as a fraction (multiply by 100 for percent).
+      - name: node_id
+        description: OSM node identifier for this point, used for segment joins.

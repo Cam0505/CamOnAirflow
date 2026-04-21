@@ -1,0 +1,42 @@
+version: 2
+
+models:
+  - name: base_filtered_ski_segments
+    description: "{{ doc('base_filtered_ski_segments_description') }}"
+    columns:
+      - name: run_osm_id
+        description: OpenStreetMap identifier of the parent ski run.
+      - name: segment_index
+        description: Sequential position of this segment within the run.
+      - name: from_node_id
+        description: OSM node ID at the start of the segment.
+      - name: to_node_id
+        description: OSM node ID at the end of the segment.
+      - name: from_lat
+        description: Latitude of the segment start node.
+      - name: from_lon
+        description: Longitude of the segment start node.
+      - name: to_lat
+        description: Latitude of the segment end node.
+      - name: to_lon
+        description: Longitude of the segment end node.
+      - name: length_m
+        description: Horizontal length of the segment in metres.
+      - name: vertical_drop_m
+        description: Elevation difference between end and start nodes (negative = downhill).
+      - name: from_elev_m
+        description: Elevation at the segment start node in metres.
+      - name: to_elev_m
+        description: Elevation at the segment end node in metres.
+      - name: gradient
+        description: Blended segment gradient in percent, derived from smoothed node gradients or elevation/length fallback.
+      - name: original_gradient
+        description: Raw segment gradient as recorded in the source data, converted to percent.
+      - name: resort
+        description: Name of the ski resort.
+      - name: country_code
+        description: Two-letter country code.
+      - name: run_name
+        description: Display name of the parent run.
+      - name: difficulty
+        description: Normalised difficulty of the parent run.

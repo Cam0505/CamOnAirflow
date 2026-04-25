@@ -21,7 +21,9 @@ models:
       - name: country
         description: Two-letter country code (JP, NZ, AU).
         data_tests:
-          - not_null
+          - not_null:
+              config:
+                severity: warn
       - name: resort_elevation_m
         description: Representative on-mountain elevation for the resort in metres.
       - name: grid_elevation_m

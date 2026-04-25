@@ -1,5 +1,13 @@
--- models/base/base_filtered_ski_lifts.sql
-
+-- ==============================================================================
+-- [INTENT — DO NOT REMOVE] base_filtered_ski_lifts
+-- Removes lift types that are not meaningful for route-planning:
+--   magic_carpet, platter, goods, station — too slow / non-public
+--   learner / beginner lifts — excluded by name pattern match
+--   lifts shorter than 100m — likely connector infrastructure, not ski lifts
+-- osm_id 1394839385 is a known bad record and is hard-excluded.
+-- Coordinate NULLs are filtered because downstream spatial joins require all
+-- four terminal positions (top + bottom lat/lon).
+-- ==============================================================================
 
 SELECT *
 FROM {{ source('ski_runs', 'ski_lifts') }}

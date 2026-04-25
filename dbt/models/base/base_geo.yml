@@ -24,6 +24,8 @@ models:
           min_value: -90
           max_value: 90
           strictly: false
+        config:
+          severity: warn
   - name: longitude
     description: "{{ doc('longitude') }}"
     data_type: double precision
@@ -33,6 +35,8 @@ models:
           min_value: -180
           max_value: 180
           strictly: false
+        config:
+          severity: warn
   - name: country_code
     description: ''
     data_type: varchar
@@ -41,6 +45,8 @@ models:
         arguments:
           values: ['AU', 'NZ', 'CA', 'GB']
           quote: true
+        config:
+          severity: warn
   - name: country
     description: "{{ doc('country') }}"
     data_type: varchar

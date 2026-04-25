@@ -1,3 +1,24 @@
+-- ==============================================================================
+-- [INTENT — DO NOT REMOVE] base_filtered_ski_segments
+-- Builds per-segment geometry and gradient for every ski run.
+--
+-- Gradient priority (blended from adjacent GPS point smoothed gradients):
+--   1. Average of from- and to-node smoothed gradients (most reliable)
+--   2. Single-node smoothed gradient if only one is available
+--   3. Raw elevation/length fallback when no smoothed data exists
+-- original_gradient preserves the raw source value (s.gradient * 100)
+--   for audit and comparison purposes.
+--
+-- INNER JOIN to base_filtered_ski_runs is intentional: it propagates all
+--   run-level filters (area=yes, min length, n_points, explicit exclusions)
+--   into this model automatically. Do NOT change to LEFT JOIN — doing so
+--   reintroduces the 29 orphaned segment runs that were previously cleaned up.
+--
+-- The manual Cardrona connector (UNION ALL at the bottom) patches a missing
+--   OSM edge between runs 1394841139 and 1394841137. It uses segment_index=999
+--   and zeroed geometry to signal that it is synthetic, not real GPS data.
+-- ==============================================================================
+
 WITH segs AS (
     SELECT
         s.run_osm_id,
@@ -35,10 +56,9 @@ WITH segs AS (
     LEFT JOIN {{ ref('base_filtered_ski_points') }} tp
       ON s.to_node_id = tp.node_id
      AND s.run_osm_id = tp.osm_id
-    LEFT JOIN {{ ref('base_filtered_ski_runs') }} r
+    INNER JOIN {{ ref('base_filtered_ski_runs') }} r
       ON s.run_osm_id = r.osm_id
     WHERE COALESCE(LOWER(TRIM(s.area)), '') <> 'yes'
-      AND COALESCE(LOWER(TRIM(r.area)), '') <> 'yes'
 )
 
 SELECT * FROM segs

@@ -1,4 +1,26 @@
 
+-- ==============================================================================
+-- [INTENT — DO NOT REMOVE] base_spectral_daily_features
+-- Standardises and enriches daily NDSI/NDWI/NDII satellite ice indices.
+--
+-- Key design decisions:
+--   Deduplication: source sometimes delivers duplicate (location, date) rows
+--     (e.g. two satellite passes). Row is ranked by non-null index count so
+--     the observation with the most valid values wins.
+--   _best columns: COALESCE(smooth, raw) — smoothed values are preferred
+--     because they reduce cloud-noise artefacts; raw is fallback.
+--   out_of_expected_range_flag: any index outside [-1.2, 1.2] is physically
+--     implausible for normalised difference indices (theoretical range is
+--     [-1, 1]; 0.2 buffer for floating-point edge cases).
+--   Anomaly calculation: subtract per-location per-day-of-year climatology
+--     computed on the same dataset (self-join via with_climatology CTE).
+--     This is in-sample, so anomalies for early dates will be noisy until
+--     several seasons of data accumulate.
+--   Change vs prev obs: delta is vs the previous *available* observation,
+--     not necessarily the previous calendar day — days_since_prev_observation
+--     tracks the actual gap so downstream can weight accordingly.
+-- ==============================================================================
+
 /*
 Daily spectral feature table for downstream fusion with weather and terrain data.
 

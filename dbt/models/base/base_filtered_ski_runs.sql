@@ -1,3 +1,21 @@
+-- ==============================================================================
+-- [INTENT — DO NOT REMOVE] base_filtered_ski_runs
+-- Core run filter. Removes:
+--   area=yes      — OSM zones/glades mapped as polygons, not runnable lines
+--   run_length_m < 10  — stub / connector segments from OSM noise
+--   n_points < 2  — single-node entries with no usable geometry
+--   osm_id 951853708  — specific Cardrona NZ entry with known bad geometry
+-- Difficulty normalisation: 'extreme' → 'intermediate', 'expert' → 'advanced'
+--   (keeps the difficulty scale consistent across data providers).
+-- Unnamed runs are assigned 'Unnamed <resort> Run <n>' within each resort
+--   using ROW_NUMBER over osm_id for a stable, deterministic label.
+-- Ski time estimates at bottom are simple placeholders (constant speed);
+--   refined times live in staging_ski_time_estimate.
+-- NOTE: base_filtered_ski_segments uses an INNER JOIN to this model so that
+--   all segment filters are inherited automatically — do not weaken filters
+--   here without checking the segment and points models.
+-- ==============================================================================
+
 WITH deduplicated_runs AS (
     SELECT
         osm_id,

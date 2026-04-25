@@ -1,4 +1,17 @@
 -- filepath: /workspaces/CamOnAirFlow/dbt/models/base/base_ski_lift_times.sql
+-- ==============================================================================
+-- [INTENT — DO NOT REMOVE] base_ski_lift_times
+-- Estimates ride time for every lift using a four-level fallback strategy:
+--   1. Actual recorded speed (lift_speed_mps) — most accurate
+--   2. OSM duration tag parsed as seconds — used when speed is absent
+--   3. Lift-type typical speed × length — covers most real-world cases
+--   4. Fixed type-based defaults (seconds) — last resort when length unknown
+-- derived_speed_mps mirrors the speed used in case 3 so downstream models
+--   can identify which method was applied without re-running the CASE logic.
+-- Type-specific speeds (m/s): gondola=5.0, chair_lift=2.5, drag/t-bar=3.0,
+--   magic_carpet=1.5, mixed_lift=3.5. These are conservative industry averages.
+-- ==============================================================================
+
 SELECT
     osm_id,
     resort,

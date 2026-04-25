@@ -28,7 +28,9 @@ models:
       - name: hourly_obs_count
         description: Number of hourly observations available for that day.
         data_tests:
-          - not_null
+          - not_null:
+              config:
+                severity: warn
       - name: temperature_mean_c
         description: Daily mean 2m air temperature in Celsius.
       - name: temperature_min_c

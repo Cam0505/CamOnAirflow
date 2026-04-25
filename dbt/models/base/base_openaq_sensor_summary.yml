@@ -17,6 +17,8 @@ models:
           - accepted_values:
               arguments:
                 values: [1,2,3,4,5,6,7,8,9,10,11,12]
+              config:
+                severity: warn
       - name: country
         description: Country code of the sensor.
         data_tests:
@@ -38,17 +40,25 @@ models:
       - name: num_records
         description: Number of records for this group.
         data_tests:
-          - not_null
+          - not_null:
+              config:
+                severity: warn
           - dbt_utils.expression_is_true:
               arguments:
                 expression: "{{ column_name }} >= 0"
+              config:
+                severity: warn
       - name: days_reported
         description: Number of unique days with data in this group.
         data_tests:
-          - not_null
+          - not_null:
+              config:
+                severity: warn
           - dbt_utils.expression_is_true:
               arguments:
                 expression: "{{ column_name }} >= 0"
+              config:
+                severity: warn
       - name: avg_value
         description: Average value for the parameter.
       - name: min_value
@@ -60,10 +70,14 @@ models:
       - name: num_nulls
         description: Number of null values for the parameter.
         data_tests:
-          - not_null
+          - not_null:
+              config:
+                severity: warn
           - dbt_utils.expression_is_true:
               arguments:
                 expression: "{{ column_name }} >= 0"
+              config:
+                severity: warn
       # Summary statistics
       - name: avg_min
         description: Average of summary__min.

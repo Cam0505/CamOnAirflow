@@ -1,3 +1,20 @@
+-- ==============================================================================
+-- [INTENT — DO NOT REMOVE] base_filtered_ski_points
+-- Fixes a systematic OSM data issue: some downhill runs are stored with
+-- point_index and distance_along_run_m measured from the bottom rather than
+-- the top of the run. This causes incorrect gradient and turniness calculations.
+--
+-- Detection: uphill_runs CTE identifies runs where the first-indexed point
+--   sits lower than the last-indexed point (ARG_MIN/ARG_MAX on elevation).
+--
+-- Fix: For those runs, point_index and distance_along_run_m are inverted:
+--   new_index = max_index - old_index
+--   new_dist  = max_dist  - old_dist
+--   This flips the ordering so index 0 is always the top of the run.
+--
+-- area=yes rows are excluded to match base_filtered_ski_runs.
+-- ==============================================================================
+
 WITH uphill_runs AS (
     SELECT
         pts.resort,
@@ -11,7 +28,7 @@ WITH uphill_runs AS (
        AND pts.country_code = runs.country_code
        AND pts.osm_id = runs.osm_id
     WHERE runs.piste_type = 'downhill'
-      AND runs.run_length_m > 100
+      AND runs.run_length_m > 50
       AND COALESCE(LOWER(TRIM(pts.area)), '') <> 'yes'
     GROUP BY
         pts.resort,

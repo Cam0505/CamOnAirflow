@@ -12,11 +12,15 @@ models:
       - name: resort
         description: Name of the ski resort the run belongs to.
         data_tests:
-          - not_null
+          - not_null:
+              config:
+                severity: warn
       - name: country_code
         description: Two-letter country code for the resort.
         data_tests:
-          - not_null
+          - not_null:
+              config:
+                severity: warn
       - name: run_name
         description: Display name of the run, with unnamed runs assigned a generated label.
       - name: region

@@ -1,4 +1,12 @@
--- models/ski_gradient_stats.sql
+-- ==============================================================================
+-- [INTENT — DO NOT REMOVE] base_ski_gradient_stats
+-- Resort-level summary of gradient statistics, grouped by difficulty bucket.
+-- mean_gradient_degrees and mean_steepest_degrees convert percent gradient to
+--   degrees using ATAN(pct/100)*180/PI() for human-readable comparison.
+-- Note: 'mean_steepest_percent/degrees' column names are misleading —
+--   they actually use MAX(), not AVG(), to return the steepest observed
+--   segment across all runs in that resort/difficulty group.
+-- ==============================================================================
 
 SELECT
     resort,

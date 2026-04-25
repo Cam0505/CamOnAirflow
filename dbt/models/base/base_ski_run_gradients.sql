@@ -1,4 +1,25 @@
--- models/ski_run_gradients.sql
+-- ==============================================================================
+-- [INTENT — DO NOT REMOVE] base_ski_run_gradients
+-- Computes per-run average gradient and steepest segment gradient.
+--
+-- avg_gradient: end-to-end (start_elev - end_elev) / run_length. Uses
+--   first/last points rather than a mean of segment gradients to avoid
+--   cumulative GPS noise amplification.
+--
+-- steepest_gradient: max segment gradient after two filters are applied:
+--   1. Segments with |gradient| > difficulty-based threshold are dropped.
+--      Thresholds are derived from piste classification angle standards:
+--        novice=15°, easy=25°, intermediate=35°, advanced/freeride=50°
+--      (converted to % via TAN(RADIANS(angle))*100)
+--   2. Segments shorter than 15m are dropped to avoid noisy single-point spikes.
+--
+-- Gradient calculation uses raw elevation first; falls back to smoothed
+--   elevation when raw produces |gradient| > 100% or exactly 0 (which signals
+--   a flat GPS artefact). If smoothed also exceeds 110% the segment is zeroed.
+--
+-- Runs with fewer than 3 points are excluded — they cannot produce a valid
+--   segment-to-segment comparison.
+-- ==============================================================================
 
 WITH points AS (
     SELECT

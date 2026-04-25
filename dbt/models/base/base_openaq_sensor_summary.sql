@@ -1,4 +1,5 @@
 -- ==============================================================================
+-- [INTENT — DO NOT REMOVE] base_openaq_sensor_summary
 -- Model: base_openaq_sensor_summary
 -- Description: Monthly summary statistics for OpenAQ sensor data
 -- ==============================================================================

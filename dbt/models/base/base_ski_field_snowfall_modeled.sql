@@ -1,3 +1,16 @@
+-- ==============================================================================
+-- [INTENT — DO NOT REMOVE] base_ski_field_snowfall_modeled
+-- Casts and standardises daily snowfall from multiple NWP model columns.
+-- snowfall_model_columns Jinja list drives both the SELECT and the CAST loop,
+--   keeping the column list in one place — add new model columns to the list
+--   only, the SQL body updates automatically.
+-- COALESCE(column, 0.0) converts NULLs to 0 so cumulative sums in analysis
+--   models don't silently drop days. Raw NULLs would need special handling
+--   if you ever need to distinguish "no forecast" from "zero snowfall".
+-- snowfall_era5_cm and snowfall_bom_access_global_cm are outside the Jinja
+--   loop — they are not included in multi-model ensemble logic.
+-- ==============================================================================
+
 {% set snowfall_model_columns = [
     'snowfall_ecmwf_ifs_cm',
     'snowfall_ukmo_seamless_cm',

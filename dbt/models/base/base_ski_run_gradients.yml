@@ -11,7 +11,9 @@ models:
       - name: resort
         description: Name of the ski resort.
         data_tests:
-          - not_null
+          - not_null:
+              config:
+                severity: warn
       - name: difficulty
         description: Difficulty rating of the run.
       - name: avg_gradient

@@ -1,5 +1,25 @@
 {{ config(materialized='table') }}
 
+-- ==============================================================================
+-- [INTENT — DO NOT REMOVE] base_weather_daily_ice_features
+-- Aggregates hourly Open-Meteo weather into a daily/location grain and
+-- engineers features specifically for ice-formation modelling.
+--
+-- Key design decisions:
+--   precip_total_mm: three-way COALESCE (precipitation → total_precipitation
+--     → rain+snowfall) handles inconsistency between API versions.
+--   wind_chill_c: Steadman formula applied only when temp ≤ 10°C and
+--     wind > 4.8 km/h; outside that range, wind_chill = temperature.
+--   vapor_pressure_deficit_kpa: derived from temp and dewpoint using the
+--     Magnus approximation (0.6108 * exp(17.27*T/(T+237.3))).
+--   supercooled_risk_hour_flag: temp -8°C to +1°C with RH ≥ 85% — the band
+--     where supercooled liquid water is most likely on rock surfaces.
+--   shortwave_energy_mj_m2: hourly W/m² × 3600s / 1,000,000 → MJ/m²/day.
+--   freeze_thaw_cycles: counted via sign-change detection on hourly temp.
+--   Rolling windows (3d, 7d): LAG-based running sums in a later CTE —
+--     preserving intermediate daily CTEs makes unit testing easier.
+-- ==============================================================================
+
 /*
 Daily weather feature table for ice-formation analysis.
 

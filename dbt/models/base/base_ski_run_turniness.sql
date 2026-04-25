@@ -1,3 +1,13 @@
+-- ==============================================================================
+-- [INTENT — DO NOT REMOVE] base_ski_run_turniness
+-- Thin projection over base_filtered_ski_runs that surfaces turniness metrics.
+-- turniness_score is computed upstream in the OSM pipeline (Ski_runs.py).
+-- turniness_per_meter normalises by run length so short and long runs are
+--   comparable; NULLIF guards against division-by-zero on zero-length runs.
+-- Rows where turniness_score IS NULL are excluded — they cannot contribute
+--   to gradient distribution or path-matrix calculations.
+-- ==============================================================================
+
 SELECT
     resort,
     osm_id,

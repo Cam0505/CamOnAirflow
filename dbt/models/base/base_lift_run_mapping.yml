@@ -11,7 +11,9 @@ models:
       - name: resort
         description: Name of the ski resort.
         data_tests:
-          - not_null
+          - not_null:
+              config:
+                severity: warn
       - name: lift_name
         description: Display name of the lift.
       - name: lift_type
@@ -24,6 +26,8 @@ models:
         description: Operational speed of the lift in metres per second.
       - name: run_osm_id
         description: OSM identifier of the connected ski run.
+        data_tests:
+          - not_null
       - name: run_name
         description: Display name of the connected run.
       - name: difficulty

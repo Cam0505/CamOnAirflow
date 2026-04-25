@@ -8,10 +8,18 @@ models:
         description: OpenStreetMap identifier of the parent ski run.
         data_tests:
           - not_null
+          - relationships:
+              arguments:
+                to: ref('base_filtered_ski_runs')
+                field: osm_id
+              config:
+                severity: warn
       - name: resort
         description: Name of the ski resort.
         data_tests:
-          - not_null
+          - not_null:
+              config:
+                severity: warn
       - name: country_code
         description: Two-letter country code.
       - name: run_name

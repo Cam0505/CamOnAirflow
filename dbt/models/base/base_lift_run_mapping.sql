@@ -1,4 +1,23 @@
--- Map lifts to runs using only top/bottom coordinates
+-- ==============================================================================
+-- [INTENT — DO NOT REMOVE] base_lift_run_mapping
+-- Spatial proximity join between lifts and runs using top/bottom GPS coordinates.
+-- No PostGIS — distances are approximated with the equirectangular formula:
+--   distance_m = SQRT((69.1*(Δlat))² + (69.1*(Δlon)*COS(lat/57.3))²) * 1609.34
+--   (degrees → miles via 69.1, × 1609.34 → metres; COS correction for longitude)
+--
+-- Two relationship types are detected:
+--   lift_services_run : lift top within 45m of run top
+--     → the lift drops riders at the top of the run
+--   run_feeds_lift    : run bottom within 75m of lift bottom
+--     → the run ends at the lift base (75m tolerance handles GPS imprecision)
+--
+-- ROW_NUMBER + rank=1 keeps only the single closest match per lift/run pair
+--   to avoid duplicating connections when multiple runs share a terminal.
+--
+-- Manual override for Whitestar Express (Cardrona NZ) is appended via
+--   UNION ALL. It uses connection_distance_m=0 as a sentinel to flag that
+--   the connection was hand-coded, not proximity-detected.
+-- ==============================================================================
 
 WITH lift_positions AS (
     SELECT

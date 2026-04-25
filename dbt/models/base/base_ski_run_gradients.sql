@@ -77,6 +77,7 @@ WITH points AS (
     SELECT *
     FROM segments
     WHERE ABS(final_segment_gradient) < steepest_gradient_threshold -- filter out extreme gradients
+    and segment_length >= 15 -- filter out very short segments
 )
 
 ,steepest_segment AS (

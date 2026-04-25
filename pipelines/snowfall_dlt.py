@@ -78,25 +78,17 @@ def get_ski_fields_with_timestamp():
     ]
 
 SKI_FIELDS = get_ski_fields_with_timestamp()
-START_DATE = date(2022, 11, 1)
+START_DATE = date(2020, 11, 1)
 BATCH_SIZE = 500  # Number of rows to yield at once
 
 GLOBAL_COMPARISON_MODELS = [
-    "era5",  # Reanalysis gold standard for long-term consistency
     "ecmwf_ifs",  # Native ECMWF HRES model (~9 km)
     "ukmo_seamless",  # UK Met Office Unified Model (~10 km)
     "icon_seamless",  # German Model (~11 km)
     "gem_seamless",  # Canadian Model (~15 km)
     "cma_grapes_global",  # Chinese Model (~15 km)
-    "gfs_seamless",  # US Model (~25 km)
-    "meteofrance_seamless",  # French ARPEGE Model (~25 km)
+    "jma_seamless",  # Japanese Model (~20 km)
 ]
-
-COUNTRY_MODEL_PRIORITY = {
-    "JP": ["jma_seamless"],
-    "AU": ["bom_access_global"],
-    "NZ": ["bom_access_global"],
-}
 
 DAILY_VARIABLE_CONFIG = {
     "snowfall_sum": {
@@ -115,7 +107,7 @@ DAILY_VARIABLE_CONFIG = {
 
 REQUESTED_DAILY_VARIABLES = list(DAILY_VARIABLE_CONFIG.keys())
 OPEN_METEO_ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/archive"
-OPEN_METEO_MAX_MODELS_PER_REQUEST = 5
+OPEN_METEO_MAX_MODELS_PER_REQUEST = 6
 OPEN_METEO_RETRY_ATTEMPTS = 1
 OPEN_METEO_BACKOFF_SECONDS = 20
 OPEN_METEO_REQUEST_TIMEOUT = 15
@@ -267,7 +259,6 @@ def get_all_missing_date_ranges_by_season(logger, locations, start_date, end_dat
 def get_relevant_models(country: str) -> list[str]:
     """Return only the model set needed for each country comparison."""
     comparison_pool = list(GLOBAL_COMPARISON_MODELS)
-    comparison_pool.extend(COUNTRY_MODEL_PRIORITY.get(country, []))
 
     deduped_models = []
     for model in comparison_pool:

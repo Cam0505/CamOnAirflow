@@ -35,16 +35,12 @@ COUNTRY_LABELS = {
 }
 
 MODEL_DISPLAY_ORDER = [
-    "ERA5",
     "ECMWF IFS",
     "UKMO Seamless",
     "ICON Seamless",
     "GEM Seamless",
     "CMA GRAPES Global",
-    "GFS Seamless",
-    "Meteo-France Seamless",
     "JMA Seamless",
-    "BOM ACCESS Global",
 ]
 
 MODEL_PALETTE = [
@@ -72,6 +68,28 @@ MODEL_LINETYPES = [
     "solid",
     "dashed",
 ]
+
+
+# Southern-Hemisphere countries whose season ends in November — the pipeline's
+# START_DATE (Nov 1) captures only the tail of their first season, so it is always
+# partial and must be excluded from season-total comparisons.
+SH_COUNTRIES = {"NZ", "AU"}
+
+
+def filter_complete_seasons(df: pd.DataFrame) -> pd.DataFrame:
+    """Drop the first (partial) season year for SH countries (NZ, AU).
+
+    For NZ/AU the ski season runs June–November. Because the pipeline start date
+    is 1 Nov, the first year_col only contains a single month of data. Dropping
+    the minimum year_col per SH country ensures only full seasons are plotted.
+    """
+    parts = []
+    for country, group in df.groupby("country", sort=False):
+        if country in SH_COUNTRIES:
+            min_year = group["year_col"].min()
+            group = group[group["year_col"] > min_year]
+        parts.append(group)
+    return pd.concat(parts, ignore_index=True) if parts else df
 
 
 paths = get_project_paths()
@@ -214,6 +232,7 @@ def main(
     df = fetch_season_totals(selected_countries)
     if df.empty:
         raise ValueError("No season totals data returned.")
+    df = filter_complete_seasons(df)
 
     output_dir = "/workspaces/CamOnAirFlow/charts"
     os.makedirs(output_dir, exist_ok=True)

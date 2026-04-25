@@ -1,6 +1,6 @@
 {
-  "version": 4,
-  "version_hash": "RaTbanqlanVz/sqiFSJ+CnKYxfBnfJRZHFp8irrAIB8=",
+  "version": 6,
+  "version_hash": "oGQ2KiKGX8Omc6qod8FaKbUFbITCNbQN/orWNJlcrKE=",
   "engine_version": 11,
   "name": "snowfall_source",
   "tables": {
@@ -83,11 +83,6 @@
           "primary_key": true,
           "data_type": "date"
         },
-        "snowfall_era5_cm": {
-          "name": "snowfall_era5_cm",
-          "data_type": "double",
-          "nullable": true
-        },
         "snowfall_ecmwf_ifs_cm": {
           "name": "snowfall_ecmwf_ifs_cm",
           "data_type": "double",
@@ -110,26 +105,6 @@
         },
         "snowfall_cma_grapes_global_cm": {
           "name": "snowfall_cma_grapes_global_cm",
-          "data_type": "double",
-          "nullable": true
-        },
-        "snowfall_gfs_seamless_cm": {
-          "name": "snowfall_gfs_seamless_cm",
-          "data_type": "double",
-          "nullable": true
-        },
-        "snowfall_meteofrance_seamless_cm": {
-          "name": "snowfall_meteofrance_seamless_cm",
-          "data_type": "double",
-          "nullable": true
-        },
-        "snowfall_bom_access_global_cm": {
-          "name": "snowfall_bom_access_global_cm",
-          "data_type": "double",
-          "nullable": true
-        },
-        "precipitation_sum_era5_mm": {
-          "name": "precipitation_sum_era5_mm",
           "data_type": "double",
           "nullable": true
         },
@@ -158,26 +133,6 @@
           "data_type": "double",
           "nullable": true
         },
-        "precipitation_sum_gfs_seamless_mm": {
-          "name": "precipitation_sum_gfs_seamless_mm",
-          "data_type": "double",
-          "nullable": true
-        },
-        "precipitation_sum_meteofrance_seamless_mm": {
-          "name": "precipitation_sum_meteofrance_seamless_mm",
-          "data_type": "double",
-          "nullable": true
-        },
-        "precipitation_sum_bom_access_global_mm": {
-          "name": "precipitation_sum_bom_access_global_mm",
-          "data_type": "double",
-          "nullable": true
-        },
-        "temperature_mean_era5_c": {
-          "name": "temperature_mean_era5_c",
-          "data_type": "double",
-          "nullable": true
-        },
         "temperature_mean_ecmwf_ifs_c": {
           "name": "temperature_mean_ecmwf_ifs_c",
           "data_type": "double",
@@ -203,26 +158,6 @@
           "data_type": "double",
           "nullable": true
         },
-        "temperature_mean_gfs_seamless_c": {
-          "name": "temperature_mean_gfs_seamless_c",
-          "data_type": "double",
-          "nullable": true
-        },
-        "temperature_mean_meteofrance_seamless_c": {
-          "name": "temperature_mean_meteofrance_seamless_c",
-          "data_type": "double",
-          "nullable": true
-        },
-        "temperature_mean_bom_access_global_c": {
-          "name": "temperature_mean_bom_access_global_c",
-          "data_type": "double",
-          "nullable": true
-        },
-        "snow_depth_era5_m": {
-          "name": "snow_depth_era5_m",
-          "data_type": "double",
-          "nullable": true
-        },
         "snow_depth_ecmwf_ifs_m": {
           "name": "snow_depth_ecmwf_ifs_m",
           "data_type": "double",
@@ -245,21 +180,6 @@
         },
         "snow_depth_cma_grapes_global_m": {
           "name": "snow_depth_cma_grapes_global_m",
-          "data_type": "double",
-          "nullable": true
-        },
-        "snow_depth_gfs_seamless_m": {
-          "name": "snow_depth_gfs_seamless_m",
-          "data_type": "double",
-          "nullable": true
-        },
-        "snow_depth_meteofrance_seamless_m": {
-          "name": "snow_depth_meteofrance_seamless_m",
-          "data_type": "double",
-          "nullable": true
-        },
-        "snow_depth_bom_access_global_m": {
-          "name": "snow_depth_bom_access_global_m",
           "data_type": "double",
           "nullable": true
         },

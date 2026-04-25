@@ -1,14 +1,10 @@
 {% set models = [
-    ('ERA5',                  'era5'),
     ('ECMWF IFS',             'ecmwf_ifs'),
     ('UKMO Seamless',         'ukmo_seamless'),
     ('ICON Seamless',         'icon_seamless'),
     ('GEM Seamless',          'gem_seamless'),
     ('CMA GRAPES Global',     'cma_grapes_global'),
-    ('GFS Seamless',          'gfs_seamless'),
-    ('Meteo-France Seamless', 'meteofrance_seamless'),
-    ('JMA Seamless',          'jma_seamless'),
-    ('BOM ACCESS Global',     'bom_access_global')
+    ('JMA Seamless',          'jma_seamless')
 ] %}
 
 with seasonal_filtered as (

@@ -41,16 +41,12 @@ COUNTRY_MONTH_ORDER = {
 }
 
 MODEL_DISPLAY_ORDER = [
-    "ERA5",
     "ECMWF IFS",
     "UKMO Seamless",
     "ICON Seamless",
     "GEM Seamless",
     "CMA GRAPES Global",
-    "GFS Seamless",
-    "Meteo-France Seamless",
     "JMA Seamless",
-    "BOM ACCESS Global",
 ]
 
 MODEL_PALETTE = [

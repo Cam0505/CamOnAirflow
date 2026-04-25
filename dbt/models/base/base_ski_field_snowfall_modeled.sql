@@ -1,14 +1,10 @@
 {% set snowfall_model_columns = [
-    'snowfall_era5_cm',
     'snowfall_ecmwf_ifs_cm',
     'snowfall_ukmo_seamless_cm',
     'snowfall_icon_seamless_cm',
     'snowfall_gem_seamless_cm',
     'snowfall_cma_grapes_global_cm',
-    'snowfall_gfs_seamless_cm',
-    'snowfall_meteofrance_seamless_cm',
-    'snowfall_jma_seamless_cm',
-    'snowfall_bom_access_global_cm'
+    'snowfall_jma_seamless_cm'
 ] %}
 
 with source_snowfall as (

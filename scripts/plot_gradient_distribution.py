@@ -18,6 +18,7 @@ COUNTRIES = {
     "Canada": "CA",
     "Japan": "JP",
     "China": "CN",
+    "Chile": "CL",
 }
 
 DISPLAY_NAME_OVERRIDES = {

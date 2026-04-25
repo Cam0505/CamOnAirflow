@@ -1,14 +1,10 @@
 {% set snowfall_models = [
-    ('ERA5', 'snowfall_era5_cm'),
     ('ECMWF IFS', 'snowfall_ecmwf_ifs_cm'),
     ('UKMO Seamless', 'snowfall_ukmo_seamless_cm'),
     ('ICON Seamless', 'snowfall_icon_seamless_cm'),
     ('GEM Seamless', 'snowfall_gem_seamless_cm'),
     ('CMA GRAPES Global', 'snowfall_cma_grapes_global_cm'),
-    ('GFS Seamless', 'snowfall_gfs_seamless_cm'),
-    ('Meteo-France Seamless', 'snowfall_meteofrance_seamless_cm'),
-    ('JMA Seamless', 'snowfall_jma_seamless_cm'),
-    ('BOM ACCESS Global', 'snowfall_bom_access_global_cm')
+    ('JMA Seamless', 'snowfall_jma_seamless_cm')
 ] %}
 
 with daily_seasonal_snowfall as (
@@ -22,16 +18,12 @@ with daily_seasonal_snowfall as (
             when extract(month from date) in (11, 12) then extract(year from date) + 1
             else extract(year from date)
         end as year_col
-        , snowfall_era5_cm
         , snowfall_ecmwf_ifs_cm
         , snowfall_ukmo_seamless_cm
         , snowfall_icon_seamless_cm
         , snowfall_gem_seamless_cm
         , snowfall_cma_grapes_global_cm
-        , snowfall_gfs_seamless_cm
-        , snowfall_meteofrance_seamless_cm
         , snowfall_jma_seamless_cm
-        , snowfall_bom_access_global_cm
     from {{ ref('base_ski_field_snowfall_modeled') }}
     where (
         country in ('JP')

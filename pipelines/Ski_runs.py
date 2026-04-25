@@ -61,7 +61,6 @@ SKI_FIELDS = [
     {"name": "Tomamu Ski Resort", "country": "JP", "region": "Hokkaido"},
     {"name": "Hakodate Nanae Snowpark", "country": "JP", "region": "Hokkaido"},
     {"name": "Sahoro", "country": "JP", "region": "Hokkaido"},
-
     {"name": "Appi Kogen Ski Resort", "country": "JP", "region": "Honshu"},
     {"name": "Shizukuishi Ski Resort", "country": "JP", "region": "Honshu"},
     {"name": "Takasu Snow Park", "country": "JP", "region": "Honshu"},
@@ -70,6 +69,7 @@ SKI_FIELDS = [
     {"name": "Zao Onsen Ski Resort", "country": "JP", "region": "Honshu"},
     {"name": "Miyagi Zao Eboshi Resort", "country": "JP", "region": "Honshu"},
     {"name": "Miyagi Zao Shiroishi Ski Resort", "country": "JP", "region": "Honshu"},
+
     # Canadian Ski Resorts
     {"name": "Nakiska", "country": "CA", "region": "Alberta"},
     {"name": "Banff Sunshine Village", "country": "CA", "region": "Alberta"},
@@ -111,7 +111,10 @@ SKI_FIELDS = [
     {"name": "Mount Hotham", "country": "AU", "region": "Victoria"},
     {"name": "Perisher", "country": "AU", "region": "New South Wales"},
     {"name": "Selwyn Snow Resort", "country": "AU", "region": "New South Wales"},
-    {"name": "Thredbo Resort", "country": "AU", "region": "New South Wales"}
+    {"name": "Thredbo Resort", "country": "AU", "region": "New South Wales"},
+
+    # Chilean Ski Resorts
+    {"name": "Corralco", "country": "CL", "region": "Chile"}
 ]
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")

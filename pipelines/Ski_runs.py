@@ -114,7 +114,20 @@ SKI_FIELDS = [
     {"name": "Thredbo Resort", "country": "AU", "region": "New South Wales"},
 
     # Chilean Ski Resorts
-    {"name": "Corralco", "country": "CL", "region": "Chile"}
+    {"name": "Corralco", "country": "CL", "region": "Chile"},
+    {"name": "Estación Esquí Antillanca", "country": "CL", "region": "Chile"},
+    {"name": "El Colorado", "country": "CL", "region": "Chile"}, 
+    {"name": "La Parva", "country": "CL", "region": "Chile"},
+    {"name": "Portillo", "country": "CL", "region": "Chile"},
+    # {"name": "Centro Ski Pucón", "country": "CL", "region": "Chile"},
+    # {"name": "Centro de Ski Chapa Verde", "country": "CL", "region": "Chile"},
+    # {"name": "Valle Nevado", "country": "CL", "region": "Chile"},
+
+    # Argentinian Ski Resorts
+    {"name": "Cerro Perito Moreno", "country": "AR", "region": "Argentina"},
+    {"name": "Cerro Catedral", "country": "AR", "region": "Argentina"},
+    {"name": "Cerro Bayo", "country": "AR", "region": "Argentina"},
+    # {"name": "Chapelco Ski Resort", "country": "AR", "region": "Argentina"},
 ]
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")

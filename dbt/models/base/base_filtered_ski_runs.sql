@@ -41,7 +41,8 @@ WITH deduplicated_runs AS (
         bottom_elevation_m,
         run_length_m / 4.0 AS ski_time_slow_sec,
         run_length_m / 7.0 AS ski_time_medium_sec,
-        run_length_m / 10.0 AS ski_time_fast_sec
+        run_length_m / 10.0 AS ski_time_fast_sec,
+        avg_point_resolution_m
     FROM {{ source('ski_runs', 'ski_runs') }}
     WHERE
         COALESCE(LOWER(TRIM(area)), '') <> 'yes'

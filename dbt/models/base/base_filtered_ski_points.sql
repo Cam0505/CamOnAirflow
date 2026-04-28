@@ -73,7 +73,8 @@ SELECT
     p.elevation_m,
     p.elevation_smoothed_m,
     p.gradient_smoothed,
-    p.node_id
+    p.node_id,
+    p.resolution_m
 FROM {{ source('ski_runs', 'ski_run_points') }} AS p
 LEFT JOIN uphill_runs AS ur
     ON p.osm_id = ur.osm_id

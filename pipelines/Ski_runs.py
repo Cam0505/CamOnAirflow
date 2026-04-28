@@ -2,6 +2,8 @@ import dlt
 from dlt.sources.helpers import requests
 import os
 import logging
+import time
+from datetime import date
 from time import perf_counter
 from collections import defaultdict
 from dotenv import load_dotenv
@@ -206,7 +208,7 @@ def _build_resort_match_clauses(field):
     return area_seed_clauses, relation_seed_clauses
 
 
-def _build_resort_preflight_query(field, area_seed_name, relation_seed_name, area_result_name, relation_result_name):
+def _build_resort_preflight_query(field, area_seed_name, relation_seed_name):
     area_seed_clauses, relation_seed_clauses = _build_resort_match_clauses(field)
     escaped_resort_name = _escape_overpass_string(field["name"])
     area_seed_block = "\n".join(area_seed_clauses) or "  // no area-capable selectors configured"
@@ -286,8 +288,6 @@ def _fetch_all_resorts_candidate_ids(stats=None):
                 field,
                 area_seed_name=f"resort_seed_{idx}",
                 relation_seed_name=f"resort_relation_{idx}",
-                area_result_name=f"resort_area_results_{idx}",
-                relation_result_name=f"resort_relation_results_{idx}",
             )
         )
     query = "\n".join(query_parts)
@@ -346,11 +346,82 @@ def _fetch_resort_elements(field, stats=None):
     )
 
 
-def get_elevations_batch(coords_list, stats=None):
+# If a single-point Google resolution probe returns worse than this, fall back to OTD srtm30m.
+RESOLUTION_OTD_THRESHOLD_M = 30.0
+
+
+def _probe_google_resolution(coord, stats=None):
+    """Single-point Google Elevation query to read the resolution at a representative location.
+    Returns resolution in metres, or None on failure. Use a single point for accurate resolution
+    (batching multiple points degrades Google's reported resolution value)."""
+    lat, lon = coord
+    try:
+        if stats is not None:
+            stats["elevation_requests_sent"] += 1
+            stats["elevation_points_requested"] += 1
+        started_at = perf_counter()
+        r = requests.get(
+            "https://maps.googleapis.com/maps/api/elevation/json",
+            params={"locations": f"{lat},{lon}", "key": GOOGLE_API_KEY},
+            timeout=10,
+        )
+        if stats is not None:
+            stats["elevation_time_s"] += perf_counter() - started_at
+        r.raise_for_status()
+        results = r.json().get("results", [])
+        if results:
+            return results[0].get("resolution")
+    except Exception as e:
+        logger.warning(f"Google resolution probe failed: {e}")
+    return None
+
+
+def _get_elevations_otd(coords_list, dataset, stats=None):
+    """Fetch elevations from OpenTopoData. Free tier: 1000 req/day, 100 pts/batch, 1 req/s.
+    Returns (elevations, resolutions) where resolutions are all None (OTD doesn't expose resolution)."""
     if not coords_list:
-        return []
+        return [], []
+    BATCH_SIZE = 100
+    all_elevations = []
+    for i in range(0, len(coords_list), BATCH_SIZE):
+        batch = coords_list[i:i + BATCH_SIZE]
+        locations = "|".join(f"{lat},{lon}" for lat, lon in batch)
+        try:
+            if stats is not None:
+                stats["otd_requests_sent"] += 1
+                stats["otd_points_requested"] += len(batch)
+            started_at = perf_counter()
+            r = requests.get(
+                f"https://api.opentopodata.org/v1/{dataset}",
+                params={"locations": locations},
+                timeout=15,
+            )
+            if stats is not None:
+                stats["elevation_time_s"] += perf_counter() - started_at
+            r.raise_for_status()
+            results = r.json().get("results", [])
+            elevations = [res.get("elevation") for res in results]
+            while len(elevations) < len(batch):
+                elevations.append(None)
+        except Exception as e:
+            logger.error(f"Error fetching OTD elevations: {e}")
+            elevations = [None] * len(batch)
+        all_elevations.extend(elevations)
+        if i + BATCH_SIZE < len(coords_list):
+            time.sleep(1)  # OTD public API: 1 req/s
+    return all_elevations, [None] * len(all_elevations)
+
+
+def get_elevations_batch(coords_list, stats=None, use_otd=False):
+    """Fetch elevations. If use_otd=True, routes to OpenTopoData srtm30m (30m free DEM).
+    use_otd is set per-resort based on a resolution probe against Google Elevation."""
+    if use_otd:
+        return _get_elevations_otd(coords_list, "srtm30m", stats)
+    if not coords_list:
+        return [], []
     BATCH_SIZE = 200
-    results = []
+    all_elevations = []
+    all_resolutions = []
     for i in range(0, len(coords_list), BATCH_SIZE):
         batch = coords_list[i:i+BATCH_SIZE]
         locations = "|".join(f"{lat},{lon}" for lat, lon in batch)
@@ -367,14 +438,19 @@ def get_elevations_batch(coords_list, stats=None):
             if stats is not None:
                 stats["elevation_time_s"] += perf_counter() - started_at
             r.raise_for_status()
-            elevations = [res.get("elevation") for res in r.json().get("results", [])]
+            batch_results = r.json().get("results", [])
+            elevations = [res.get("elevation") for res in batch_results]
+            resolutions = [res.get("resolution") for res in batch_results]
             while len(elevations) < len(batch):
                 elevations.append(None)
+                resolutions.append(None)
         except Exception as e:
             logger.error(f"Error fetching elevations: {e}")
             elevations = [None] * len(batch)
-        results.extend(elevations)
-    return results
+            resolutions = [None] * len(batch)
+        all_elevations.extend(elevations)
+        all_resolutions.extend(resolutions)
+    return all_elevations, all_resolutions
 
 def smooth_steep_gradients(elevs, dists, threshold=SMOOTHING_GRADE_THRESHOLD, window=7):
     elevs = np.array(elevs, dtype=float)
@@ -458,6 +534,8 @@ def ski_source(known_run_osm_by_resort: dict, known_lift_osm_by_resort: dict):
         "overpass_geom_time_s": 0.0,
         "elevation_requests_sent": 0,
         "elevation_points_requested": 0,
+        "otd_requests_sent": 0,
+        "otd_points_requested": 0,
         "elevation_time_s": 0.0,
         "elements_seen": 0,
         "elements_sent_to_elevation": 0,
@@ -485,6 +563,22 @@ def ski_source(known_run_osm_by_resort: dict, known_lift_osm_by_resort: dict):
     }
     quarantine_state = dlt.current.source_state().setdefault("osm_id_quarantine", {"by_resort": {}})
     quarantine_by_resort = quarantine_state.setdefault("by_resort", {})
+
+    today_str = str(date.today())
+    api_state = dlt.current.source_state().setdefault("api_requests", {})
+    _api_keys = (
+        "overpass_id_sent",
+        "overpass_geom_sent",
+        "google_elevation_sent",
+        "google_elevation_points",
+        "otd_sent",
+        "otd_points",
+    )
+    for _key in _api_keys:
+        api_state.setdefault(_key, {})
+    # Prune to only today — carry forward today's tally, start fresh each new day
+    for _key in _api_keys:
+        api_state[_key] = {today_str: api_state[_key].get(today_str, 0)}
     if should_preflight_ids:
         try:
             logger.info("Checking OSM ids across all configured resorts before geometry fetch ...")
@@ -554,12 +648,12 @@ def ski_source(known_run_osm_by_resort: dict, known_lift_osm_by_resort: dict):
                         resort_counts["run_ids"],
                         resort_counts["lift_ids"],
                     )
-                    logger.info(
-                        "Resort new-id details | resort=%s | run_ids=%s | lift_ids=%s",
-                        resort_name,
-                        resort_counts.get("run_id_values", []),
-                        resort_counts.get("lift_id_values", []),
-                    )
+                    # logger.info(
+                    #     "Resort new-id details | resort=%s | run_ids=%s | lift_ids=%s",
+                    #     resort_name,
+                    #     resort_counts.get("run_id_values", []),
+                    #     resort_counts.get("lift_id_values", []),
+                    # )
         except Exception as e:
             logger.warning(
                 f"Global ID preflight failed, falling back to geometry fetch: {e}"
@@ -591,6 +685,37 @@ def ski_source(known_run_osm_by_resort: dict, known_lift_osm_by_resort: dict):
                 )
             logger.error(str(e))
             continue
+
+        # Probe Google resolution with one representative point from this resort.
+        # Single-point queries return accurate resolution values (batching degrades them).
+        # If Google is coarser than the threshold, use OTD srtm30m for the whole resort.
+        use_otd = False
+        probe_coord = next(
+            (
+                (pt["lat"], pt["lon"])
+                for elem in elements
+                for pt in elem.get("geometry", [])
+            ),
+            None,
+        )
+        if probe_coord is not None:
+            google_res = _probe_google_resolution(probe_coord, stats=stats)
+            if google_res is not None:
+                if google_res > RESOLUTION_OTD_THRESHOLD_M:
+                    use_otd = True
+                    logger.info(
+                        "Resolution probe | resort=%s | google_res=%.1fm > %.0fm threshold → OTD srtm30m",
+                        field["name"], google_res, RESOLUTION_OTD_THRESHOLD_M,
+                    )
+                else:
+                    logger.info(
+                        "Resolution probe | resort=%s | google_res=%.1fm ≤ %.0fm threshold → Google",
+                        field["name"], google_res, RESOLUTION_OTD_THRESHOLD_M,
+                    )
+            else:
+                logger.warning(
+                    "Resolution probe failed for %s, defaulting to Google", field["name"]
+                )
 
         for run in elements:
             stats["elements_seen"] += 1
@@ -645,7 +770,10 @@ def ski_source(known_run_osm_by_resort: dict, known_lift_osm_by_resort: dict):
 
             # Calculate elevations ONCE for all coords
             stats["elements_sent_to_elevation"] += 1
-            elevations = get_elevations_batch(coords, stats=stats)
+            elevations, point_resolutions = get_elevations_batch(coords, stats=stats, use_otd=use_otd)
+            # OTD doesn't return per-point resolution; fill with the known srtm30m grid resolution.
+            if use_otd:
+                point_resolutions = [30.0] * len(coords)
 
             if is_run:
                 # Calculate cumulative distances once
@@ -685,6 +813,7 @@ def ski_source(known_run_osm_by_resort: dict, known_lift_osm_by_resort: dict):
                     "node_ids": nodes,  # store node ids
                     "length_m": element_length,
                     "elevations": elevations,  # store all elevations
+                    "point_resolutions": point_resolutions,  # resolution per point (metres)
                     "elevations_smooth": elevations_smooth,  # store smoothed elevations
                     "gradients_smooth": gradients_smooth,  # store gradients
                     "cum_distances": cum_distances,  # store distances
@@ -728,11 +857,13 @@ def ski_source(known_run_osm_by_resort: dict, known_lift_osm_by_resort: dict):
         stats["elements_seen"] - stats["elements_sent_to_elevation"]
     )
     logger.info(
-        "API summary | overpass_id_sent=%s | overpass_geom_sent=%s | elevation_sent=%s | elevation_points=%s",
+        "API summary | overpass_id_sent=%s | overpass_geom_sent=%s | google_elevation_sent=%s | google_elevation_points=%s | otd_sent=%s | otd_points=%s",
         stats["overpass_id_requests_sent"],
         stats["overpass_requests_sent"],
         stats["elevation_requests_sent"],
         stats["elevation_points_requested"],
+        stats["otd_requests_sent"],
+        stats["otd_points_requested"],
     )
     logger.info(
         "Timing summary | overpass_id_s=%.2f | overpass_geom_s=%.2f | elevation_s=%.2f",
@@ -793,12 +924,34 @@ def ski_source(known_run_osm_by_resort: dict, known_lift_osm_by_resort: dict):
             resort_counts["lifts"],
         )
 
+    # Persist daily API request counts to pipeline state
+    api_state["overpass_id_sent"][today_str] = api_state["overpass_id_sent"].get(today_str, 0) + stats["overpass_id_requests_sent"]
+    api_state["overpass_geom_sent"][today_str] = api_state["overpass_geom_sent"].get(today_str, 0) + stats["overpass_requests_sent"]
+    api_state["google_elevation_sent"][today_str] = api_state["google_elevation_sent"].get(today_str, 0) + stats["elevation_requests_sent"]
+    api_state["google_elevation_points"][today_str] = api_state["google_elevation_points"].get(today_str, 0) + stats["elevation_points_requested"]
+    api_state["otd_sent"][today_str] = api_state["otd_sent"].get(today_str, 0) + stats["otd_requests_sent"]
+    api_state["otd_points"][today_str] = api_state["otd_points"].get(today_str, 0) + stats["otd_points_requested"]
+    logger.info(
+        "Daily API totals (state) | date=%s | overpass_id_sent=%s | overpass_geom_sent=%s | google_elevation_sent=%s | google_elevation_points=%s | otd_sent=%s | otd_points=%s",
+        today_str,
+        api_state["overpass_id_sent"][today_str],
+        api_state["overpass_geom_sent"][today_str],
+        api_state["google_elevation_sent"][today_str],
+        api_state["google_elevation_points"][today_str],
+        api_state["otd_sent"][today_str],
+        api_state["otd_points"][today_str],
+    )
+
     @dlt.resource(write_disposition="merge", table_name="ski_runs", primary_key=["osm_id"])
     def ski_runs():
         for run in ski_runs_data:
             tags = run.get("tags", {})
             
             # Use pre-calculated values
+            point_resolutions = run.get("point_resolutions", [])
+            valid_resolutions = [r for r in point_resolutions if r is not None]
+            avg_point_resolution_m = sum(valid_resolutions) / len(valid_resolutions) if valid_resolutions else None
+
             yield {
                 "osm_id": run["osm_id"],
                 "resort": run["resort"],
@@ -810,6 +963,7 @@ def ski_source(known_run_osm_by_resort: dict, known_lift_osm_by_resort: dict):
                 "piste_type": tags.get("piste:type"),
                 "run_length_m": run.get("length_m", 0),
                 "n_points": len(run.get("coords", [])),
+                "avg_point_resolution_m": avg_point_resolution_m,
                 "turniness_score": run.get("turniness_score", 0),
                 "top_lat": run["top_lat"],
                 "top_lon": run["top_lon"],
@@ -831,6 +985,7 @@ def ski_source(known_run_osm_by_resort: dict, known_lift_osm_by_resort: dict):
             elevations_smooth = run.get("elevations_smooth", [])
             gradients_smooth = run.get("gradients_smooth", [])
             cum_distances = run.get("cum_distances", [])
+            point_resolutions = run.get("point_resolutions", [])
             
             if len(coords) < 2:
                 logger.warning(f"Skipping run {tags.get('name', '')} ({run['osm_id']}): only {len(coords)} points left.")
@@ -841,6 +996,7 @@ def ski_source(known_run_osm_by_resort: dict, known_lift_osm_by_resort: dict):
                 zip(coords, cum_distances, elevations, elevations_smooth, gradients_smooth)
             ):
                 node_id = node_ids[idx] if idx < len(node_ids) else None
+                resolution = point_resolutions[idx] if idx < len(point_resolutions) else None
                 yield {
                     "osm_id": run["osm_id"],
                     "resort": run["resort"],
@@ -854,7 +1010,8 @@ def ski_source(known_run_osm_by_resort: dict, known_lift_osm_by_resort: dict):
                     "elevation_m": elev,
                     "elevation_smoothed_m": float(elev_sm) if elev_sm is not None else None,
                     "gradient_smoothed": float(grad_sm) if grad_sm is not None else None,
-                    "node_id": str(node_id) if node_id is not None else None
+                    "node_id": str(node_id) if node_id is not None else None,
+                    "resolution_m": float(resolution) if resolution is not None else None,
                 }
 
     @dlt.resource(write_disposition="merge", table_name="ski_lifts", primary_key=["osm_id"])
@@ -901,7 +1058,7 @@ def ski_source(known_run_osm_by_resort: dict, known_lift_osm_by_resort: dict):
             node_ids = run.get("node_ids", [])
             tags = run.get("tags", {})
             elevations = run.get("elevations", [])  # Use pre-calculated elevations
-            
+
             for idx in range(len(coords) - 1):
                 from_lat, from_lon = coords[idx]
                 to_lat, to_lon = coords[idx + 1]

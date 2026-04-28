@@ -4,12 +4,14 @@ Stack order (bottom → top): None, novice, easy, intermediate, advanced, freeri
 """
 
 import argparse
+import math
 import os
 import unicodedata
 import duckdb
 from dotenv import load_dotenv
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
+import matplotlib as mpl
 import numpy as np
 from matplotlib.patches import Patch
 from project_path import get_project_paths, set_dlt_env_vars
@@ -198,6 +200,34 @@ def load_plot_data(con, target_countries):
     ).df()
 
 
+def load_resolution_data(con, target_countries):
+    """Load length-weighted average DEM resolution per resort from ski_runs."""
+    if target_countries:
+        placeholders = ", ".join(["?"] * len(target_countries))
+        extra = f"AND country_code IN ({placeholders})"
+        params = list(target_countries)
+    else:
+        extra = ""
+        params = []
+    try:
+        rows = con.execute(
+            f"""
+            SELECT
+                country_code,
+                resort,
+                SUM(avg_point_resolution_m * run_length_m) / NULLIF(SUM(run_length_m), 0) AS avg_resolution_m
+            FROM camonairflow.ski_runs.ski_runs
+            WHERE avg_point_resolution_m IS NOT NULL
+            {extra}
+            GROUP BY country_code, resort
+            """,
+            params,
+        ).fetchall()
+        return {(row[0], row[1]): row[2] for row in rows}
+    except Exception:
+        return {}
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -258,10 +288,50 @@ def _apply_gradient_bands(ax):
         tick_label.set_fontweight("bold")
 
 
+def _resolution_color(resolution_m):
+    """Map DEM resolution in metres to an RGB color on a green→yellow→red log scale."""
+    if resolution_m is None or resolution_m <= 0:
+        return None
+    lo, hi = math.log(1.0), math.log(200.0)
+    t = max(0.0, min(1.0, (math.log(max(resolution_m, 1.0)) - lo) / (hi - lo)))
+    # RdYlGn(1-t): t=0 (fine resolution) → green, t=1 (coarse) → red
+    cmap = mpl.colormaps["RdYlGn"]
+    return cmap(1.0 - t)[:3]
+
+
+def _draw_resolution_stamp(ax, resolution_m):
+    """Draw a small color-coded DEM resolution badge in the top-right corner of ax."""
+    if resolution_m is None:
+        return
+    color = _resolution_color(resolution_m)
+    if color is None:
+        return
+    r, g, b = color
+    text_color = "black" if (0.299 * r + 0.587 * g + 0.114 * b) > 0.55 else "white"
+    ax.text(
+        0.975, 0.965,
+        f"~{resolution_m:.0f}m",
+        transform=ax.transAxes,
+        fontsize=8,
+        fontweight="bold",
+        ha="right",
+        va="top",
+        color=text_color,
+        zorder=5,
+        bbox=dict(
+            boxstyle="round,pad=0.35",
+            facecolor=color,
+            edgecolor=text_color,
+            linewidth=1.0,
+            alpha=0.88,
+        ),
+    )
+
+
 # ---------------------------------------------------------------------------
 # Per-country chart generation
 # ---------------------------------------------------------------------------
-def generate_country_plots(df_all):
+def generate_country_plots(df_all, resolution_by_resort=None):
     df_all = df_all.copy()
     df_all["diff_key"] = df_all["difficulty"].apply(_normalise_difficulty)
 
@@ -340,6 +410,8 @@ def generate_country_plots(df_all):
             ax.tick_params(axis="x", labelrotation=45, labelsize=11, labelbottom=True)
             ax.tick_params(axis="y", labelsize=11)
             _apply_gradient_bands(ax)
+            if resolution_by_resort is not None:
+                _draw_resolution_stamp(ax, resolution_by_resort.get((country_code, resort)))
             ax.set_xlabel("Gradient Bucket Center (°)", fontsize=12, fontweight="bold")
             ax.set_ylabel("API Skiable Terrain (m)", fontsize=12, fontweight="bold")
 
@@ -393,7 +465,8 @@ def main():
         df_all = load_plot_data(con, target_countries)
         if df_all.empty:
             raise ValueError("No gradient distribution data found for the selected countries.")
-        generate_country_plots(df_all)
+        resolution_by_resort = load_resolution_data(con, target_countries)
+        generate_country_plots(df_all, resolution_by_resort=resolution_by_resort)
     finally:
         con.close()
 

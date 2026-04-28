@@ -1,9 +1,5 @@
 {% set snowfall_models = [
     ('ECMWF IFS', 'snowfall_ecmwf_ifs_cm'),
-    ('UKMO Seamless', 'snowfall_ukmo_seamless_cm'),
-    ('ICON Seamless', 'snowfall_icon_seamless_cm'),
-    ('GEM Seamless', 'snowfall_gem_seamless_cm'),
-    ('CMA GRAPES Global', 'snowfall_cma_grapes_global_cm'),
     ('JMA Seamless', 'snowfall_jma_seamless_cm')
 ] %}
 
@@ -19,10 +15,6 @@ with daily_seasonal_snowfall as (
             else extract(year from date)
         end as year_col
         , snowfall_ecmwf_ifs_cm
-        , snowfall_ukmo_seamless_cm
-        , snowfall_icon_seamless_cm
-        , snowfall_gem_seamless_cm
-        , snowfall_cma_grapes_global_cm
         , snowfall_jma_seamless_cm
     from {{ ref('base_ski_field_snowfall_modeled') }}
     where (

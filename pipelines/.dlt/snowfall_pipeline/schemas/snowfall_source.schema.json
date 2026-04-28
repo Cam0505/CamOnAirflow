@@ -1,6 +1,6 @@
 {
-  "version": 6,
-  "version_hash": "oGQ2KiKGX8Omc6qod8FaKbUFbITCNbQN/orWNJlcrKE=",
+  "version": 4,
+  "version_hash": "iAx21wBTzIxhw6r4tS97Luy9NwrcqsneUDF1C30qP5g=",
   "engine_version": 11,
   "name": "snowfall_source",
   "tables": {
@@ -88,23 +88,8 @@
           "data_type": "double",
           "nullable": true
         },
-        "snowfall_ukmo_seamless_cm": {
-          "name": "snowfall_ukmo_seamless_cm",
-          "data_type": "double",
-          "nullable": true
-        },
-        "snowfall_icon_seamless_cm": {
-          "name": "snowfall_icon_seamless_cm",
-          "data_type": "double",
-          "nullable": true
-        },
-        "snowfall_gem_seamless_cm": {
-          "name": "snowfall_gem_seamless_cm",
-          "data_type": "double",
-          "nullable": true
-        },
-        "snowfall_cma_grapes_global_cm": {
-          "name": "snowfall_cma_grapes_global_cm",
+        "snowfall_jma_seamless_cm": {
+          "name": "snowfall_jma_seamless_cm",
           "data_type": "double",
           "nullable": true
         },
@@ -113,23 +98,8 @@
           "data_type": "double",
           "nullable": true
         },
-        "precipitation_sum_ukmo_seamless_mm": {
-          "name": "precipitation_sum_ukmo_seamless_mm",
-          "data_type": "double",
-          "nullable": true
-        },
-        "precipitation_sum_icon_seamless_mm": {
-          "name": "precipitation_sum_icon_seamless_mm",
-          "data_type": "double",
-          "nullable": true
-        },
-        "precipitation_sum_gem_seamless_mm": {
-          "name": "precipitation_sum_gem_seamless_mm",
-          "data_type": "double",
-          "nullable": true
-        },
-        "precipitation_sum_cma_grapes_global_mm": {
-          "name": "precipitation_sum_cma_grapes_global_mm",
+        "precipitation_sum_jma_seamless_mm": {
+          "name": "precipitation_sum_jma_seamless_mm",
           "data_type": "double",
           "nullable": true
         },
@@ -138,23 +108,8 @@
           "data_type": "double",
           "nullable": true
         },
-        "temperature_mean_ukmo_seamless_c": {
-          "name": "temperature_mean_ukmo_seamless_c",
-          "data_type": "double",
-          "nullable": true
-        },
-        "temperature_mean_icon_seamless_c": {
-          "name": "temperature_mean_icon_seamless_c",
-          "data_type": "double",
-          "nullable": true
-        },
-        "temperature_mean_gem_seamless_c": {
-          "name": "temperature_mean_gem_seamless_c",
-          "data_type": "double",
-          "nullable": true
-        },
-        "temperature_mean_cma_grapes_global_c": {
-          "name": "temperature_mean_cma_grapes_global_c",
+        "temperature_mean_jma_seamless_c": {
+          "name": "temperature_mean_jma_seamless_c",
           "data_type": "double",
           "nullable": true
         },
@@ -163,23 +118,8 @@
           "data_type": "double",
           "nullable": true
         },
-        "snow_depth_ukmo_seamless_m": {
-          "name": "snow_depth_ukmo_seamless_m",
-          "data_type": "double",
-          "nullable": true
-        },
-        "snow_depth_icon_seamless_m": {
-          "name": "snow_depth_icon_seamless_m",
-          "data_type": "double",
-          "nullable": true
-        },
-        "snow_depth_gem_seamless_m": {
-          "name": "snow_depth_gem_seamless_m",
-          "data_type": "double",
-          "nullable": true
-        },
-        "snow_depth_cma_grapes_global_m": {
-          "name": "snow_depth_cma_grapes_global_m",
+        "snow_depth_jma_seamless_m": {
+          "name": "snow_depth_jma_seamless_m",
           "data_type": "double",
           "nullable": true
         },
@@ -215,26 +155,6 @@
           "nullable": false,
           "unique": true,
           "row_key": true
-        },
-        "snowfall_jma_seamless_cm": {
-          "name": "snowfall_jma_seamless_cm",
-          "data_type": "double",
-          "nullable": true
-        },
-        "precipitation_sum_jma_seamless_mm": {
-          "name": "precipitation_sum_jma_seamless_mm",
-          "data_type": "double",
-          "nullable": true
-        },
-        "temperature_mean_jma_seamless_c": {
-          "name": "temperature_mean_jma_seamless_c",
-          "data_type": "double",
-          "nullable": true
-        },
-        "snow_depth_jma_seamless_m": {
-          "name": "snow_depth_jma_seamless_m",
-          "data_type": "double",
-          "nullable": true
         }
       },
       "write_disposition": "merge",
@@ -401,8 +321,8 @@
     }
   },
   "previous_hashes": [
-    "Kw4Yus5o0n8WfLnt2xIQ5xrQygk6H6xthzPLYKvmnbs=",
-    "uK1BJSETuGngIXoMYIbGXzvtvsqgOLtO6l1U+lbnz5w=",
+    "cMYUownfeq8LW5RqMKufQXJDGrSR8kkVM4Fr/oOYHTo=",
+    "4NlEI3UQYawsFgUixH6Q7QMgsUUMySLnH+7w847s6lM=",
     "fAQpY26aNZ3Yuir2781vGPznD0F7pmne3Je+xTQz3oo=",
     "vy39yzEHY2qxiw+bFF+uPbfXLVkW4cavadpf/S0uGCI="
   ]

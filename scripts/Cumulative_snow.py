@@ -8,7 +8,7 @@ from plotnine import (
     ggplot, aes, geom_line, labs, facet_wrap, theme_light, theme,
     element_text, element_rect, element_line, scale_x_continuous,
     scale_color_manual, guides, guide_legend,
-    geom_point, geom_text, geom_label
+    geom_point, geom_text
 )
 import matplotlib.colors as mcolors
 import numpy as np
@@ -32,15 +32,11 @@ df = con.execute("""
         a.day_of_season,
         a.facet_label,
         a.daily_snowfall_cm,
-        a.cumulative_snowfall_cm,
-        b.station_name,
-        b.station_distance_km,
-        b.elevation_delta_km
+        a.cumulative_snowfall_cm
     FROM camonairflow.public_analysis.analysis_cumulative_snowfall a
-    LEFT JOIN camonairflow.public_base.base_jp_ski_field_weather b
-        ON a.ski_field = b.location
-       AND a.datecol = b.date
-    WHERE a.year_col >= 1990
+    WHERE (a.model_name = 'ECMWF IFS' and country <> 'JP')
+         OR (a.model_name = 'JMA Seamless' and country = 'JP')
+      AND a.year_col >= 1990
 """).df()
 
 if df.empty:
@@ -111,30 +107,6 @@ HIGHLIGHT_COLORS = [
 ]
 OLDER_YEARS_COLOR = "#888888"
 
-JP_STATION_NAME_MAP = {
-    '倶知安': 'Kutchan',
-    '函館': 'Hakodate',
-    '喜茂別': 'Kimobetsu',
-    '夕張': 'Yubari',
-    '富良野': 'Furano',
-    '小樽': 'Otaru',
-    '山形': 'Yamagata',
-    '岩手松尾': 'Iwate Matsuo',
-    '幾寅': 'Ikutora',
-    '新得': 'Shintoku',
-    '白石': 'Shiroishi',
-    '長滝': 'Nagataki',
-    '雫石': 'Shizukuishi'
-}
-
-
-def display_station_name(name):
-    if pd.isna(name):
-        return 'No station metadata'
-    name = str(name).strip()
-    return JP_STATION_NAME_MAP.get(name, name)
-
-
 def grey_to_black_gradient(n):
     """Light grey to near-black for oldest years, giving clear depth gradient."""
     return [
@@ -179,28 +151,6 @@ for country in sorted(df['country'].dropna().unique()):
     month_ticks, month_labels = season_month_ticks_for_country(country_df)
     ski_fields = sorted(country_df['ski_field'].dropna().unique())
     ncol, _, fig_width, fig_height = get_facet_layout(len(ski_fields))
-
-    facet_station_info = (
-        country_df.groupby('facet_label', as_index=False)
-        .agg(
-            station_name=('station_name', lambda s: next((display_station_name(x) for x in s if pd.notna(x) and str(x).strip()), 'No station metadata')),
-            station_distance_km=('station_distance_km', 'median'),
-            elevation_delta_km=('elevation_delta_km', 'median'),
-            min_day=('day_of_season', 'min'),
-            max_cumulative=('cumulative_snowfall_cm', 'max')
-        )
-    )
-    facet_station_info['label_x'] = facet_station_info['min_day'] + 2
-    facet_station_info['label_y'] = facet_station_info['max_cumulative'] * 0.98
-    facet_station_info['station_label'] = facet_station_info.apply(
-        lambda row: (
-            f"{row['station_name']}\n"
-            f"{row['station_distance_km']:.1f} km | gap {row['elevation_delta_km'] * 1000:.0f} m"
-        )
-        if pd.notna(row['station_distance_km']) and pd.notna(row['elevation_delta_km'])
-        else str(row['station_name']),
-        axis=1
-    )
 
     p_cum = ggplot()
     # Draw older grey-to-black years first so highlights paint on top.
@@ -289,19 +239,6 @@ for country in sorted(df['country'].dropna().unique()):
             data=df_percent,
             mapping=aes(x='day_of_season', y='cumulative_snowfall_cm', label='percent_label'),
             color='red', size=7.5, fontweight='bold'
-        )
-
-    if not facet_station_info.empty:
-        p_cum += geom_label(
-            data=facet_station_info,
-            mapping=aes(x='label_x', y='label_y', label='station_label'),
-            color='#222222',
-            fill='white',
-            size=8,
-            ha='left',
-            va='top',
-            label_size=0.25,
-            alpha=0.9
         )
 
     p_cum += scale_color_manual(

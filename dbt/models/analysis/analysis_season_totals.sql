@@ -1,9 +1,5 @@
 {% set models = [
     ('ECMWF IFS',             'ecmwf_ifs'),
-    ('UKMO Seamless',         'ukmo_seamless'),
-    ('ICON Seamless',         'icon_seamless'),
-    ('GEM Seamless',          'gem_seamless'),
-    ('CMA GRAPES Global',     'cma_grapes_global'),
     ('JMA Seamless',          'jma_seamless')
 ] %}
 

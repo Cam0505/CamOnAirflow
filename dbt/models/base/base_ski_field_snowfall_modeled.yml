@@ -32,19 +32,5 @@ models:
         description: Daily snowfall from the ERA5 reanalysis model in centimetres.
       - name: snowfall_ecmwf_ifs_cm
         description: Daily snowfall from the ECMWF IFS model in centimetres.
-      - name: snowfall_ukmo_seamless_cm
-        description: Daily snowfall from the UKMO Seamless model in centimetres.
-      - name: snowfall_icon_seamless_cm
-        description: Daily snowfall from the ICON Seamless model in centimetres.
-      - name: snowfall_gem_seamless_cm
-        description: Daily snowfall from the GEM Seamless model in centimetres.
-      - name: snowfall_cma_grapes_global_cm
-        description: Daily snowfall from the CMA GRAPES Global model in centimetres.
-      - name: snowfall_gfs_seamless_cm
-        description: Daily snowfall from the GFS Seamless model in centimetres.
-      - name: snowfall_meteofrance_seamless_cm
-        description: Daily snowfall from the Meteo-France Seamless model in centimetres.
       - name: snowfall_jma_seamless_cm
         description: Daily snowfall from the JMA Seamless model in centimetres (Japan-priority).
-      - name: snowfall_bom_access_global_cm
-        description: Daily snowfall from the BOM ACCESS Global model in centimetres (AU/NZ-priority).

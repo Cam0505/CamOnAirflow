@@ -78,15 +78,10 @@ def get_ski_fields_with_timestamp():
     ]
 
 SKI_FIELDS = get_ski_fields_with_timestamp()
-START_DATE = date(2020, 11, 1)
-BATCH_SIZE = 500  # Number of rows to yield at once
+START_DATE = date(2016, 11, 1)
 
 GLOBAL_COMPARISON_MODELS = [
     "ecmwf_ifs",  # Native ECMWF HRES model (~9 km)
-    "ukmo_seamless",  # UK Met Office Unified Model (~10 km)
-    "icon_seamless",  # German Model (~11 km)
-    "gem_seamless",  # Canadian Model (~15 km)
-    "cma_grapes_global",  # Chinese Model (~15 km)
     "jma_seamless",  # Japanese Model (~20 km)
 ]
 
@@ -107,7 +102,6 @@ DAILY_VARIABLE_CONFIG = {
 
 REQUESTED_DAILY_VARIABLES = list(DAILY_VARIABLE_CONFIG.keys())
 OPEN_METEO_ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/archive"
-OPEN_METEO_MAX_MODELS_PER_REQUEST = 6
 OPEN_METEO_RETRY_ATTEMPTS = 1
 OPEN_METEO_BACKOFF_SECONDS = 20
 OPEN_METEO_REQUEST_TIMEOUT = 15
@@ -256,22 +250,6 @@ def get_all_missing_date_ranges_by_season(logger, locations, start_date, end_dat
         return missing_ranges, False, {loc["name"]: False for loc in locations}
 
 
-def get_relevant_models(country: str) -> list[str]:
-    """Return only the model set needed for each country comparison."""
-    comparison_pool = list(GLOBAL_COMPARISON_MODELS)
-
-    deduped_models = []
-    for model in comparison_pool:
-        if model not in deduped_models:
-            deduped_models.append(model)
-
-    return deduped_models
-
-
-def _chunk_models(models: list[str], chunk_size: int) -> list[list[str]]:
-    return [models[i:i + chunk_size] for i in range(0, len(models), chunk_size)]
-
-
 def _wait_for_open_meteo_slot() -> None:
     global _LAST_OPEN_METEO_REQUEST_TS
     now = tyme.monotonic()
@@ -279,21 +257,6 @@ def _wait_for_open_meteo_slot() -> None:
     if elapsed < OPEN_METEO_MIN_REQUEST_SPACING_SECONDS:
         tyme.sleep(OPEN_METEO_MIN_REQUEST_SPACING_SECONDS - elapsed)
     _LAST_OPEN_METEO_REQUEST_TS = tyme.monotonic()
-
-
-def _merge_open_meteo_payload(combined: dict | None, new_data: dict) -> dict:
-    if combined is None:
-        return new_data
-
-    combined_daily = combined.setdefault("daily", {})
-    new_daily = new_data.get("daily", {})
-
-    if combined_daily.get("time") and new_daily.get("time") and combined_daily["time"] != new_daily["time"]:
-        raise ValueError("Open-Meteo daily time arrays did not match across model batches")
-
-    combined_daily.update(new_daily)
-    combined.setdefault("daily_units", {}).update(new_data.get("daily_units", {}))
-    return combined
 
 
 def _compute_retry_wait_seconds(response, attempt: int) -> int:
@@ -371,19 +334,7 @@ def _request_open_meteo_batch(location, start_date, end_date, models: list[str])
                 if _GLOBAL_RETRY_COUNT > GLOBAL_MAX_RETRIES:
                     logger.error("Global retry limit exceeded on RequestException. Halting pipeline.")
                     raise GlobalRateLimitReached("Too many 429 rate limits hit globally.")
-                
-                if attempt < OPEN_METEO_RETRY_ATTEMPTS:
-                    wait_seconds = _compute_retry_wait_seconds(getattr(e, "response", None), attempt)
-                    logger.warning(
-                        "Open-Meteo 429 retry scheduled | location=%s | models=%s | attempt=%s/%s | wait_s=%s",
-                        location["name"],
-                        ",".join(models),
-                        attempt,
-                        OPEN_METEO_RETRY_ATTEMPTS,
-                        wait_seconds,
-                    )
-                    tyme.sleep(wait_seconds)
-                    continue
+
 
             logger.error(
                 f"Request failed for {location['name']} ({resort_elevation}m) | models={','.join(models)}: {e}"
@@ -406,47 +357,28 @@ def _request_open_meteo_batch(location, start_date, end_date, models: list[str])
 
 
 def fetch_snowfall_data(location, start_date, end_date):
-    """Fetch comparison-model Open-Meteo daily fields with smaller batched requests."""
+    """Fetch daily weather data for all comparison models in a single request."""
     resort_elevation = location.get("resort_elevation")
     logger.debug(
         f"Fetching data for {location['name']} from {start_date} to {end_date} at resort elevation {resort_elevation}m"
     )
-    country = location.get("country")
-    comparison_models = get_relevant_models(country)
-    model_batches = _chunk_models(comparison_models, OPEN_METEO_MAX_MODELS_PER_REQUEST)
-
-    combined_data = None
-    for batch_index, batch in enumerate(model_batches, start=1):
-        logger.info(
-            "Requesting Open-Meteo batch %s/%s for %s | models=%s | range=%s to %s",
-            batch_index,
-            len(model_batches),
-            location["name"],
-            ",".join(batch),
-            start_date,
-            end_date,
-        )
-        batch_data = _request_open_meteo_batch(location, start_date, end_date, batch)
-        if batch_data is None:
-            logger.warning(
-                "Skipping failed comparison-model batch for %s | models=%s",
-                location["name"],
-                ",".join(batch),
-            )
-            continue
-
-        combined_data = _merge_open_meteo_payload(combined_data, batch_data)
-
-    if combined_data is None:
+    logger.info(
+        "Requesting Open-Meteo for %s | models=%s | range=%s to %s",
+        location["name"],
+        ",".join(GLOBAL_COMPARISON_MODELS),
+        start_date,
+        end_date,
+    )
+    data = _request_open_meteo_batch(location, start_date, end_date, GLOBAL_COMPARISON_MODELS)
+    if data is None:
         return None
-
     logger.info(
         "Received data for %s (resort %sm): %s daily records",
         location["name"],
         resort_elevation,
-        len(combined_data.get("daily", {}).get("time", [])),
+        len(data.get("daily", {}).get("time", [])),
     )
-    return combined_data
+    return data
 
 @dlt.resource(write_disposition="merge", name="ski_field_lookup", primary_key=["name"])
 def ski_field_lookup_resource(new_locations):
@@ -467,7 +399,6 @@ def snowfall_source(logger: logging.Logger, dataset, run_from_date: date | None 
     def ski_field_data():
         state = dlt.current.source_state().setdefault("snowfall", {
             "Daily_Requests": {},
-            "Processed_Ranges": {},
             "Known_Locations": [],
             "Daily_default": {},
         })
@@ -498,9 +429,6 @@ def snowfall_source(logger: logging.Logger, dataset, run_from_date: date | None 
                 logger, SKI_FIELDS, START_DATE, end_date, dataset, daily_default=state["Daily_default"][today_str]
             )
 
-        if table_truncated:
-            state["Processed_Ranges"] = {}
-
         logger.info("Starting snowfall data collection for ski fields")
 
         abort_pipeline = False
@@ -508,7 +436,7 @@ def snowfall_source(logger: logging.Logger, dataset, run_from_date: date | None 
         for location in SKI_FIELDS:
             if abort_pipeline:
                 break
-                
+
             location_name = location["name"]
             country = location["country"]
 
@@ -535,16 +463,13 @@ def snowfall_source(logger: logging.Logger, dataset, run_from_date: date | None 
                     # --- Process raw daily snowpack-model inputs at resort elevation ---
                     grid_elevation = data.get("elevation")
                     daily_data = data["daily"]
-                    models = get_relevant_models(country)
-                    merged = build_daily_weather_frame(daily_data, models)
+                    merged = build_daily_weather_frame(daily_data, list(GLOBAL_COMPARISON_MODELS))
                     merged["location"] = location_name
                     merged["country"] = country
                     merged["resort_elevation"] = location.get("resort_elevation")
                     merged["grid_elevation"] = grid_elevation
 
-                    # Yield in batches using the range approach
-                    for i in range(0, len(merged), BATCH_SIZE):
-                        yield merged.iloc[i:i+BATCH_SIZE].to_dict(orient="records")
+                    yield merged.to_dict(orient="records")
 
                 except GlobalRateLimitReached as e:
                     logger.error(f"Gracefully exiting generator to preserve yielded data: {e}")
@@ -631,7 +556,6 @@ if __name__ == "__main__":
 
         state = source.state.get('snowfall', {})
         logger.info(f"Daily Requests: {state.get('Daily_Requests', {})}")
-        logger.info(f"Processed Ranges: {sum(len(v) for v in state.get('Processed_Ranges', {}).values())}")
         logger.info(f"Pipeline run completed. Load Info: {load_info}")
 
         state_locations = set(state.get("Known_Locations", []))

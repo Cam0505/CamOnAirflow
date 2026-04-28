@@ -42,10 +42,6 @@ COUNTRY_MONTH_ORDER = {
 
 MODEL_DISPLAY_ORDER = [
     "ECMWF IFS",
-    "UKMO Seamless",
-    "ICON Seamless",
-    "GEM Seamless",
-    "CMA GRAPES Global",
     "JMA Seamless",
 ]
 

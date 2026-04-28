@@ -19,6 +19,7 @@ from plotnine import (
     scale_color_manual,
     scale_linetype_manual,
     scale_x_continuous,
+    scale_y_continuous,
     theme,
     theme_light,
 )
@@ -36,10 +37,6 @@ COUNTRY_LABELS = {
 
 MODEL_DISPLAY_ORDER = [
     "ECMWF IFS",
-    "UKMO Seamless",
-    "ICON Seamless",
-    "GEM Seamless",
-    "CMA GRAPES Global",
     "JMA Seamless",
 ]
 
@@ -165,6 +162,12 @@ def plot_country(
     all_years = sorted(plot_df["year_col"].unique())
     ncol, fig_width, fig_height = get_facet_layout(plot_df["ski_field"].nunique())
 
+    # snowfall: fixed axes (shared), y starts at 0; temp: shared y, free x
+    if metric == "season_snowfall_cm":
+        facet_scales = "fixed"
+    else:
+        facet_scales = "free_x"
+
     metric_slug = metric.replace("_", "-")
     metric_title = {
         "season_snowfall_cm": "Total Snowfall",
@@ -185,7 +188,8 @@ def plot_country(
             labels=[str(y) for y in all_years],
             expand=(0.04, 0),
         )
-        + facet_wrap("~ski_field", scales="free_y", ncol=ncol)
+        + (scale_y_continuous(limits=(0, None)) if metric == "season_snowfall_cm" else scale_y_continuous())  # type: ignore[arg-type]
+        + facet_wrap("~ski_field", scales=facet_scales, ncol=ncol)
         + labs(
             title=f"{COUNTRY_LABELS.get(country, country)} — {metric_title} by Season ({country})",
             subtitle="Per-season model comparison using Open-Meteo series",

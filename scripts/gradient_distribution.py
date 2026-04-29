@@ -282,7 +282,7 @@ def _band_color_for_value(value):
 
 def _apply_gradient_bands(ax):
     for band in GRADIENT_BANDS:
-        ax.axvspan(band["start"], band["end"], color=band["color"], alpha=0.1, zorder=0)
+        ax.axvspan(band["start"], band["end"], color=band["color"], alpha=0.125, zorder=0)
     for tick_value, tick_label in zip(ax.get_xticks(), ax.get_xticklabels()):
         tick_label.set_color(_band_color_for_value(tick_value))
         tick_label.set_fontweight("bold")

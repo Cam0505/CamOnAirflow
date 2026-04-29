@@ -3,6 +3,7 @@ from dlt.sources.helpers import requests
 import os
 import logging
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date
 from time import perf_counter
 from collections import defaultdict
@@ -12,6 +13,8 @@ from geopy.distance import geodesic
 from dlt.destinations.exceptions import DatabaseUndefinedRelation
 import numpy as np
 import math
+import requests as _stdlib_requests
+
 
 # --- ENV setup ---
 paths = get_project_paths()
@@ -146,6 +149,13 @@ MANUAL_QUARANTINED_OSM_IDS_BY_RESORT = {
         "lift_ids": [],
     },
 }
+
+
+# Thread-safe session for GSI concurrent requests (dlt requests wrapper is single-threaded).
+_GSI_SESSION = _stdlib_requests.Session()
+_GSI_SESSION.headers.update({"User-Agent": "CamOnAirFlow/ski-runs-pipeline research"})
+_gsi_adapter = _stdlib_requests.adapters.HTTPAdapter(pool_connections=1, pool_maxsize=25)
+_GSI_SESSION.mount("https://", _gsi_adapter)
 
 
 def _post_overpass_query(query, field_name, timeout=90, stats=None, time_key=None):
@@ -347,7 +357,77 @@ def _fetch_resort_elements(field, stats=None):
 
 
 # If a single-point Google resolution probe returns worse than this, fall back to OTD srtm30m.
-RESOLUTION_OTD_THRESHOLD_M = 30.0
+RESOLUTION_OTD_THRESHOLD_M = 40.0
+
+# ---------------------------------------------------------------------------
+# GSI (Geospatial Information Authority of Japan) free 5 m / 10 m DEM
+# Used instead of Google/OTD for all JP resorts.
+# ---------------------------------------------------------------------------
+GSI_ELEVATION_URL = (
+    "https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php"
+    "?lon={lon:.6f}&lat={lat:.6f}&outtype=JSON"
+)
+
+
+# Raw Japanese hsrc codes → resolution in metres.
+# All we need: does the string start with "5" or "10"?
+def _gsi_hsrc_to_resolution_m(raw: str | None) -> float | None:
+    if not raw:
+        return None
+    # Check longer prefixes first to avoid "10" being shadowed by "1"
+    if raw.startswith("10"):
+        return 10.0
+    if raw.startswith("5"):
+        return 5.0
+    if raw.startswith("1"):
+        return 1.0
+    logger.warning("GSI: unrecognised hsrc value %r — resolution will be NULL", raw)
+    return None
+
+
+def _fetch_gsi_point(lat: float, lon: float, retries: int = 3):
+    """Fetch a single elevation point from the GSI free REST API.
+    Returns (elevation_m, resolution_m) or (None, None) on failure."""
+    url = GSI_ELEVATION_URL.format(lat=lat, lon=lon)
+    for attempt in range(retries):
+        try:
+            r = _GSI_SESSION.get(url, timeout=10)
+            r.raise_for_status()
+            data = r.json()
+            elevation = data.get("elevation")
+            if elevation == "-----" or elevation is None:
+                return None, None
+            resolution = _gsi_hsrc_to_resolution_m(data.get("hsrc"))
+            return float(elevation), resolution
+        except Exception:
+            if attempt < retries - 1:
+                time.sleep(2 ** attempt)
+    return None, None
+
+
+def _get_elevations_gsi(coords_list, stats=None, max_workers=20):
+    """Fetch elevations from GSI Japan 5 m/10 m LiDAR DEM.
+    Single-point API, parallelised with a thread pool.
+    Returns (elevations, resolutions_m) lists matching coords_list order."""
+    if not coords_list:
+        return [], []
+    n = len(coords_list)
+    elevations: list[float | None] = [None] * n
+    resolutions: list[float | None] = [None] * n
+    if stats is not None:
+        stats["gsi_points_requested"] = stats.get("gsi_points_requested", 0) + n
+    workers = min(max_workers, n)
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        future_to_idx = {
+            pool.submit(_fetch_gsi_point, lat, lon): i
+            for i, (lat, lon) in enumerate(coords_list)
+        }
+        for future in as_completed(future_to_idx):
+            i = future_to_idx[future]
+            elev, res = future.result()
+            elevations[i] = elev
+            resolutions[i] = res
+    return elevations, resolutions
 
 
 def _probe_google_resolution(coord, stats=None):
@@ -412,9 +492,13 @@ def _get_elevations_otd(coords_list, dataset, stats=None):
     return all_elevations, [None] * len(all_elevations)
 
 
-def get_elevations_batch(coords_list, stats=None, use_otd=False):
-    """Fetch elevations. If use_otd=True, routes to OpenTopoData srtm30m (30m free DEM).
-    use_otd is set per-resort based on a resolution probe against Google Elevation."""
+def get_elevations_batch(coords_list, stats=None, use_otd=False, use_gsi=False):
+    """Fetch elevations.
+    use_gsi=True  → GSI Japan 5m/10m LiDAR (set for all JP resorts).
+    use_otd=True  → OpenTopoData srtm30m 30m (set when Google resolution > threshold).
+    Default       → Google Elevation API."""
+    if use_gsi:
+        return _get_elevations_gsi(coords_list, stats=stats)
     if use_otd:
         return _get_elevations_otd(coords_list, "srtm30m", stats)
     if not coords_list:
@@ -560,6 +644,7 @@ def ski_source(known_run_osm_by_resort: dict, known_lift_osm_by_resort: dict):
         "skipped_insufficient_coords": 0,
         "skipped_filtered_lift_type": 0,
         "skipped_short_lift": 0,
+        "gsi_points_requested": 0,
     }
     quarantine_state = dlt.current.source_state().setdefault("osm_id_quarantine", {"by_resort": {}})
     quarantine_by_resort = quarantine_state.setdefault("by_resort", {})
@@ -671,36 +756,42 @@ def ski_source(known_run_osm_by_resort: dict, known_lift_osm_by_resort: dict):
             logger.error(str(e))
             continue
 
-        # Probe Google resolution with one representative point from this resort.
-        # Single-point queries return accurate resolution values (batching degrades them).
-        # If Google is coarser than the threshold, use OTD srtm30m for the whole resort.
+        # JP resorts → GSI free 5m/10m LiDAR DEM, skip Google resolution probe.
+        # Non-JP resorts → probe Google; fall back to OTD srtm30m if resolution > threshold.
+        use_gsi = field["country"] == "JP"
         use_otd = False
-        probe_coord = next(
-            (
-                (pt["lat"], pt["lon"])
-                for elem in elements
-                for pt in elem.get("geometry", [])
-            ),
-            None,
-        )
-        if probe_coord is not None:
-            google_res = _probe_google_resolution(probe_coord, stats=stats)
-            if google_res is not None:
-                if google_res > RESOLUTION_OTD_THRESHOLD_M:
-                    use_otd = True
-                    logger.info(
-                        "Resolution probe | resort=%s | google_res=%.1fm > %.0fm threshold → OTD srtm30m",
-                        field["name"], google_res, RESOLUTION_OTD_THRESHOLD_M,
-                    )
+        if use_gsi:
+            logger.info(
+                "Elevation source | resort=%s → GSI Japan 5m/10m LiDAR DEM",
+                field["name"],
+            )
+        else:
+            probe_coord = next(
+                (
+                    (pt["lat"], pt["lon"])
+                    for elem in elements
+                    for pt in elem.get("geometry", [])
+                ),
+                None,
+            )
+            if probe_coord is not None:
+                google_res = _probe_google_resolution(probe_coord, stats=stats)
+                if google_res is not None:
+                    if google_res > RESOLUTION_OTD_THRESHOLD_M:
+                        use_otd = True
+                        logger.info(
+                            "Resolution probe | resort=%s | google_res=%.1fm > %.0fm threshold → OTD srtm30m",
+                            field["name"], google_res, RESOLUTION_OTD_THRESHOLD_M,
+                        )
+                    else:
+                        logger.info(
+                            "Resolution probe | resort=%s | google_res=%.1fm ≤ %.0fm threshold → Google",
+                            field["name"], google_res, RESOLUTION_OTD_THRESHOLD_M,
+                        )
                 else:
-                    logger.info(
-                        "Resolution probe | resort=%s | google_res=%.1fm ≤ %.0fm threshold → Google",
-                        field["name"], google_res, RESOLUTION_OTD_THRESHOLD_M,
+                    logger.warning(
+                        "Resolution probe failed for %s, defaulting to Google", field["name"]
                     )
-            else:
-                logger.warning(
-                    "Resolution probe failed for %s, defaulting to Google", field["name"]
-                )
 
         for run in elements:
             stats["elements_seen"] += 1
@@ -755,7 +846,7 @@ def ski_source(known_run_osm_by_resort: dict, known_lift_osm_by_resort: dict):
 
             # Calculate elevations ONCE for all coords
             stats["elements_sent_to_elevation"] += 1
-            elevations, point_resolutions = get_elevations_batch(coords, stats=stats, use_otd=use_otd)
+            elevations, point_resolutions = get_elevations_batch(coords, stats=stats, use_otd=use_otd, use_gsi=use_gsi)
             # OTD doesn't return per-point resolution; fill with the known srtm30m grid resolution.
             if use_otd:
                 point_resolutions = [30.0] * len(coords)
@@ -842,13 +933,14 @@ def ski_source(known_run_osm_by_resort: dict, known_lift_osm_by_resort: dict):
         stats["elements_seen"] - stats["elements_sent_to_elevation"]
     )
     logger.info(
-        "API summary | overpass_id_sent=%s | overpass_geom_sent=%s | google_elevation_sent=%s | google_elevation_points=%s | otd_sent=%s | otd_points=%s",
+        "API summary | overpass_id_sent=%s | overpass_geom_sent=%s | google_elevation_sent=%s | google_elevation_points=%s | otd_sent=%s | otd_points=%s | gsi_points=%s",
         stats["overpass_id_requests_sent"],
         stats["overpass_requests_sent"],
         stats["elevation_requests_sent"],
         stats["elevation_points_requested"],
         stats["otd_requests_sent"],
         stats["otd_points_requested"],
+        stats["gsi_points_requested"],
     )
     logger.info(
         "Timing summary | overpass_id_s=%.2f | overpass_geom_s=%.2f | elevation_s=%.2f",

@@ -564,21 +564,6 @@ def ski_source(known_run_osm_by_resort: dict, known_lift_osm_by_resort: dict):
     quarantine_state = dlt.current.source_state().setdefault("osm_id_quarantine", {"by_resort": {}})
     quarantine_by_resort = quarantine_state.setdefault("by_resort", {})
 
-    today_str = str(date.today())
-    api_state = dlt.current.source_state().setdefault("api_requests", {})
-    _api_keys = (
-        "overpass_id_sent",
-        "overpass_geom_sent",
-        "google_elevation_sent",
-        "google_elevation_points",
-        "otd_sent",
-        "otd_points",
-    )
-    for _key in _api_keys:
-        api_state.setdefault(_key, {})
-    # Prune to only today — carry forward today's tally, start fresh each new day
-    for _key in _api_keys:
-        api_state[_key] = {today_str: api_state[_key].get(today_str, 0)}
     if should_preflight_ids:
         try:
             logger.info("Checking OSM ids across all configured resorts before geometry fetch ...")
@@ -924,23 +909,41 @@ def ski_source(known_run_osm_by_resort: dict, known_lift_osm_by_resort: dict):
             resort_counts["lifts"],
         )
 
-    # Persist daily API request counts to pipeline state
-    api_state["overpass_id_sent"][today_str] = api_state["overpass_id_sent"].get(today_str, 0) + stats["overpass_id_requests_sent"]
-    api_state["overpass_geom_sent"][today_str] = api_state["overpass_geom_sent"].get(today_str, 0) + stats["overpass_requests_sent"]
-    api_state["google_elevation_sent"][today_str] = api_state["google_elevation_sent"].get(today_str, 0) + stats["elevation_requests_sent"]
-    api_state["google_elevation_points"][today_str] = api_state["google_elevation_points"].get(today_str, 0) + stats["elevation_points_requested"]
-    api_state["otd_sent"][today_str] = api_state["otd_sent"].get(today_str, 0) + stats["otd_requests_sent"]
-    api_state["otd_points"][today_str] = api_state["otd_points"].get(today_str, 0) + stats["otd_points_requested"]
-    logger.info(
-        "Daily API totals (state) | date=%s | overpass_id_sent=%s | overpass_geom_sent=%s | google_elevation_sent=%s | google_elevation_points=%s | otd_sent=%s | otd_points=%s",
-        today_str,
-        api_state["overpass_id_sent"][today_str],
-        api_state["overpass_geom_sent"][today_str],
-        api_state["google_elevation_sent"][today_str],
-        api_state["google_elevation_points"][today_str],
-        api_state["otd_sent"][today_str],
-        api_state["otd_points"][today_str],
-    )
+    @dlt.resource(write_disposition="append", table_name="_api_daily_state")
+    def _api_daily_state_updater():
+        _today_str = str(date.today())
+        _api_state = dlt.current.source_state().setdefault("api_requests", {})
+        _api_keys = (
+            "overpass_id_sent",
+            "overpass_geom_sent",
+            "google_elevation_sent",
+            "google_elevation_points",
+            "otd_sent",
+            "otd_points",
+        )
+        for _key in _api_keys:
+            _api_state.setdefault(_key, {})
+        # Prune to only today — carry forward today's tally, start fresh each new day
+        for _key in _api_keys:
+            _api_state[_key] = {_today_str: _api_state[_key].get(_today_str, 0)}
+        # Accumulate this run's counts into the daily total
+        _api_state["overpass_id_sent"][_today_str] = _api_state["overpass_id_sent"].get(_today_str, 0) + stats["overpass_id_requests_sent"]
+        _api_state["overpass_geom_sent"][_today_str] = _api_state["overpass_geom_sent"].get(_today_str, 0) + stats["overpass_requests_sent"]
+        _api_state["google_elevation_sent"][_today_str] = _api_state["google_elevation_sent"].get(_today_str, 0) + stats["elevation_requests_sent"]
+        _api_state["google_elevation_points"][_today_str] = _api_state["google_elevation_points"].get(_today_str, 0) + stats["elevation_points_requested"]
+        _api_state["otd_sent"][_today_str] = _api_state["otd_sent"].get(_today_str, 0) + stats["otd_requests_sent"]
+        _api_state["otd_points"][_today_str] = _api_state["otd_points"].get(_today_str, 0) + stats["otd_points_requested"]
+        logger.info(
+            "Daily API totals (state) | date=%s | overpass_id_sent=%s | overpass_geom_sent=%s | google_elevation_sent=%s | google_elevation_points=%s | otd_sent=%s | otd_points=%s",
+            _today_str,
+            _api_state["overpass_id_sent"][_today_str],
+            _api_state["overpass_geom_sent"][_today_str],
+            _api_state["google_elevation_sent"][_today_str],
+            _api_state["google_elevation_points"][_today_str],
+            _api_state["otd_sent"][_today_str],
+            _api_state["otd_points"][_today_str],
+        )
+        yield from ()
 
     @dlt.resource(write_disposition="merge", table_name="ski_runs", primary_key=["osm_id"])
     def ski_runs():
@@ -1088,7 +1091,7 @@ def ski_source(known_run_osm_by_resort: dict, known_lift_osm_by_resort: dict):
                     "area": tags.get("area", ""),
                 }
 
-    return [ski_runs, ski_run_points, ski_lifts_resource, ski_run_segments]
+    return [ski_runs, ski_run_points, ski_lifts_resource, ski_run_segments, _api_daily_state_updater]
 
 
 def _load_known_osm_ids_by_resort(pipeline, table_name):

@@ -34,8 +34,8 @@ df = con.execute("""
         a.daily_snowfall_cm,
         a.cumulative_snowfall_cm
     FROM camonairflow.public_analysis.analysis_cumulative_snowfall a
-    WHERE (a.model_name = 'ECMWF IFS' and country <> 'JP')
-         OR (a.model_name = 'JMA Seamless' and country = 'JP')
+    WHERE ((a.model_name = 'ECMWF IFS' and country <> 'JP')
+         OR (a.model_name = 'JMA Seamless' and country = 'JP'))
       AND a.year_col >= 1990
 """).df()
 

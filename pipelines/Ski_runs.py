@@ -14,6 +14,7 @@ from dlt.destinations.exceptions import DatabaseUndefinedRelation
 import numpy as np
 import math
 import requests as _stdlib_requests
+from requests.adapters import HTTPAdapter
 
 
 # --- ENV setup ---
@@ -154,7 +155,7 @@ MANUAL_QUARANTINED_OSM_IDS_BY_RESORT = {
 # Thread-safe session for GSI concurrent requests (dlt requests wrapper is single-threaded).
 _GSI_SESSION = _stdlib_requests.Session()
 _GSI_SESSION.headers.update({"User-Agent": "CamOnAirFlow/ski-runs-pipeline research"})
-_gsi_adapter = _stdlib_requests.adapters.HTTPAdapter(pool_connections=1, pool_maxsize=25)
+_gsi_adapter = HTTPAdapter(pool_connections=1, pool_maxsize=25)
 _GSI_SESSION.mount("https://", _gsi_adapter)
 
 

@@ -42,6 +42,7 @@ import duckdb
 import numpy as np
 import pyarrow as pa
 import dlt
+from dlt.destinations.exceptions import DatabaseUndefinedRelation
 import rasterio
 import rasterio.windows
 from rasterio.windows import from_bounds
@@ -317,7 +318,11 @@ def _iter_raster_chunks(
     """
     # GDAL VSI path — translates s3:// → /vsis3/ for GDAL's S3 virtual FS
     vsi_path = s3_url.replace("s3://", "/vsis3/")
-    source_file = s3_url.rsplit("/", 1)[-1]
+    # Include the survey path in source_file so tiles with the same filename
+    # from different surveys (e.g. 2016 vs 2021 editions) are distinct.
+    # Format: "{region}/{survey}/dem_1m/2193/{filename}.tiff"
+    _NZ_BUCKET = "s3://nz-elevation/"
+    source_file = s3_url[len(_NZ_BUCKET):] if s3_url.startswith(_NZ_BUCKET) else s3_url.rsplit("/", 1)[-1]
 
     with rasterio.Env(
         # No AWS credentials needed — bucket is public open data.
@@ -501,7 +506,11 @@ def nz_lidar_source(resort_bboxes: list[dict]):
 
             for s3_url in s3_urls:
                 total_files += 1
-                source_file = s3_url.rsplit("/", 1)[-1]
+                # Include the survey path so tiles with the same filename from
+                # different surveys get distinct state keys (e.g. queenstown_2016
+                # vs queenstown_2021 both have CB11_10000_0503.tiff).
+                _NZ_BUCKET = "s3://nz-elevation/"
+                source_file = s3_url[len(_NZ_BUCKET):] if s3_url.startswith(_NZ_BUCKET) else s3_url.rsplit("/", 1)[-1]
                 state_key = f"{resort}::{source_file}"
 
                 # --- Incremental check: skip files already loaded ---
@@ -625,8 +634,8 @@ def _sync_state_from_table(pipeline) -> None:
                 f" FROM {qualified}"
             )
         keys = [r[0] for r in rows]
-    except duckdb.CatalogException:
-        # Table doesn't exist yet (first run) — start with an empty state.
+    except (duckdb.CatalogException, DatabaseUndefinedRelation):
+        # Table doesn't exist yet (first run or table was dropped) — start with an empty state.
         keys = []
 
     with pipeline.managed_state() as state:
@@ -658,6 +667,15 @@ def run_pipeline(logger: logging.Logger, full_refresh: bool = False) -> None:
     )
 
     if full_refresh:
+        # Truncate the destination table so reprocessed data doesn't duplicate
+        # rows that were loaded under the old (filename-only) source_file key.
+        qualified = f"{DESTINATION_DATABASE}.{DATASET_NAME}.{TARGET_TABLE}"
+        try:
+            with pipeline.sql_client() as client:
+                client.execute_sql(f"DELETE FROM {qualified} WHERE TRUE")
+            logger.info("Full refresh — destination table truncated.")
+        except Exception as e:
+            logger.info("Full refresh — table not yet created or already empty: %s", e)
         # Wipe the local state entirely so every file is reprocessed.
         with pipeline.managed_state() as state:
             state.setdefault("sources", {}).setdefault(

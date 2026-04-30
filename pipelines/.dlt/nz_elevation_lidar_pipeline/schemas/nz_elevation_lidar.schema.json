@@ -1,6 +1,6 @@
 {
-  "version": 5,
-  "version_hash": "L9S9TzbAwqwrYjiQcgjGHEV+bjmDOr6I/g7q0t6gaW8=",
+  "version": 2,
+  "version_hash": "m9fhhIG1rmvJ4AHCwq8jGPx5KsragXhGBeSzHH06JpM=",
   "engine_version": 11,
   "name": "nz_elevation_lidar",
   "tables": {
@@ -75,6 +75,59 @@
       "resource": "_dlt_loads",
       "description": "Created by DLT. Tracks completed loads"
     },
+    "ski_resort_elevation_1m": {
+      "columns": {
+        "resort_name": {
+          "name": "resort_name",
+          "nullable": true,
+          "data_type": "text"
+        },
+        "lon": {
+          "name": "lon",
+          "nullable": true,
+          "data_type": "double"
+        },
+        "lat": {
+          "name": "lat",
+          "nullable": true,
+          "data_type": "double"
+        },
+        "x_nztm": {
+          "name": "x_nztm",
+          "nullable": true,
+          "data_type": "bigint",
+          "precision": 32
+        },
+        "y_nztm": {
+          "name": "y_nztm",
+          "nullable": true,
+          "data_type": "bigint",
+          "precision": 32
+        },
+        "elevation_m": {
+          "name": "elevation_m",
+          "nullable": true,
+          "data_type": "double"
+        },
+        "resolution_m": {
+          "name": "resolution_m",
+          "nullable": true,
+          "data_type": "bigint",
+          "precision": 32
+        },
+        "source_file": {
+          "name": "source_file",
+          "nullable": true,
+          "data_type": "text"
+        }
+      },
+      "write_disposition": "append",
+      "name": "ski_resort_elevation_1m",
+      "resource": "ski_resort_elevation_1m",
+      "x-normalizer": {
+        "seen-data": true
+      }
+    },
     "_dlt_pipeline_state": {
       "columns": {
         "version": {
@@ -127,59 +180,6 @@
       "x-normalizer": {
         "seen-data": true
       }
-    },
-    "ski_resort_elevation_1m": {
-      "columns": {
-        "resort_name": {
-          "name": "resort_name",
-          "nullable": true,
-          "data_type": "text"
-        },
-        "lon": {
-          "name": "lon",
-          "nullable": true,
-          "data_type": "double"
-        },
-        "lat": {
-          "name": "lat",
-          "nullable": true,
-          "data_type": "double"
-        },
-        "elevation_m": {
-          "name": "elevation_m",
-          "nullable": true,
-          "data_type": "double"
-        },
-        "resolution_m": {
-          "name": "resolution_m",
-          "nullable": true,
-          "data_type": "bigint",
-          "precision": 32
-        },
-        "source_file": {
-          "name": "source_file",
-          "nullable": true,
-          "data_type": "text"
-        },
-        "x_nztm": {
-          "name": "x_nztm",
-          "nullable": true,
-          "data_type": "bigint",
-          "precision": 32
-        },
-        "y_nztm": {
-          "name": "y_nztm",
-          "nullable": true,
-          "data_type": "bigint",
-          "precision": 32
-        }
-      },
-      "write_disposition": "append",
-      "name": "ski_resort_elevation_1m",
-      "resource": "ski_resort_elevation_1m",
-      "x-normalizer": {
-        "seen-data": true
-      }
     }
   },
   "settings": {
@@ -215,10 +215,7 @@
     }
   },
   "previous_hashes": [
-    "bwSCPXLD5YelUtQfkAMpy7dCfQ56uG4avl4fLugo/VE=",
-    "ws2pqCo2PozsTFXphW/WRirYmZcoZa8iHv+CtLsCTr0=",
-    "Wf/RVO9XvbH1pkVInqXppgoevpWG2exql75QLv8QFPk=",
-    "Cf6vQe0AWe2OqQ2KF1vXWxXUV3umAfJgiJ/+8O1j7QI=",
-    "71SajfTkBKC7X6FqhQ4GqeJJfbpBhCBjGhXL4yk8lR0="
+    "S/0INjglst9wbv2B5Cy+aXMS9/S6Kb68Nbo8JKAY6lU=",
+    "I6lEVXK68/Gqvv/gy2YSsNuzEpzMTHnEUQ/tnE7ZbL4="
   ]
 }

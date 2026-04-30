@@ -1,0 +1,9 @@
+version: 2
+
+sources:
+  - name: lidar
+    database: camonairflow
+    schema: nz_lidar
+
+    tables:
+      - name: ski_resort_elevation_1m

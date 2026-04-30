@@ -5,7 +5,7 @@
     "cacheFrom": "camonairflow-app:latest",
     "context": "..",
     "args": {
-      "VARIANT": "3.12.9"  // Explicit Python version
+      "VARIANT": "3.12"  // Explicit Python version
     }
   },
   "runArgs": [

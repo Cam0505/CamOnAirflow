@@ -570,22 +570,34 @@ def compute_turniness(coords):
 def get_top_bottom_coordinates(coords, elevations=None, is_lift=False):
     """
     Get top and bottom coordinates for a run or lift.
-    For ski runs: First point is top, last point is bottom (flow top-to-bottom)
-    For ski lifts: First point is bottom, last point (where skiers get off)
+    For ski runs: First point is top, last point is bottom (flow top-to-bottom).
+    For ski lifts: elevation is used to determine top/bottom, because OSM ways
+    can be digitized in either direction (bottom-to-top or top-to-bottom).
+    Falls back to assuming bottom-to-top ordering when no elevation data is available.
     """
     if not coords or len(coords) < 2:
         return None, None, None, None, None, None
 
     if is_lift:
-        # For lifts: First point is bottom, last point is top
-        bottom_coords = coords[0]  # First point (where skiers get on)
-        top_coords = coords[-1]    # Last point (where skiers get off)
-        
-        # Get elevations if available
+        # For lifts: use elevation to determine top/bottom, as OSM ways can be
+        # digitized in either direction (top-to-bottom or bottom-to-top).
         if elevations and len(elevations) == len(coords):
-            bottom_elevation = elevations[0]
-            top_elevation = elevations[-1]
+            if elevations[-1] >= elevations[0]:
+                # Way runs bottom-to-top (normal case)
+                top_coords = coords[-1]
+                bottom_coords = coords[0]
+                top_elevation = elevations[-1]
+                bottom_elevation = elevations[0]
+            else:
+                # Way runs top-to-bottom (reversed case)
+                top_coords = coords[0]
+                bottom_coords = coords[-1]
+                top_elevation = elevations[0]
+                bottom_elevation = elevations[-1]
         else:
+            # No elevation data — fall back to assuming bottom-to-top ordering
+            bottom_coords = coords[0]
+            top_coords = coords[-1]
             bottom_elevation = None
             top_elevation = None
     else:

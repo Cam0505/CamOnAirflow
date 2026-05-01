@@ -38,6 +38,7 @@ database_string = os.getenv("MD")
 if not database_string:
     raise ValueError("Missing MD in environment.")
 
+
 OUTPUT_DIR = os.path.join(paths["PROJECT_ROOT"], "charts", "ski_network_graphs")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
@@ -265,11 +266,43 @@ def render_resort(con, resort_name: str, country_code: str = "",
     rot = _compute_rotation(runs_meta_df, lon0, lat0)
     runs_df["x"], runs_df["y"] = _rotate(runs_df["x"].values, runs_df["y"].values, rot)
 
+    # ── 5b. pre-project lift coordinates (needed for bounding box & drawing) ─
+    lifts_projected = []
+    for _, lift in lifts_df.iterrows():
+        bx, by = _equirect([lift["bottom_lon"]], [lift["bottom_lat"]], lon0, lat0)
+        tx, ty = _equirect([lift["top_lon"]], [lift["top_lat"]], lon0, lat0)
+        bxr, byr = _rotate(np.array([float(bx[0])]), np.array([float(by[0])]), rot)
+        txr, tyr = _rotate(np.array([float(tx[0])]), np.array([float(ty[0])]), rot)
+        lifts_projected.append({
+            "name": lift["name"],
+            "xs": [float(bxr[0]), float(txr[0])],
+            "ys": [float(byr[0]), float(tyr[0])],
+        })
+
+    # ── 5c. size figure to match actual data aspect ratio ────────────────────
+    all_pts_x = list(runs_df["x"].values)
+    all_pts_y = list(runs_df["y"].values)
+    for lp in lifts_projected:
+        all_pts_x.extend(lp["xs"])
+        all_pts_y.extend(lp["ys"])
+    x_min, x_max = min(all_pts_x), max(all_pts_x)
+    y_min, y_max = min(all_pts_y), max(all_pts_y)
+    data_w = float(x_max - x_min) or 1.0
+    data_h = float(y_max - y_min) or 1.0
+    aspect_ratio = data_h / data_w
+    BASE = 10.0
+    if aspect_ratio >= 1.0:  # portrait data
+        fig_w = max(BASE / aspect_ratio, 5.0)
+        fig_h = BASE
+    else:  # landscape data
+        fig_w = BASE
+        fig_h = max(BASE * aspect_ratio, 5.0)
+
     # ── 6. longest path (pre-loaded from mart_longest_ski_paths) ─────────────
     # path_segments: {run_osm_id (int): set of segment_indices (int)}
     path_segments, path_dist_m, path_desc = path_info
     path_dist_km = path_dist_m / 1000
-    fig, ax = plt.subplots(figsize=(14, 10), facecolor=BG_COLOR)
+    fig, ax = plt.subplots(figsize=(fig_w, fig_h), facecolor=BG_COLOR)
     ax.set_facecolor(BG_COLOR)
     ax.set_aspect("equal")
     ax.axis("off")
@@ -315,14 +348,9 @@ def render_resort(con, resort_name: str, country_code: str = "",
                             solid_capstyle="round", solid_joinstyle="round", zorder=3)
 
     # ── 10. draw lifts ─────────────────────────────────────────────────────────
-    for _, lift in lifts_df.iterrows():
-        bx, by = _equirect([lift["bottom_lon"]], [lift["bottom_lat"]], lon0, lat0)
-        tx, ty = _equirect([lift["top_lon"]], [lift["top_lat"]], lon0, lat0)
-        # apply same rotation as runs
-        bxr, byr = _rotate(np.array([float(bx[0])]), np.array([float(by[0])]), rot)
-        txr, tyr = _rotate(np.array([float(tx[0])]), np.array([float(ty[0])]), rot)
-        xs = [float(bxr[0]), float(txr[0])]
-        ys = [float(byr[0]), float(tyr[0])]
+    for lp in lifts_projected:
+        xs = lp["xs"]
+        ys = lp["ys"]
 
         for lw, alpha in LIFT_GLOW_LAYERS:
             ax.plot(xs, ys,
@@ -343,11 +371,11 @@ def render_resort(con, resort_name: str, country_code: str = "",
         )
 
         # lift name label
-        if lift["name"]:
+        if lp["name"]:
             mx = (xs[0] + xs[1]) / 2
             my = (ys[0] + ys[1]) / 2
             ax.text(
-                mx, my, _safe_text(lift["name"].title()),
+                mx, my, _safe_text(lp["name"].title()),
                 color=LIFT_COLOR, fontsize=5.5, alpha=0.75,
                 ha="center", va="center", rotation=0,
                 path_effects=[pe.withStroke(linewidth=2, foreground=BG_COLOR)],
@@ -410,7 +438,13 @@ def render_resort(con, resort_name: str, country_code: str = "",
         path_effects=[pe.withStroke(linewidth=4, foreground=BG_COLOR)],
     )
 
-    # ── 14. save ─────────────────────────────────────────────────────────────
+    # ── 14. fix view limits to include all data (runs + lifts) ───────────────
+    pad_x = data_w * 0.12
+    pad_y = data_h * 0.12
+    ax.set_xlim(x_min - pad_x, x_max + pad_x)
+    ax.set_ylim(y_min - pad_y, y_max + pad_y)
+
+    # ── 15. save ─────────────────────────────────────────────────────────────
     safe_name = resort_name.replace("/", "_").replace(" ", "_")
     country_dir = os.path.join(OUTPUT_DIR, country_code) if country_code else OUTPUT_DIR
     os.makedirs(country_dir, exist_ok=True)
@@ -424,7 +458,7 @@ def render_resort(con, resort_name: str, country_code: str = "",
 def main():
     resort_args = sys.argv[1:]
 
-    con = duckdb.connect(database_string)
+    con = duckdb.connect(database_string)  # type: ignore
 
     if resort_args:
         # Look up country codes for explicitly named resorts

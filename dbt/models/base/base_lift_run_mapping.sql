@@ -92,7 +92,7 @@ lift_services_runs AS (
     WHERE SQRT(
         POW(69.1 * (l.top_lat - r.top_lat), 2) + 
         POW(69.1 * (l.top_lon - r.top_lon) * COS(r.top_lat / 57.3), 2)
-    ) * 1609.34 <= 45  -- Within 45m 
+    ) * 1609.34 <= 60  -- Within 60m 
 ),
 
 -- Runs that feed into lifts (run bottom near lift bottom)

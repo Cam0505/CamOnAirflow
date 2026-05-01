@@ -25,6 +25,7 @@ resort graphs.
 Output: one row per resort — the single longest path found.
 """
 
+import math
 import pandas as pd
 import json
 from typing import Dict, Optional
@@ -44,8 +45,23 @@ OUTPUT_COLUMNS = [
 # At the cap the best path found so far is returned.
 _MAX_STATES = 2_000_000
 
+# Proximity fallback threshold — used for NZ resorts where OSM ways have
+# gaps between run endpoints that don't share a node ID.
+_NZ_PROXIMITY_THRESHOLD_M = 50.0
 
-def build_segment_graph(ski_segments: pd.DataFrame) -> Dict[str, Dict]:
+
+def _haversine_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Approximate great-circle distance in metres using the equirectangular formula."""
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    lat_mid = math.radians((lat1 + lat2) / 2.0)
+    return math.sqrt(dlat ** 2 + (math.cos(lat_mid) * dlon) ** 2) * 6_371_000
+
+
+def build_segment_graph(
+    ski_segments: pd.DataFrame,
+    use_proximity_fallback: bool = False,
+) -> Dict[str, Dict]:
     """
     Build a segment-level directed graph.
 
@@ -55,6 +71,13 @@ def build_segment_graph(ski_segments: pd.DataFrame) -> Dict[str, Dict]:
       - not (same run AND B.seg_idx <= A.seg_idx)  — no backward same-run travel
 
     Uses a from_node index for O(n) construction instead of O(n²).
+
+    When use_proximity_fallback=True, any segment whose to_node matches no
+    from_node exactly is also checked against all segment start-points within
+    _NZ_PROXIMITY_THRESHOLD_M.  The elevation guard (candidate start elevation
+    >= current end elevation) prevents uphill proximity connections.
+    A spatial bucket grid (1° cells ≈ 111 km) keeps the fallback O(n) rather
+    than O(n²) for large resorts.
     """
     segment_graph: Dict[str, Dict] = {}
     from_node_index: Dict = {}  # from_node_id -> [seg_id, ...]
@@ -63,11 +86,25 @@ def build_segment_graph(ski_segments: pd.DataFrame) -> Dict[str, Dict]:
         seg_id = f"{seg['run_osm_id']}_{seg['segment_index']}"
         fn = seg["from_node_id"] if pd.notna(seg["from_node_id"]) else None
         tn = seg["to_node_id"] if pd.notna(seg["to_node_id"]) else None
+
+        to_lat = seg["to_lat"] if "to_lat" in seg.index and pd.notna(seg["to_lat"]) else None
+        to_lon = seg["to_lon"] if "to_lon" in seg.index and pd.notna(seg["to_lon"]) else None
+        from_lat = seg["from_lat"] if "from_lat" in seg.index and pd.notna(seg["from_lat"]) else None
+        from_lon = seg["from_lon"] if "from_lon" in seg.index and pd.notna(seg["from_lon"]) else None
+        from_elev = seg["from_elev_m"] if "from_elev_m" in seg.index and pd.notna(seg["from_elev_m"]) else None
+        to_elev = seg["to_elev_m"] if "to_elev_m" in seg.index and pd.notna(seg["to_elev_m"]) else None
+
         segment_graph[seg_id] = {
             "run_id": seg["run_osm_id"],
             "seg_idx": seg["segment_index"],
             "from_node": fn,
             "to_node": tn,
+            "from_lat": from_lat,
+            "from_lon": from_lon,
+            "to_lat": to_lat,
+            "to_lon": to_lon,
+            "from_elev": from_elev,
+            "to_elev": to_elev,
             "length_m": seg["length_m"],
             "vertical_drop": seg["vertical_drop_m"],
             "run_name": seg["run_name"],
@@ -89,6 +126,51 @@ def build_segment_graph(ski_segments: pd.DataFrame) -> Dict[str, Dict]:
             if other["run_id"] == data["run_id"] and other["seg_idx"] <= data["seg_idx"]:
                 continue
             data["next_segments"].add(other_id)
+
+    # Proximity fallback: for NZ resorts where OSM gaps exist between run endpoints
+    if use_proximity_fallback:
+        # Build a coarse spatial bucket (1° ≈ 111 km) so the fallback stays O(n)
+        bucket_index: Dict = {}  # (int_lat, int_lon) -> [seg_id, ...]
+        for seg_id, data in segment_graph.items():
+            if data["from_lat"] is not None and data["from_lon"] is not None:
+                cell = (int(data["from_lat"]), int(data["from_lon"]))
+                bucket_index.setdefault(cell, []).append(seg_id)
+
+        # ±1° search radius covers any gap within ~111 km — far more than needed
+        for seg_id, data in segment_graph.items():
+            # Only apply fallback when exact-node wiring found nothing
+            if data["next_segments"]:
+                continue
+            if data["to_lat"] is None or data["to_lon"] is None:
+                continue
+
+            tlat, tlon = data["to_lat"], data["to_lon"]
+            cell = (int(tlat), int(tlon))
+
+            candidates = []
+            for dlat in (-1, 0, 1):
+                for dlon in (-1, 0, 1):
+                    candidates.extend(bucket_index.get((cell[0] + dlat, cell[1] + dlon), []))
+
+            for other_id in candidates:
+                if other_id == seg_id:
+                    continue
+                other = segment_graph[other_id]
+                if other["from_lat"] is None or other["from_lon"] is None:
+                    continue
+                # Block backward same-run travel
+                if other["run_id"] == data["run_id"] and other["seg_idx"] <= data["seg_idx"]:
+                    continue
+                # Elevation guard: don't allow uphill proximity connections
+                if (
+                    data["to_elev"] is not None
+                    and other["from_elev"] is not None
+                    and other["from_elev"] > data["to_elev"] + 5  # 5m tolerance for flat connectors
+                ):
+                    continue
+                dist = _haversine_m(tlat, tlon, other["from_lat"], other["from_lon"])
+                if dist <= _NZ_PROXIMITY_THRESHOLD_M:
+                    data["next_segments"].add(other_id)
 
     return segment_graph
 
@@ -214,7 +296,8 @@ def model(dbt, session):
         if resort_segs.empty:
             continue
 
-        graph = build_segment_graph(resort_segs)
+        is_nz = resort_segs["country_code"].iloc[0] == "NZ"
+        graph = build_segment_graph(resort_segs, use_proximity_fallback=is_nz)
         result = find_longest_path_for_resort(graph, resort_lrm)
 
         if result is None:

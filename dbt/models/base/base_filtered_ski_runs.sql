@@ -14,7 +14,14 @@
 -- NOTE: base_filtered_ski_segments uses an INNER JOIN to this model so that
 --   all segment filters are inherited automatically — do not weaken filters
 --   here without checking the segment and points models.
+-- Uphill coordinate fix: some runs are stored with top/bottom coordinates
+--   reversed (bottom elevation > top elevation). When detected via
+--   top_elevation_m < bottom_elevation_m, the top_* and bottom_* columns
+--   are swapped so that top always refers to the higher endpoint.
 -- ==============================================================================
+
+-- Applies only to runs that have both elevation values present.
+-- NULL-elevation rows are left unchanged (no reliable direction signal).
 
 WITH deduplicated_runs AS (
     SELECT
@@ -33,12 +40,25 @@ WITH deduplicated_runs AS (
             ELSE difficulty
         END AS difficulty,
         turniness_score,
-        top_lat,
-        top_lon,
-        top_elevation_m,
-        bottom_lat,
-        bottom_lon,
-        bottom_elevation_m,
+        -- Swap top/bottom when the stored "top" is actually lower than "bottom"
+        CASE WHEN top_elevation_m IS NOT NULL AND bottom_elevation_m IS NOT NULL
+                  AND top_elevation_m < bottom_elevation_m
+             THEN bottom_lat ELSE top_lat END AS top_lat,
+        CASE WHEN top_elevation_m IS NOT NULL AND bottom_elevation_m IS NOT NULL
+                  AND top_elevation_m < bottom_elevation_m
+             THEN bottom_lon ELSE top_lon END AS top_lon,
+        CASE WHEN top_elevation_m IS NOT NULL AND bottom_elevation_m IS NOT NULL
+                  AND top_elevation_m < bottom_elevation_m
+             THEN bottom_elevation_m ELSE top_elevation_m END AS top_elevation_m,
+        CASE WHEN top_elevation_m IS NOT NULL AND bottom_elevation_m IS NOT NULL
+                  AND top_elevation_m < bottom_elevation_m
+             THEN top_lat ELSE bottom_lat END AS bottom_lat,
+        CASE WHEN top_elevation_m IS NOT NULL AND bottom_elevation_m IS NOT NULL
+                  AND top_elevation_m < bottom_elevation_m
+             THEN top_lon ELSE bottom_lon END AS bottom_lon,
+        CASE WHEN top_elevation_m IS NOT NULL AND bottom_elevation_m IS NOT NULL
+                  AND top_elevation_m < bottom_elevation_m
+             THEN top_elevation_m ELSE bottom_elevation_m END AS bottom_elevation_m,
         run_length_m / 4.0 AS ski_time_slow_sec,
         run_length_m / 7.0 AS ski_time_medium_sec,
         run_length_m / 10.0 AS ski_time_fast_sec,

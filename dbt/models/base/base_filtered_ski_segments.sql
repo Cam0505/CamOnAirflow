@@ -31,6 +31,7 @@
 -- direction. This ensures graph edges in staging_all_resorts_longest_path connect
 -- correctly (A.to_node_id == B.from_node_id).
 WITH uphill_runs AS (
+    -- Downhill runs stored bottom-to-top in OSM (flip so segment_index=0 is at top)
     SELECT
         pts.osm_id,
         pts.resort,
@@ -48,6 +49,27 @@ WITH uphill_runs AS (
         pts.country_code,
         pts.osm_id
     HAVING ARG_MIN(pts.elevation_m, pts.point_index) < ARG_MAX(pts.elevation_m, pts.point_index)
+
+    UNION ALL
+
+    -- Hike runs stored top-to-bottom in OSM (flip so segment_index=0 is at bottom, for uphill traversal)
+    SELECT
+        pts.osm_id,
+        pts.resort,
+        pts.country_code
+    FROM {{ source('ski_runs', 'ski_run_points') }} AS pts
+    INNER JOIN {{ source('ski_runs', 'ski_runs') }} AS runs
+        ON pts.resort = runs.resort
+       AND pts.country_code = runs.country_code
+       AND pts.osm_id = runs.osm_id
+    WHERE runs.piste_type = 'hike'
+      AND runs.run_length_m > 50
+      AND COALESCE(LOWER(TRIM(pts.area)), '') <> 'yes'
+    GROUP BY
+        pts.resort,
+        pts.country_code,
+        pts.osm_id
+    HAVING ARG_MIN(pts.elevation_m, pts.point_index) > ARG_MAX(pts.elevation_m, pts.point_index)
 ),
 
 max_segment_indexes AS (
@@ -105,6 +127,7 @@ segs AS (
         r.resort,
         r.country_code,
         r.run_name,
+        r.piste_type,
         r.difficulty
     FROM {{ source('ski_runs', 'ski_run_segments') }} s
     LEFT JOIN {{ ref('base_filtered_ski_points') }} fp
@@ -145,4 +168,5 @@ SELECT
     'Cardrona Alpine Resort' AS resort,
     'NZ' AS country_code,
     'manual_connector' AS run_name,
+    'downhill' AS piste_type,
     NULL AS difficulty

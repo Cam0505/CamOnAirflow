@@ -21,6 +21,7 @@ matplotlib.rcParams["font.family"] = ["DejaVu Sans", "IPAexGothic", "AR PL UMing
 import matplotlib.pyplot as plt  # noqa: E402
 import matplotlib.patheffects as pe  # noqa: E402
 import matplotlib.lines as mlines  # noqa: E402
+from matplotlib.colors import LightSource, Normalize  # noqa: E402
 import duckdb  # noqa: E402
 try:
     from scipy.interpolate import griddata as _scipy_griddata
@@ -69,6 +70,12 @@ LIFT_GLOW_LAYERS = [
     (2.5, 0.20),
     (1.2, 0.90),
 ]
+HIKE_GLOW_LAYERS = [
+    (4.0, 0.05),
+    (2.0, 0.12),
+    (0.9, 0.70),
+]
+HIKE_DASHES = (5, 4)   # dash on / off in points
 
 
 def _safe_text(s):
@@ -120,8 +127,8 @@ def _rotate(xs, ys, angle: float):
     return c * xs - s * ys, s * xs + c * ys
 
 
-def _draw_topo(ax, xs, ys, zs, interval: int = 100):
-    """Interpolate a grid from scattered run-point elevations and draw faint contour lines."""
+def _draw_topo(ax, xs, ys, zs, interval: int = 50):
+    """Interpolate a grid from scattered run-point elevations, draw hillshading and contour lines."""
     if not _HAS_SCIPY:
         return
     valid = ~(np.isnan(xs) | np.isnan(ys) | np.isnan(zs))
@@ -138,6 +145,31 @@ def _draw_topo(ax, xs, ys, zs, interval: int = 100):
         yv.min() - pad_y : yv.max() + pad_y : 200j,
     ]
     gz = _scipy_griddata((xv, yv), zv, (gx, gy), method="linear")
+    extent = [float(gx.min()), float(gx.max()), float(gy.min()), float(gy.max())]
+
+    # ── hillshade + terrain tint ─────────────────────────────────────────────
+    # gz is (nx, ny) from mgrid; imshow expects (ny, nx), so transpose.
+    gz_t = gz.T
+    gz_mean = float(np.nanmean(gz_t)) if not np.all(np.isnan(gz_t)) else 0.0
+    gz_filled = np.where(np.isnan(gz_t), gz_mean, gz_t)
+    dx_m = (float(gx.max()) - float(gx.min())) / 199.0
+    dy_m = (float(gy.max()) - float(gy.min())) / 199.0
+    ls = LightSource(azdeg=315, altdeg=40)
+    # Shift vmin below z_min so the data maps into the brown/white alpine
+    # portion of the terrain palette rather than the sea-level blues.
+    shade_rgb = ls.shade(
+        gz_filled,
+        cmap=plt.cm.terrain,
+        norm=Normalize(vmin=z_min - (z_max - z_min) * 0.5, vmax=z_max),
+        blend_mode="soft",
+        vert_exag=3.0,
+        dx=dx_m,
+        dy=dy_m,
+    )
+    ax.imshow(shade_rgb, extent=extent, origin="lower", aspect="auto",
+              alpha=0.04, zorder=0, interpolation="bilinear")
+
+    # ── contour lines ────────────────────────────────────────────────────────
     levels = np.arange(
         math.ceil(z_min / interval) * interval,
         z_max + interval,
@@ -234,7 +266,7 @@ def render_resort(con, resort_name: str, country_code: str = "",
         FROM camonairflow.ski_runs.ski_run_points p
         JOIN camonairflow.ski_runs.ski_runs r ON p.osm_id = r.osm_id
         WHERE p.resort = ?
-        and r.piste_type = 'downhill'
+        and r.piste_type IN ('downhill', 'hike')
         ORDER BY p.osm_id, p.point_index
     """, [resort_name]).df()
 
@@ -324,13 +356,43 @@ def render_resort(con, resort_name: str, country_code: str = "",
         pt_idx = group["point_index"].values
         diff = group["difficulty"].iloc[0]
         color = _safe_color(diff)
+        is_hike = str(group["piste_type"].iloc[0]).lower() == "hike"
 
         touched_segs = path_segments.get(int(osm_id))
 
-        # Every run drawn dimmed as background
-        for lw, alpha in GLOW_LAYERS:
-            ax.plot(xs, ys, color=color, lw=lw, alpha=alpha * 0.55,
-                    solid_capstyle="round", solid_joinstyle="round", zorder=2)
+        if is_hike:
+            # Bootpack / hike: dashed lines with an uphill direction arrow
+            for lw, alpha in HIKE_GLOW_LAYERS:
+                ax.plot(xs, ys, color=color, lw=lw, alpha=alpha * 0.60,
+                        linestyle="--", dashes=HIKE_DASHES,
+                        solid_capstyle="butt", zorder=2)
+            # Arrow near midpoint pointing uphill
+            elev_arr = group["elevation_smoothed_m"].values.astype(float)
+            mid = max(len(xs) // 2, 1)
+            e0 = elev_arr[0] if not np.isnan(elev_arr[0]) else 0.0
+            e_last = elev_arr[-1] if not np.isnan(elev_arr[-1]) else 0.0
+            if e_last > e0:
+                arr_x0, arr_y0 = xs[mid - 1], ys[mid - 1]
+                arr_x1, arr_y1 = xs[mid], ys[mid]
+            else:
+                arr_x0, arr_y0 = xs[mid], ys[mid]
+                arr_x1, arr_y1 = xs[mid - 1], ys[mid - 1]
+            ax.annotate(
+                "", xy=(arr_x1, arr_y1), xytext=(arr_x0, arr_y0),
+                arrowprops=dict(
+                    arrowstyle="-|>",
+                    color=color,
+                    lw=0.7,
+                    mutation_scale=7,
+                    alpha=0.80,
+                ),
+                zorder=3,
+            )
+        else:
+            # Regular downhill run — solid glow layers
+            for lw, alpha in GLOW_LAYERS:
+                ax.plot(xs, ys, color=color, lw=lw, alpha=alpha * 0.55,
+                        solid_capstyle="round", solid_joinstyle="round", zorder=2)
 
         if touched_segs:
             # Overlay only the specific segment ranges that are on the path
@@ -340,12 +402,32 @@ def render_resort(con, resort_name: str, country_code: str = "",
                 pxs, pys = xs[mask], ys[mask]
                 if len(pxs) < 2:
                     continue
-                for lw, alpha, c in HIGHLIGHT_LAYERS:
-                    ax.plot(pxs, pys, color=c, lw=lw, alpha=alpha,
-                            solid_capstyle="round", solid_joinstyle="round", zorder=3)
-                for lw, alpha in GLOW_LAYERS:
-                    ax.plot(pxs, pys, color=color, lw=lw, alpha=alpha,
-                            solid_capstyle="round", solid_joinstyle="round", zorder=3)
+                if is_hike:
+                    # Highlighted hike segment: brighter dashes + white uphill arrow
+                    for lw, alpha in HIKE_GLOW_LAYERS:
+                        ax.plot(pxs, pys, color=color, lw=lw, alpha=alpha,
+                                linestyle="--", dashes=HIKE_DASHES,
+                                solid_capstyle="butt", zorder=4)
+                    hmid = max(len(pxs) // 2, 1)
+                    ax.annotate(
+                        "", xy=(pxs[hmid], pys[hmid]),
+                        xytext=(pxs[hmid - 1], pys[hmid - 1]),
+                        arrowprops=dict(
+                            arrowstyle="-|>",
+                            color="white",
+                            lw=0.8,
+                            mutation_scale=9,
+                            alpha=0.90,
+                        ),
+                        zorder=5,
+                    )
+                else:
+                    for lw, alpha, c in HIGHLIGHT_LAYERS:
+                        ax.plot(pxs, pys, color=c, lw=lw, alpha=alpha,
+                                solid_capstyle="round", solid_joinstyle="round", zorder=3)
+                    for lw, alpha in GLOW_LAYERS:
+                        ax.plot(pxs, pys, color=color, lw=lw, alpha=alpha,
+                                solid_capstyle="round", solid_joinstyle="round", zorder=3)
 
     # ── 10. draw lifts ─────────────────────────────────────────────────────────
     for lp in lifts_projected:
@@ -414,9 +496,15 @@ def render_resort(con, resort_name: str, country_code: str = "",
         mlines.Line2D([0], [0], color=LIFT_COLOR, lw=1.5,
                       linestyle="--", label="Lift")
     )
+    if not runs_df.empty and (runs_df["piste_type"] == "hike").any():
+        legend_items.append(
+            mlines.Line2D([0], [0], color="#90A4AE", lw=1.2,
+                          linestyle="--", dashes=HIKE_DASHES,
+                          label="Bootpack (hike)")
+        )
     legend_items.append(
         mlines.Line2D([0], [0], color="white", lw=0.6,
-                      alpha=0.30, label="Contours (100m)")
+                      alpha=0.30, label="Contours (50m)")
     )
     if path_dist_m > 0:
         legend_items.append(

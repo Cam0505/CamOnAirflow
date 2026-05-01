@@ -108,6 +108,7 @@ def build_segment_graph(
             "length_m": seg["length_m"],
             "vertical_drop": seg["vertical_drop_m"],
             "run_name": seg["run_name"],
+            "piste_type": seg["piste_type"] if "piste_type" in seg.index and pd.notna(seg["piste_type"]) else "downhill",
             "next_segments": set(),
         }
         if fn is not None:
@@ -224,6 +225,7 @@ def find_longest_path_for_resort(
                 "runs": [seg["run_id"]],
                 "run_names": [seg["run_name"]],
                 "visited": {start_seg_id},
+                "hike_runs_used": set(),
                 "distance": seg["length_m"],
                 "vertical": vert,
                 "lift_id": lift_id,
@@ -240,6 +242,15 @@ def find_longest_path_for_resort(
 
             nexts = seg_data["next_segments"] - state["visited"]
 
+            # Filter out hike segments whose bootpack run has already been traversed
+            nexts = {
+                nid for nid in nexts
+                if not (
+                    segment_graph[nid]["piste_type"] == "hike"
+                    and segment_graph[nid]["run_id"] in state["hike_runs_used"]
+                )
+            }
+
             if not nexts:
                 # terminal — compare to best
                 if state["distance"] > best_dist:
@@ -250,11 +261,15 @@ def find_longest_path_for_resort(
             for next_id in nexts:
                 ns = segment_graph[next_id]
                 nv = ns["vertical_drop"] if pd.notna(ns["vertical_drop"]) else 0.0
+                next_hike_used = state["hike_runs_used"]
+                if ns["piste_type"] == "hike":
+                    next_hike_used = state["hike_runs_used"] | {ns["run_id"]}
                 stack.append((next_id, {
                     "segments": state["segments"] + [next_id],
                     "runs": state["runs"] + [ns["run_id"]],
                     "run_names": state["run_names"] + [ns["run_name"]],
                     "visited": state["visited"] | {next_id},
+                    "hike_runs_used": next_hike_used,
                     "distance": state["distance"] + ns["length_m"],
                     "vertical": state["vertical"] + nv,
                     "lift_id": state["lift_id"],

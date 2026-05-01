@@ -46,5 +46,7 @@ models:
         description: Two-letter country code.
       - name: run_name
         description: Display name of the parent run.
+      - name: piste_type
+        description: OpenStreetMap piste type of the parent run (e.g. downhill, hike).
       - name: difficulty
         description: Normalised difficulty of the parent run.

@@ -577,7 +577,7 @@ def _load_resort_bboxes(pipeline) -> list[dict]:
     ST_Transform / ST_Y.
     Returns an empty list if the view does not yet exist (first-run safety).
     """
-    sql = f"SELECT resort, min_x, min_y, max_x, max_y FROM {BBOX_VIEW}"
+    sql = f"SELECT resort, min_x, min_y, max_x, max_y FROM {BBOX_VIEW} where resort = 'Ōhau Snow Fields'"
     try:
         with pipeline.sql_client() as client:
             try:

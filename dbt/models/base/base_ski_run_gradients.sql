@@ -32,7 +32,7 @@ WITH points AS (
         r.difficulty
     FROM {{ ref('base_filtered_ski_points') }} AS p
     INNER JOIN {{ ref('base_filtered_ski_runs') }} AS r ON p.osm_id = r.osm_id
-    where r.n_points >= 3
+    where r.n_points >= 2
 )
 
 , first_last_points AS (

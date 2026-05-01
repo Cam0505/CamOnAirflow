@@ -464,22 +464,44 @@ def render_resort(con, resort_name: str, country_code: str = "",
             )
 
     # ── 11. run name labels (midpoint of each run) ────────────────────────────
+    # Greedy spatial suppression: skip a label if its midpoint is within
+    # LABEL_MIN_DIST_M of any already-placed label.  Longer runs are prioritised
+    # so that important named runs are more likely to get a label.
+    LABEL_MIN_DIST_M = 120.0
+    placed_label_positions: list[tuple[float, float]] = []
+
+    label_candidates = []
     for osm_id, group in runs_df.groupby("osm_id", sort=False):
         group = group.sort_values("point_index")
         mid = len(group) // 2
-        mx = group["x"].iloc[mid]
-        my = group["y"].iloc[mid]
+        mx = float(group["x"].iloc[mid])
+        my = float(group["y"].iloc[mid])
         run_name = group["run_name"].iloc[0]
         diff = group["difficulty"].iloc[0]
-        color = _safe_color(diff)
+        run_length = float(group["x"].count())  # proxy for run length (point count)
+        label_candidates.append((run_length, mx, my, run_name, diff))
 
-        if run_name and str(run_name).strip():
-            ax.text(
-                mx, my, _safe_text(run_name),
-                color=color, fontsize=5, alpha=0.70,
-                ha="center", va="center",
-                path_effects=[pe.withStroke(linewidth=2, foreground=BG_COLOR)],
-            )
+    # Longest runs first so they win the label slot
+    label_candidates.sort(key=lambda t: t[0], reverse=True)
+
+    for _, mx, my, run_name, diff in label_candidates:
+        if not run_name or not str(run_name).strip():
+            continue
+        # Check distance to every already-placed label
+        too_close = any(
+            math.hypot(mx - px, my - py) < LABEL_MIN_DIST_M
+            for px, py in placed_label_positions
+        )
+        if too_close:
+            continue
+        placed_label_positions.append((mx, my))
+        color = _safe_color(diff)
+        ax.text(
+            mx, my, _safe_text(run_name),
+            color=color, fontsize=5, alpha=0.70,
+            ha="center", va="center",
+            path_effects=[pe.withStroke(linewidth=2, foreground=BG_COLOR)],
+        )
 
     # ── 12. legend ────────────────────────────────────────────────────────────
     legend_items = []

@@ -78,7 +78,7 @@ def get_ski_fields_with_timestamp():
     ]
 
 SKI_FIELDS = get_ski_fields_with_timestamp()
-START_DATE = date(2016, 11, 1)
+START_DATE = date(2014, 11, 1)
 
 GLOBAL_COMPARISON_MODELS = [
     "ecmwf_ifs",  # Native ECMWF HRES model (~9 km)

@@ -159,7 +159,7 @@ def _draw_topo(ax, xs, ys, zs, interval: int = 50):
     # portion of the terrain palette rather than the sea-level blues.
     shade_rgb = ls.shade(
         gz_filled,
-        cmap=plt.cm.terrain,
+        cmap=matplotlib.colormaps["terrain"],
         norm=Normalize(vmin=z_min - (z_max - z_min) * 0.5, vmax=z_max),
         blend_mode="soft",
         vert_exag=3.0,
@@ -167,7 +167,7 @@ def _draw_topo(ax, xs, ys, zs, interval: int = 50):
         dy=dy_m,
     )
     ax.imshow(shade_rgb, extent=extent, origin="lower", aspect="auto",
-              alpha=0.04, zorder=0, interpolation="bilinear")
+              alpha=0.06, zorder=0, interpolation="bilinear")
 
     # ── contour lines ────────────────────────────────────────────────────────
     levels = np.arange(

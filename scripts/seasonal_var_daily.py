@@ -40,8 +40,12 @@ df = con.execute("""
         facet_label,
         daily_snowfall_cm,
         cumulative_snowfall_cm
-    FROM camonairflow.public_analysis.snowfall_cumulative_daily
+    FROM camonairflow.public_analysis.analysis_cumulative_snowfall
     WHERE year_col >= 1980
+      AND (
+          (country = 'JP'  AND model_name = 'JMA Seamless')
+       OR (country <> 'JP' AND model_name = 'ECMWF IFS')
+      )
 """).df()
 
 if df.empty:

@@ -62,9 +62,9 @@ OVERLAP_COLOR = "#58C251"  # neon green
 DIFFICULTY_COLORS = {
     "novice": "#4CAF50",
     "easy": "#42A5F5",
-    "intermediate": "#EF5350",
-    "advanced": "#FF9800",
-    "expert": "#E040FB",
+    "intermediate": "#D82741",
+    "advanced": "#8C32DA",
+    "expert": "#6318A0",
     "freeride": "#00BCD4",
     None: "#90A4AE",
     "nan": "#90A4AE",
@@ -244,25 +244,26 @@ def _load_longest_paths(con) -> dict:
 # ── highlight drawing helper ──────────────────────────────────────────────────
 
 def _draw_highlight(ax, pxs, pys, glow_color, diff_color, is_hike, zorder=3, alpha_scale=1.0):
-    """Draw a path-highlight: coloured glow layers then difficulty-coloured core."""
+    """Draw a path-highlight: coloured glow halo behind the run, then a solid core."""
+    # Halo at zorder-1 so the base-run line (zorder=2) covers the centre
     for lw, alpha, c in _highlight_layers(glow_color):
         alpha = min(alpha * alpha_scale, 1.0)
         if is_hike:
             ax.plot(pxs, pys, color=c, lw=lw, alpha=alpha,
                     linestyle="--", dashes=HIKE_DASHES,
-                    solid_capstyle="butt", zorder=zorder)
+                    solid_capstyle="butt", zorder=zorder - 1)
         else:
             ax.plot(pxs, pys, color=c, lw=lw, alpha=alpha,
-                    solid_capstyle="round", solid_joinstyle="round", zorder=zorder)
-    # Difficulty-coloured core on top so terrain character shows through
-    for lw, alpha in GLOW_LAYERS:
-        if is_hike:
-            ax.plot(pxs, pys, color=diff_color, lw=lw, alpha=alpha,
-                    linestyle="--", dashes=HIKE_DASHES,
-                    solid_capstyle="butt", zorder=zorder)
-        else:
-            ax.plot(pxs, pys, color=diff_color, lw=lw, alpha=alpha,
-                    solid_capstyle="round", solid_joinstyle="round", zorder=zorder)
+                    solid_capstyle="round", solid_joinstyle="round", zorder=zorder - 1)
+    # Solid opaque difficulty core on top — same width/style as the base run
+    lw_core = 0.9 if is_hike else 1.4
+    if is_hike:
+        ax.plot(pxs, pys, color=diff_color, lw=lw_core, alpha=1.0,
+                linestyle="--", dashes=HIKE_DASHES,
+                solid_capstyle="butt", zorder=zorder)
+    else:
+        ax.plot(pxs, pys, color=diff_color, lw=lw_core, alpha=1.0,
+                solid_capstyle="round", solid_joinstyle="round", zorder=zorder)
 
 
 # ── resort renderer ───────────────────────────────────────────────────────────

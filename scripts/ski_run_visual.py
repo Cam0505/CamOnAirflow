@@ -46,6 +46,7 @@ difficulty_colors = {
     "easy": "#377eb8",
     "intermediate": "#d90f0f",
     "advanced": "#0e0d0d",
+    "expert": "#6600CC",
     "freeride": "#00CED1",
     None: "#999999",
     "nan": "#999999"
@@ -181,7 +182,6 @@ def load_plot_data(con, target_countries):
         f"""
         SELECT osm_id, resort, region, run_name, country_code,
             CASE WHEN difficulty = 'extreme' THEN 'intermediate'
-                 WHEN difficulty = 'expert' THEN 'advanced'
                  ELSE difficulty END AS difficulty,
             piste_type,
             run_length_m,
@@ -223,7 +223,6 @@ def load_plot_data(con, target_countries):
         SELECT fr.region,
             gs.resort,
             CASE WHEN gs.difficulty = 'extreme' THEN 'intermediate'
-                 WHEN gs.difficulty = 'expert' THEN 'advanced'
                  ELSE gs.difficulty END AS difficulty,
             gs.run_count,
             gs.mean_gradient_degrees,

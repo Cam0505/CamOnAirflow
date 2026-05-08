@@ -12,7 +12,7 @@ Steepness is measured as avg_gradient = total_vertical_m / total_distance_m
 
 To avoid trivially short paths dominating (a single steep segment averages
 higher than any multi-run descent), a per-resort minimum path length is
-enforced at the 25th percentile of all reachable terminal path distances.
+enforced as 20% of the longest terminal path found in Pass 1.
 
 Algorithm — two DFS passes:
   Pass 1 (lightweight): traverse the graph collecting only the total distance
@@ -23,8 +23,8 @@ Algorithm — two DFS passes:
     path found so far.
 
 Each pass is capped at _MAX_STATES DFS node expansions to keep large/dense
-resorts tractable.  The p25 from pass 1 is a slight over-estimate when the
-cap fires (shorter, earlier paths are under-represented), but it remains a
+resorts tractable.  The max/4 threshold from pass 1 is a slight under-estimate
+when the cap fires (very long paths may be missed), but it remains a
 meaningful minimum that rules out trivially short paths.
 
 Starting points and proximity-fallback logic are identical to
@@ -261,9 +261,7 @@ def find_steepest_path_for_resort(
     if not terminal_distances:
         return None
 
-    terminal_distances_sorted = sorted(terminal_distances)
-    p25_idx = max(0, int(len(terminal_distances_sorted) * 0.25) - 1)
-    min_length = terminal_distances_sorted[p25_idx]
+    min_length = max(terminal_distances) / 5.0
 
     # ── Pass 2: full DFS, steepest terminal path >= min_length ──────────────
     best_gradient: float = -1.0

@@ -5,7 +5,7 @@
 --   run_length_m < 10  — stub / connector segments from OSM noise
 --   n_points < 2  — single-node entries with no usable geometry
 --   osm_id 951853708  — specific Cardrona NZ entry with known bad geometry
--- Difficulty normalisation: 'extreme' → 'intermediate', 'expert' → 'advanced'
+-- Difficulty normalisation: 'extreme' → 'intermediate'
 --   (keeps the difficulty scale consistent across data providers).
 -- Unnamed runs are assigned 'Unnamed <resort> Run <n>' within each resort
 --   using ROW_NUMBER over osm_id for a stable, deterministic label.
@@ -36,7 +36,6 @@ WITH deduplicated_runs AS (
         n_points,
         CASE
             WHEN difficulty = 'extreme' THEN 'intermediate'
-            WHEN difficulty = 'expert' THEN 'advanced'
             ELSE difficulty
         END AS difficulty,
         turniness_score,
